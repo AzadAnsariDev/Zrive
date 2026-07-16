@@ -2,6 +2,7 @@ import config from "../config/config.js"
 import userModel from "../models/user.model.js"
 import jwt from 'jsonwebtoken'
 
+
 const sendTokenResponse = (user, res, statusCode, message)=>{
     const token = jwt.sign({
         id : user._id
@@ -86,4 +87,31 @@ export const login = async (req, res)=>{
 
     await sendTokenResponse(user, res, 200, "User loggedIn successfully")
 
+}
+
+export const googleCallback = async (req, res)=>{
+   
+    const {id, displayName, emails, photos} = req.user
+    const email = emails[0].value
+    const photo = photos[0].value
+
+    let user = await userModel.findOne({
+        email
+    })
+
+    if(!user){
+        user = await userModel.create({
+            email,
+            googleId: id,
+            username : displayName
+        })
+    }
+
+    const token = jwt.sign({
+        id: user._id
+    },config.JWT_SECRET)
+
+    res.cookie("token", token)
+
+    res.redirect("http://localhost:5173/")
 }

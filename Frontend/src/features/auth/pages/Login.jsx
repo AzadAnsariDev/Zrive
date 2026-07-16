@@ -176,8 +176,8 @@ const Login = () => {
                   {...register("password", {
                     required: "Please enter your password",
                     minLength: {
-                      value: 8,
-                      message: "Password must be at least 8 characters",
+                      value: 6,
+                      message: "Password must be at least 6 characters",
                     },
                   })}
                 />
@@ -220,6 +220,9 @@ const Login = () => {
           <div className="mt-6 space-y-3">
             <button
               type="button"
+              onClick={()=>{
+                 window.location.href = "/api/auth/google";
+              }}
               className="flex w-full items-center justify-center gap-2 rounded-full border border-[#E7DDCB] bg-white py-3.5 text-[15px] font-semibold text-[#111111] transition-colors hover:bg-[#0F0F0F]/[0.03]"
             >
               <GoogleIcon />

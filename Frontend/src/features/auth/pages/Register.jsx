@@ -337,6 +337,9 @@ const Register = () => {
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button
             type="button"
+            onClick={()=>{
+              window.location.href = "api/auth/google"
+            }}
             className="flex items-center justify-center gap-2 rounded-full border border-[#E7DDCB] bg-white py-3.5 text-[15px] font-semibold text-[#111111] shadow-sm transition-colors hover:bg-[#0F0F0F]/[0.03]"
           >
             <GoogleIcon />
