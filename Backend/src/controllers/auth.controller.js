@@ -57,9 +57,8 @@ export const register = async (req, res)=>{
 } 
 
 export const login = async (req, res)=>{
-    console.log("Login api hit")
+
     const { identifier, password } = req.body
-    console.log(req.body)
 
     const isEmail = identifier.includes("@")
     
