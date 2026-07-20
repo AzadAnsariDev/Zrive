@@ -3,7 +3,7 @@ import { uploadFiles } from "../services/storage.service.js"
 
 export const createProduct = async (req, res) =>{
 
-    const {title, description, priceAmount, priceCurrency} = req.body
+    const {title, description, priceAmount, priceCurrency, stock, status, category} = req.body
 
     const seller = req.user
 
@@ -22,6 +22,9 @@ export const createProduct = async (req, res) =>{
             amount : priceAmount,
             currency: priceCurrency || "INR"
         },
+        stock,
+        status,
+        category,
         images
     })
 
