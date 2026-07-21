@@ -1,8 +1,10 @@
 import React from 'react'
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
-import { Heart, Plus, Star, Shirt, Footprints, Watch, User as UserIcon } from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { Heart, Plus, Star, Shirt, Footprints, Watch, User as UserIcon, ArrowRight } from 'lucide-react'
 import { useProduct } from '../../product/hook/useProduct'
+import heroImage from "../../../assets/images/Hero_Zrive.png";
 
 // ---- Static content -------------------------------------------------------
 // Categories aren't part of the product API, so they stay static. Mobile
@@ -65,13 +67,41 @@ const StarRating = ({ rating = 4.5, count = 0 }) => (
   </div>
 )
 
-const Home = () => {
+// ---- Backend data format safety helpers -----------------------------------
+export const formatPrice = (priceObj) => {
+  if (priceObj === undefined || priceObj === null) return ''
+  if (typeof priceObj === 'number' || typeof priceObj === 'string') {
+    return `₹${priceObj}`
+  }
+  if (typeof priceObj === 'object') {
+    const amount = priceObj.amount ?? priceObj.value
+    if (amount === undefined || amount === null) return ''
+    const currency = priceObj.currency || 'INR'
+    const symbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : `${currency} `
+    return `${symbol}${amount}`
+  }
+  return ''
+}
 
+const getProductName = (product) => product?.title || product?.name || 'Product'
+
+const getProductImage = (product) => {
+  if (product?.images && product.images.length > 0) {
+    const img = product.images[0]
+    return typeof img === 'string' ? img : img?.url || ''
+  }
+  return product?.image || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=500&auto=format&fit=crop'
+}
+
+const getProductKey = (product, idx) => product?._id || product?.id || idx
+
+const Home = () => {
+  const navigate = useNavigate()
   const { handleGetProducts } = useProduct()
 
-  // useEffect(() => {
-  //   handleGetProducts()
-  // }, [])
+  useEffect(() => {
+    handleGetProducts()
+  }, [])
 
   const products = useSelector((state) => state.product.products)
   const { hours, minutes, seconds } = useCountdown(FLASH_SALE_DURATION_MS)
@@ -106,76 +136,46 @@ const Home = () => {
           </h1>
           <button
             type="button"
-            onClick={() => { }}
-            className="bg-white text-black text-[12.5px] font-semibold tracking-[0.08em] uppercase px-6 py-3.5 rounded-full hover:opacity-90 active:scale-[0.98] transition-all"
+            onClick={() => navigate('/all-products')}
+            className="bg-white text-black text-[12.5px] font-semibold tracking-[0.08em] uppercase px-6 py-3.5 rounded-full hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer"
           >
             Shop the Collection
           </button>
         </div>
       </section>
 
-      {/* ================= HERO — desktop/tablet ================= */}
-      {/*
-  Layout matches the design:
-    • Left ~40% — dark overlay panel with large headline + CTA
-    • Right ~60% — 2 columns × 3 rows of portrait-ratio fashion images
-*/}
-      <section className="hidden md:flex relative overflow-hidden" style={{ height: '72vh', minHeight: '520px', maxHeight: '780px' }}>
-        {/* ── Left text panel ── */}
-        <div className="relative flex flex-col justify-end p-10 lg:p-14" style={{ width: '38%', flexShrink: 0 }}>
-          <img
-            src={HERO_TILE_IMAGES[0]}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/60" />
-          <div className="relative z-10">
-            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-neutral-300 mb-3 block">
-              New Collection 2026
-            </span>
-            <h1 className="text-white font-black leading-[0.95] tracking-tight mb-6"
-              style={{ fontSize: 'clamp(2.6rem, 4.5vw, 5rem)' }}>
-              THE MODERN
-              <br />
-              MASCULINE.
-            </h1>
-            <button
-              type="button"
-              onClick={() => { }}
-              className="w-fit bg-white text-black text-[11.5px] font-semibold tracking-[0.12em] uppercase px-7 py-3 rounded-full hover:opacity-90 transition-opacity"
-            >
-              Shop Now
-            </button>
-          </div>
-        </div>
-
-        {/* ── Right image grid: 2 cols × 3 rows ── */}
-        <div className="flex-1 grid grid-cols-2 grid-rows-3 gap-[2px]" style={{ minWidth: 0 }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="relative overflow-hidden">
-              <img
-                src={HERO_TILE_IMAGES[i % HERO_TILE_IMAGES.length]}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover opacity-90"
-              />
-              <div className="absolute inset-0 bg-black/30" />
-              <div className="absolute top-2.5 left-3 text-[9px] font-bold tracking-widest text-white/70 uppercase">ZRIVE</div>
-            </div>
-          ))}
+      {/* ================= HERO — desktop/tablet (sale poster, AJIO-style) ================= */}
+      <section className="hidden md:block w-full h-[360px] lg:h-[420px] relative overflow-hidden bg-gray-900 group">
+        <img
+          src={heroImage}
+          alt="ZRIVE Flat 40% Off Promotion"
+          className="w-full h-full object-cover object-center block transition-transform duration-500 ease-out group-hover:scale-[1.008]"
+        />
+        {/* Eye-catching, premium overlay CTA button placed below discount graphics */}
+        <div className="absolute bottom-6 left-8 lg:bottom-6 lg:left-14 z-10">
+          <button
+            type="button"
+            onClick={() => navigate('/all-products')}
+            className="group/btn inline-flex items-center gap-3 bg-black text-white text-xs lg:text-sm font-bold tracking-[0.12em] uppercase px-7 py-3.5 rounded-full shadow-2xl border border-white/20 hover:bg-white hover:text-black hover:border-transparent transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+          >
+            <span>Shop Now</span>
+            <ArrowRight size={16} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
+          </button>
         </div>
       </section>
+
 
       {/* ================= Categories — mobile (photo circles) ================= */}
       <section className="md:hidden px-5 pt-10 pb-2">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-[12px] font-bold tracking-[0.14em] uppercase text-gray-500">Categories</h2>
-          <button type="button" onClick={() => { }} className="text-[12.5px] font-medium text-gray-500 hover:text-black transition-colors">
+          <button type="button" onClick={() => {}} className="text-[12.5px] font-medium text-gray-500 hover:text-black transition-colors">
             View All
           </button>
         </div>
         <div className="flex gap-5 overflow-x-auto no-scrollbar -mx-5 px-5 pb-1">
           {MOBILE_CATEGORIES.map((cat) => (
-            <button key={cat.id} type="button" onClick={() => { }} className="flex flex-col items-center gap-2.5 flex-shrink-0">
+            <button key={cat.id} type="button" onClick={() => {}} className="flex flex-col items-center gap-2.5 flex-shrink-0">
               <span className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 border border-gray-100">
                 <img src={cat.image} alt={cat.label} className="w-full h-full object-cover" />
               </span>
@@ -192,7 +192,7 @@ const Home = () => {
             <button
               key={id}
               type="button"
-              onClick={() => { }}
+              onClick={() => {}}
               className="flex flex-col items-center gap-3 py-2 hover:opacity-70 transition-opacity"
             >
               <Icon size={26} strokeWidth={1.25} />
@@ -214,7 +214,7 @@ const Home = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-7 left-7">
               <h3 className="text-white text-[22px] font-bold tracking-tight mb-1">Summer Essentials</h3>
-              <button type="button" onClick={() => { }} className="text-[12px] font-semibold tracking-[0.08em] uppercase text-white border-b border-white/60 pb-0.5 hover:border-white transition-colors">
+              <button type="button" onClick={() => {}} className="text-[12px] font-semibold tracking-[0.08em] uppercase text-white border-b border-white/60 pb-0.5 hover:border-white transition-colors">
                 Explore Collection
               </button>
             </div>
@@ -228,7 +228,7 @@ const Home = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-7 left-7">
               <h3 className="text-white text-[22px] font-bold tracking-tight mb-1">Tailored Suits</h3>
-              <button type="button" onClick={() => { }} className="text-[12px] font-semibold tracking-[0.08em] uppercase text-white border-b border-white/60 pb-0.5 hover:border-white transition-colors">
+              <button type="button" onClick={() => {}} className="text-[12px] font-semibold tracking-[0.08em] uppercase text-white border-b border-white/60 pb-0.5 hover:border-white transition-colors">
                 View Craftsmanship
               </button>
             </div>
@@ -243,18 +243,18 @@ const Home = () => {
         {trendingHero ? (
           <div className="relative rounded-2xl overflow-hidden bg-gray-50 mb-4">
             <div className="relative aspect-[4/5]">
-              <img src={trendingHero.image} alt={trendingHero.name} className="w-full h-full object-cover" />
-              <button type="button" aria-label="Add to wishlist" onClick={() => { }} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition-colors">
+              <img src={getProductImage(trendingHero)} alt={getProductName(trendingHero)} className="w-full h-full object-cover" />
+              <button type="button" aria-label="Add to wishlist" onClick={() => {}} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition-colors">
                 <Heart size={16} strokeWidth={1.75} />
               </button>
-              <button type="button" aria-label="Quick add to cart" onClick={() => { }} className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-black text-white flex items-center justify-center hover:opacity-90 active:scale-95 transition-all">
+              <button type="button" aria-label="Quick add to cart" onClick={() => {}} className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-black text-white flex items-center justify-center hover:opacity-90 active:scale-95 transition-all">
                 <Plus size={18} strokeWidth={2} />
               </button>
             </div>
             <div className="px-1 pt-3.5 pb-1">
               {trendingHero.tag && <span className="text-[10.5px] font-semibold tracking-[0.1em] uppercase text-gray-500">{trendingHero.tag}</span>}
-              <h3 className="text-[15px] font-semibold mt-0.5">{trendingHero.name}</h3>
-              <p className="text-[14px] text-gray-500 mt-0.5">${trendingHero.price}</p>
+              <h3 className="text-[15px] font-semibold mt-0.5">{getProductName(trendingHero)}</h3>
+              <p className="text-[14px] text-gray-500 mt-0.5">{formatPrice(trendingHero.price)}</p>
             </div>
           </div>
         ) : (
@@ -263,18 +263,18 @@ const Home = () => {
 
         <div className="grid grid-cols-2 gap-4 mt-2">
           {trendingGridMobile.length > 0
-            ? trendingGridMobile.map((product) => (
-              <div key={product.id}>
-                <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-50 mb-2.5">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                  <button type="button" aria-label="Add to wishlist" onClick={() => { }} className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition-colors">
-                    <Heart size={14} strokeWidth={1.75} />
-                  </button>
+            ? trendingGridMobile.map((product, idx) => (
+                <div key={getProductKey(product, idx)}>
+                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-50 mb-2.5">
+                    <img src={getProductImage(product)} alt={getProductName(product)} className="w-full h-full object-cover" />
+                    <button type="button" aria-label="Add to wishlist" onClick={() => {}} className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition-colors">
+                      <Heart size={14} strokeWidth={1.75} />
+                    </button>
+                  </div>
+                  <h3 className="text-[13.5px] font-medium">{getProductName(product)}</h3>
+                  <p className="text-[13px] text-gray-500 mt-0.5">{formatPrice(product.price)}</p>
                 </div>
-                <h3 className="text-[13.5px] font-medium">{product.name}</h3>
-                <p className="text-[13px] text-gray-500 mt-0.5">${product.price}</p>
-              </div>
-            ))
+              ))
             : [0, 1].map((i) => <ProductCardSkeleton key={i} className="aspect-square" />)}
         </div>
       </section>
@@ -287,44 +287,44 @@ const Home = () => {
               <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-gray-400 mb-1.5">Curated For You</p>
               <h2 className="text-[26px] font-extrabold tracking-tight">Trending Now</h2>
             </div>
-            <button type="button" onClick={() => { }} className="text-[12.5px] font-semibold tracking-wide uppercase text-gray-500 hover:text-black transition-colors">
+            <button type="button" onClick={() => {}} className="text-[12.5px] font-semibold tracking-wide uppercase text-gray-500 hover:text-black transition-colors">
               View All
             </button>
           </div>
 
           <div className="grid grid-cols-4 gap-6">
             {trendingGridDesktop.length > 0
-              ? trendingGridDesktop.map((product) => (
-                <div key={product.id}>
-                  <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-50 mb-3.5">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                    {product.tag && (
-                      <span className="absolute top-3 left-3 bg-black text-white text-[10px] font-bold tracking-wide uppercase px-2 py-1 rounded">
-                        {product.tag}
-                      </span>
-                    )}
-                    {product.discountLabel && (
-                      <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold tracking-wide uppercase px-2 py-1 rounded">
-                        {product.discountLabel}
-                      </span>
-                    )}
-                    <button type="button" aria-label="Add to wishlist" onClick={() => { }} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition-colors">
-                      <Heart size={14} strokeWidth={1.75} />
-                    </button>
+              ? trendingGridDesktop.map((product, idx) => (
+                  <div key={getProductKey(product, idx)}>
+                    <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-50 mb-3.5">
+                      <img src={getProductImage(product)} alt={getProductName(product)} className="w-full h-full object-cover" />
+                      {product.tag && (
+                        <span className="absolute top-3 left-3 bg-black text-white text-[10px] font-bold tracking-wide uppercase px-2 py-1 rounded">
+                          {product.tag}
+                        </span>
+                      )}
+                      {product.discountLabel && (
+                        <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold tracking-wide uppercase px-2 py-1 rounded">
+                          {product.discountLabel}
+                        </span>
+                      )}
+                      <button type="button" aria-label="Add to wishlist" onClick={() => {}} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition-colors">
+                        <Heart size={14} strokeWidth={1.75} />
+                      </button>
+                    </div>
+                    <p className="text-[10.5px] font-semibold tracking-[0.08em] uppercase text-gray-400 mb-1">
+                      {product.brand ?? product.category ?? 'Zrive Essentials'}
+                    </p>
+                    <h3 className="text-[14px] font-semibold mb-1.5">{getProductName(product)}</h3>
+                    <StarRating rating={product.rating} count={product.reviewCount} />
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[14px] font-semibold">{formatPrice(product.price)}</span>
+                      {product.originalPrice && (
+                        <span className="text-[12.5px] text-gray-400 line-through">{formatPrice(product.originalPrice)}</span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-[10.5px] font-semibold tracking-[0.08em] uppercase text-gray-400 mb-1">
-                    {product.brand ?? 'Zrive Essentials'}
-                  </p>
-                  <h3 className="text-[14px] font-semibold mb-1.5">{product.name}</h3>
-                  <StarRating rating={product.rating} count={product.reviewCount} />
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[14px] font-semibold">${product.price}</span>
-                    {product.originalPrice && (
-                      <span className="text-[12.5px] text-gray-400 line-through">${product.originalPrice}</span>
-                    )}
-                  </div>
-                </div>
-              ))
+                ))
               : [0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} className="aspect-[3/4]" />)}
           </div>
         </div>
@@ -338,15 +338,15 @@ const Home = () => {
         </div>
         <div className="flex gap-4 overflow-x-auto no-scrollbar px-5 pb-1">
           {forYou.length > 0
-            ? forYou.map((product) => (
-              <div key={product.id} className="flex-shrink-0 w-[150px]">
-                <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-gray-50 mb-2.5">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            ? forYou.map((product, idx) => (
+                <div key={getProductKey(product, idx)} className="flex-shrink-0 w-[150px]">
+                  <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-gray-50 mb-2.5">
+                    <img src={getProductImage(product)} alt={getProductName(product)} className="w-full h-full object-cover" />
+                  </div>
+                  <h3 className="text-[13px] font-medium truncate">{getProductName(product)}</h3>
+                  <p className="text-[13px] text-gray-500 mt-0.5">{formatPrice(product.price)}</p>
                 </div>
-                <h3 className="text-[13px] font-medium truncate">{product.name}</h3>
-                <p className="text-[13px] text-gray-500 mt-0.5">${product.price}</p>
-              </div>
-            ))
+              ))
             : [0, 1].map((i) => <ProductCardSkeleton key={i} className="flex-shrink-0 w-[150px] aspect-[4/5]" />)}
         </div>
       </section>
@@ -388,7 +388,7 @@ const Home = () => {
             <div className="absolute inset-0 bg-black/30" />
             <button
               type="button"
-              onClick={() => { }}
+              onClick={() => {}}
               className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white text-black text-[12px] font-semibold tracking-[0.08em] uppercase px-6 py-3 rounded-full hover:opacity-90 transition-opacity whitespace-nowrap"
             >
               Shop the Sale
@@ -409,12 +409,12 @@ const Home = () => {
             <input
               type="email"
               placeholder="Enter your email"
-              onChange={() => { }}
+              onChange={() => {}}
               className="flex-1 rounded-full border border-gray-200 bg-white px-5 py-3 text-[13px] outline-none focus:ring-2 focus:ring-black/10 transition-shadow"
             />
             <button
               type="button"
-              onClick={() => { }}
+              onClick={() => {}}
               className="bg-black text-white text-[12.5px] font-semibold tracking-[0.08em] uppercase px-7 py-3 rounded-full hover:opacity-90 transition-opacity"
             >
               Join
@@ -429,11 +429,11 @@ const Home = () => {
           <h2 className="text-[11px] font-semibold tracking-[0.14em] uppercase text-gray-400 mb-5">Recently Viewed</h2>
           <div className="grid grid-cols-4 gap-6">
             {recentlyViewed.length > 0
-              ? recentlyViewed.map((product) => (
-                <div key={product.id} className="aspect-square rounded-2xl overflow-hidden bg-gray-50">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                </div>
-              ))
+              ? recentlyViewed.map((product, idx) => (
+                  <div key={getProductKey(product, idx)} className="aspect-square rounded-2xl overflow-hidden bg-gray-50">
+                    <img src={getProductImage(product)} alt={getProductName(product)} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                  </div>
+                ))
               : [0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} className="aspect-square" />)}
           </div>
         </div>
@@ -450,7 +450,7 @@ const Home = () => {
             <h4 className="text-[11px] font-semibold tracking-[0.1em] uppercase text-neutral-500 mb-3.5">Company</h4>
             <ul className="space-y-2.5">
               {['About', 'Journal', 'Stores'].map((label) => (
-                <li key={label}><button type="button" onClick={() => { }} className="text-[13.5px] text-neutral-300 hover:text-white transition-colors">{label}</button></li>
+                <li key={label}><button type="button" onClick={() => {}} className="text-[13.5px] text-neutral-300 hover:text-white transition-colors">{label}</button></li>
               ))}
             </ul>
           </div>
@@ -458,13 +458,13 @@ const Home = () => {
             <h4 className="text-[11px] font-semibold tracking-[0.1em] uppercase text-neutral-500 mb-3.5">Support</h4>
             <ul className="space-y-2.5">
               {['Shipping', 'Returns', 'Contact'].map((label) => (
-                <li key={label}><button type="button" onClick={() => { }} className="text-[13.5px] text-neutral-300 hover:text-white transition-colors">{label}</button></li>
+                <li key={label}><button type="button" onClick={() => {}} className="text-[13.5px] text-neutral-300 hover:text-white transition-colors">{label}</button></li>
               ))}
             </ul>
           </div>
         </div>
         <div className="border-t border-neutral-800 pt-6">
-          <button type="button" onClick={() => { }} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">
+          <button type="button" onClick={() => {}} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">
             United States | EN
           </button>
         </div>
@@ -491,7 +491,7 @@ const Home = () => {
                 <ul className="space-y-2.5">
                   {links.map((label) => (
                     <li key={label}>
-                      <button type="button" onClick={() => { }} className="text-[13.5px] text-gray-600 hover:text-black transition-colors">
+                      <button type="button" onClick={() => {}} className="text-[13.5px] text-gray-600 hover:text-black transition-colors">
                         {label}
                       </button>
                     </li>
@@ -504,7 +504,7 @@ const Home = () => {
             <p className="text-[12px] text-gray-500">© 2026 ZRIVE. All rights reserved.</p>
             <div className="flex items-center gap-5">
               {['Instagram', 'Twitter', 'Facebook'].map((label) => (
-                <button key={label} type="button" onClick={() => { }} className="text-[12px] text-gray-500 hover:text-black transition-colors">
+                <button key={label} type="button" onClick={() => {}} className="text-[12px] text-gray-500 hover:text-black transition-colors">
                   {label}
                 </button>
               ))}

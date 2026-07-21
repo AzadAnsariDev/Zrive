@@ -7,6 +7,7 @@ import CreateProduct from '../features/product/pages/CreateProduct'
 import Protected from '../features/auth/components/Protected'
 import Home from '../features/home/pages/Home'
 import UserLayout from '../features/layout/UserLayout'
+import AllProducts from '../features/product/pages/AllProducts'
 
 
 
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
         { path: 'sale', element: <div>Sale page</div> },  // ← add
         { path: 'profile', element: <div>Profile page</div> },
         { path: 'wishlist', element: <div>Wishlist page</div> },
+        { path: 'all-products', element: <AllProducts /> },
     ],
 },
     {

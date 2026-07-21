@@ -11,22 +11,10 @@ const EmailOrPhoneRegex = /^([^\s@]+@[^\s@]+\.[^\s@]+|[6-9]\d{9})$/;
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 48 48">
-    <path
-      fill="#FFC107"
-      d="M43.6 20.5H42V20.4H24v7.2h11.3c-1.6 4.6-6 7.9-11.3 7.9-6.9 0-12.5-5.6-12.5-12.5S17.1 10.5 24 10.5c3.2 0 6.1 1.2 8.3 3.2l5.1-5.1C34.5 5.7 29.5 3.7 24 3.7 12.9 3.7 3.9 12.7 3.9 23.8S12.9 43.9 24 43.9c11.1 0 20.1-9 20.1-20.1 0-1.1-.1-2.2-.3-3.3z"
-    />
-    <path
-      fill="#FF3D00"
-      d="M6.3 14.6l5.9 4.3C13.9 15.3 18.6 12.5 24 12.5c3.2 0 6.1 1.2 8.3 3.2l5.1-5.1C34.5 7.7 29.5 5.7 24 5.7c-7.7 0-14.4 4.3-17.7 10.6z"
-    />
-    <path
-      fill="#4CAF50"
-      d="M24 43.9c5.4 0 10.3-1.9 14.1-5.1l-6.5-5.5c-2.1 1.5-4.7 2.4-7.6 2.4-5.3 0-9.7-3.3-11.3-7.9l-6.2 4.8C9.7 39.6 16.3 43.9 24 43.9z"
-    />
-    <path
-      fill="#1976D2"
-      d="M43.6 20.5H42V20.4H24v7.2h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.5 5.5C41.4 35.6 44.1 30.1 44.1 23.8c0-1.1-.2-2.2-.5-3.3z"
-    />
+    <path fill="#FFC107" d="M43.6 20.5H42V20.4H24v7.2h11.3c-1.6 4.6-6 7.9-11.3 7.9-6.9 0-12.5-5.6-12.5-12.5S17.1 10.5 24 10.5c3.2 0 6.1 1.2 8.3 3.2l5.1-5.1C34.5 5.7 29.5 3.7 24 3.7 12.9 3.7 3.9 12.7 3.9 23.8S12.9 43.9 24 43.9c11.1 0 20.1-9 20.1-20.1 0-1.1-.1-2.2-.3-3.3z" />
+    <path fill="#FF3D00" d="M6.3 14.6l5.9 4.3C13.9 15.3 18.6 12.5 24 12.5c3.2 0 6.1 1.2 8.3 3.2l5.1-5.1C34.5 7.7 29.5 5.7 24 5.7c-7.7 0-14.4 4.3-17.7 10.6z" />
+    <path fill="#4CAF50" d="M24 43.9c5.4 0 10.3-1.9 14.1-5.1l-6.5-5.5c-2.1 1.5-4.7 2.4-7.6 2.4-5.3 0-9.7-3.3-11.3-7.9l-6.2 4.8C9.7 39.6 16.3 43.9 24 43.9z" />
+    <path fill="#1976D2" d="M43.6 20.5H42V20.4H24v7.2h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.5 5.5C41.4 35.6 44.1 30.1 44.1 23.8c0-1.1-.2-2.2-.5-3.3z" />
   </svg>
 );
 
@@ -63,42 +51,35 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full justify-center bg-[#F5E9DA] px-6 py-10">
+    <div className="flex min-h-screen w-full justify-center bg-white px-6 py-10">
       <div className="w-full max-w-[420px]">
         {/* Logo */}
         <div className="flex justify-center">
           <div className="flex flex-col items-center">
             <ZriveLogo />
-            <p className="mt-4 font-semibold tracking-[0.35em] text-[20px] text-[#111111]">
+            <p className="mt-4 font-bold tracking-[0.35em] text-[20px] text-black">
               ZRIVE
             </p>
-            <p className="mt-1 text-[11px] font-semibold tracking-[0.25em] text-[#5F5F5F]">
+            <p className="mt-1 text-[11px] font-medium tracking-[0.25em] text-gray-400">
               MEN&apos;S FASHION MARKETPLACE
             </p>
           </div>
         </div>
 
         {/* Heading */}
-        <h1 className="mt-8 text-center text-[34px] font-bold leading-[1.1] tracking-tight text-[#111111]">
+        <h1 className="mt-8 text-center text-[30px] font-bold leading-[1.1] tracking-tight text-black">
           Welcome Back
         </h1>
-        <p className="mt-3 text-center text-[15px] leading-relaxed text-[#5F5F5F]">
+        <p className="mt-2 text-center text-[15px] leading-relaxed text-gray-500">
           Please enter your details to continue your luxury shopping journey.
         </p>
 
         {/* Card */}
-        <div className="mt-8 rounded-[24px] bg-white p-6 shadow-card">
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            noValidate
-            className="space-y-6"
-          >
+        <div className="mt-8 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
             {/* Email or Phone */}
             <div>
-              <label
-                htmlFor="identifier"
-                className="mb-2 block text-[15px] font-semibold text-[#111111]"
-              >
+              <label htmlFor="identifier" className="mb-1.5 block text-[14px] font-semibold text-black">
                 Email or Phone Number
               </label>
               <input
@@ -106,44 +87,32 @@ const Login = () => {
                 type="text"
                 placeholder="yourname@email.com"
                 aria-invalid={errors.identifier ? "true" : "false"}
-                className={`w-full rounded-full border bg-white px-5 py-4 text-[15px] text-[#111111] placeholder:text-[#B9B2A4] outline-none transition-colors focus:border-[#A07F3A] focus:ring-2 focus:ring-[#A07F3A]/20 ${
-                  errors.identifier ? "border-red-400" : "border-[#E7DDCB]"
+                className={`w-full rounded-lg border bg-gray-50 px-4 py-3 text-[15px] text-black placeholder:text-gray-400 outline-none transition-colors focus:border-black focus:ring-1 focus:ring-black ${
+                  errors.identifier ? "border-red-400" : "border-gray-200"
                 }`}
                 {...register("identifier", {
                   required: "Please enter your email or phone number",
-                  pattern: {
-                    value: EmailOrPhoneRegex,
-                    message: "Enter a valid email or 10-digit phone number",
-                  },
+                  pattern: { value: EmailOrPhoneRegex, message: "Enter a valid email or 10-digit phone number" },
                 })}
               />
               {errors.identifier && (
-                <p className="mt-1.5 text-[13px] font-medium text-red-500">
-                  {errors.identifier.message}
-                </p>
+                <p className="mt-1.5 text-[13px] font-medium text-red-500">{errors.identifier.message}</p>
               )}
             </div>
 
             {/* Password */}
             <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label
-                  htmlFor="password"
-                  className="text-[15px] font-semibold text-[#111111]"
-                >
+              <div className="mb-1.5 flex items-center justify-between">
+                <label htmlFor="password" className="text-[14px] font-semibold text-black">
                   Password
                 </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-[14px] font-semibold text-[#A07F3A] hover:underline"
-                >
+                <Link to="/forgot-password" className="text-[13px] font-semibold text-black hover:underline">
                   Forgot Password?
                 </Link>
               </div>
-
               <div
-                className={`flex items-center overflow-hidden rounded-full border bg-white transition-colors focus-within:border-[#A07F3A] focus-within:ring-2 focus-within:ring-[#A07F3A]/20 ${
-                  errors.password ? "border-red-400" : "border-[#E7DDCB]"
+                className={`flex items-center overflow-hidden rounded-lg border bg-gray-50 transition-colors focus-within:border-black focus-within:ring-1 focus-within:ring-black ${
+                  errors.password ? "border-red-400" : "border-gray-200"
                 }`}
               >
                 <input
@@ -151,35 +120,30 @@ const Login = () => {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   aria-invalid={errors.password ? "true" : "false"}
-                  className="w-full bg-transparent px-5 py-4 text-[15px] text-[#111111] placeholder:text-[#B9B2A4] outline-none"
+                  className="w-full bg-transparent px-4 py-3 text-[15px] text-black placeholder:text-gray-400 outline-none"
                   {...register("password", {
                     required: "Please enter your password",
-                    minLength: {
-                      value: 6,
-                      message: "Password must be at least 6 characters",
-                    },
+                    minLength: { value: 6, message: "Password must be at least 6 characters" },
                   })}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="px-5 text-[#5F5F5F] hover:text-[#111111]"
+                  className="px-4 text-gray-400 hover:text-black"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1.5 text-[13px] font-medium text-red-500">
-                  {errors.password.message}
-                </p>
+                <p className="mt-1.5 text-[13px] font-medium text-red-500">{errors.password.message}</p>
               )}
             </div>
 
             {/* Submit */}
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-[#0F0F0F] py-4 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-black py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Sign In
               <ArrowRight size={18} />
@@ -188,11 +152,9 @@ const Login = () => {
 
           {/* Divider */}
           <div className="mt-8 flex items-center gap-3">
-            <span className="h-px flex-1 bg-[#0F0F0F]/10" />
-            <span className="text-[11px] font-semibold tracking-[0.2em] text-[#5F5F5F]">
-              OR SECURE LOGIN
-            </span>
-            <span className="h-px flex-1 bg-[#0F0F0F]/10" />
+            <span className="h-px flex-1 bg-gray-200" />
+            <span className="text-[11px] font-semibold tracking-[0.2em] text-gray-400">OR</span>
+            <span className="h-px flex-1 bg-gray-200" />
           </div>
 
           {/* Social buttons */}
@@ -202,14 +164,14 @@ const Login = () => {
               onClick={() => {
                 window.location.href = "/api/auth/google";
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-[#E7DDCB] bg-white py-3.5 text-[15px] font-semibold text-[#111111] transition-colors hover:bg-[#0F0F0F]/[0.03]"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white py-3 text-[14px] font-semibold text-black transition-colors hover:bg-gray-50"
             >
               <GoogleIcon />
               Continue with Google
             </button>
             <button
               type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-[#E7DDCB] bg-white py-3.5 text-[15px] font-semibold text-[#111111] transition-colors hover:bg-[#0F0F0F]/[0.03]"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white py-3 text-[14px] font-semibold text-black transition-colors hover:bg-gray-50"
             >
               <AppleIcon />
               Continue with Apple
@@ -218,12 +180,9 @@ const Login = () => {
         </div>
 
         {/* Footer */}
-        <p className="mt-6 text-center text-[15px] text-[#5F5F5F]">
+        <p className="mt-6 text-center text-[15px] text-gray-500">
           Don&apos;t have an account?{" "}
-          <Link
-            to="/register"
-            className="font-semibold text-[#111111] hover:underline"
-          >
+          <Link to="/register" className="font-semibold text-black hover:underline">
             Sign Up
           </Link>
         </p>
