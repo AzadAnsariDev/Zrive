@@ -5,20 +5,33 @@ import SellerLayout from '../features/layout/SellerLayout'
 import ProductList from '../features/product/pages/ProductList'
 import CreateProduct from '../features/product/pages/CreateProduct'
 import Protected from '../features/auth/components/Protected'
+import Home from '../features/home/pages/Home'
+import UserLayout from '../features/layout/UserLayout'
+
 
 
 const router = createBrowserRouter([
+{
+    path: '/',
+    element: <UserLayout />,
+    children: [
+        { index: true, element: <Home /> },
+        { path: 'categories', element: <div>Categories page</div> },
+        { path: 'new-arrivals', element: <div>New Arrivals page</div> },  // ← add
+        { path: 'cart', element: <div>Cart page</div> },
+        { path: 'orders', element: <div>Orders page</div> },
+        { path: 'sale', element: <div>Sale page</div> },  // ← add
+        { path: 'profile', element: <div>Profile page</div> },
+        { path: 'wishlist', element: <div>Wishlist page</div> },
+    ],
+},
     {
-        path : '/',
-        element : <h1>Hello to Zrive</h1>
+        path: '/register',
+        element: <Register />
     },
     {
-        path : '/register',
-        element : <Register />
-    },
-    {
-        path : '/login',
-        element : <Login />
+        path: '/login',
+        element: <Login />
     },
     {
         // Every seller page lives under here. SellerLayout renders the
@@ -38,6 +51,7 @@ const router = createBrowserRouter([
                 element : <CreateProduct />
             },
             {
+                index:true,
                 path : 'dashboard',
                 element : <div>Dashboard page</div>
             },

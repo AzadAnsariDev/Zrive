@@ -29,12 +29,7 @@ export const login = async (identifier, password)=>{
 
 export const getMe = async () => {
   try {
-    console.log("Before API");
-
     const response = await authApiInstance.get("/get-me");
-
-    console.log("After API", response);
-
     return response.data;
   } catch (err) {
     console.log("GET ME ERROR", err);

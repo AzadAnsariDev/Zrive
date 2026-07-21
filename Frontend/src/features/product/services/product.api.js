@@ -10,7 +10,12 @@ export const createProduct = async (formData)=>{
     return response.data
 }
 
-export const getProductList = async ()=>{
+export const getSellerProducts = async ()=>{
     const response = await productApiInstance.get("/getSellerProducts")
     return response.data
 } 
+
+export const getProducts = async ()=>{
+    const response = await productApiInstance.get("/getProducts")
+    return response.data
+}

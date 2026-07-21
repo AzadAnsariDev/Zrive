@@ -46,3 +46,11 @@ export const getSellerProduct = async (req, res)=>{
     })
 }
 
+export const getProducts = async (req, res)=>{
+    const products = await productModel.find()
+
+    res.status(200).json({
+        message : "All products fetched succesfully",
+        products
+    })
+}

@@ -84,7 +84,7 @@ const ProductList = () => {
   // Guard against the redux slice being undefined/null before the fetch
   // resolves — without this, .filter()/.reduce() below throw and nothing
   // (including the empty state) ever renders.
-  const PRODUCTS = useSelector((state) => state.product.sellerProduct) || []
+  const PRODUCTS = useSelector((state) => state.product.sellerProducts) || []
   const [activeFilter, setActiveFilter] = useState('All')
 
   const filteredProducts = PRODUCTS.filter((p) => {
@@ -93,10 +93,10 @@ const ProductList = () => {
     return true
   })
 
-  const { handleGetProductList } = useProduct()
+  const { handleGetSellerProducts } = useProduct()
 
   useEffect(() => {
-    handleGetProductList()
+    handleGetSellerProducts()
   }, [])
 
   const totalStock = PRODUCTS.reduce((sum, p) => sum + p.stock, 0)
