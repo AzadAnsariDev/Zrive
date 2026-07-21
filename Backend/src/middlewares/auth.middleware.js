@@ -1,6 +1,28 @@
 import jwt from 'jsonwebtoken'
 import config from '../config/config.js'
 import userModel from '../models/user.model.js'
+import { json } from 'express'
+
+export const authenticateUser = (req, res, next)=>{
+    const token = req.cookies.token
+
+    if(!token){
+        return res.status(400).json({
+            message : "Please Login or Register first"
+        })
+    }
+
+    try{
+        const decoded = jwt.verify(token,config.JWT_SECRET)
+        req.user = decoded
+        next()
+    }catch(err){
+        console.log(err)
+        return res.status(401).json({
+            message: "Unauthorized Access"
+        })
+    }
+}
 
 export const authenticateSeller = async (req, res ,next)=>{
 

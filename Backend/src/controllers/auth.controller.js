@@ -114,3 +114,21 @@ export const googleCallback = async (req, res)=>{
 
     res.redirect("http://localhost:5173/")
 }
+
+export const getMe = async (req, res)=>{
+    const userId = req.user.id
+
+    const user = await userModel.findById(userId)
+
+    if(!user){
+        return res.status(401).json({
+            message : "Unauthorized Access"
+        })
+    }
+
+    res.status(200).json({
+        message : "User fetched successfully",
+        success: true,
+        user
+    })
+}

@@ -6,22 +6,17 @@ import { setSellerProduct } from "../state/productSlice"
 export const useProduct = ()=>{
 
     const dispacth = useDispatch()
-
     const handleCreateProduct = async (formData)=>{
-        dispacth(setLoading(true))
         try{
             const result = await createProduct(formData)
             return result
         }catch(err){
             console.log(err)
             dispacth(setError(err.message))
-        }finally{
-            dispacth(setLoading(false))
         }
     }
 
     const handleGetProductList = async ()=>{
-        dispacth(setLoading(true))
         try{
             const result = await getProductList()
             console.log(result.products)
@@ -30,8 +25,6 @@ export const useProduct = ()=>{
         }catch(err){
             console.log(err)
             dispacth(setError(err.message))
-        }finally{
-            dispacth(setLoading(false))
         }
     }
 

@@ -3,6 +3,8 @@ import { Bell, Search, SlidersHorizontal, Plus, MoreVertical, ChevronLeft, Chevr
 import { Link } from 'react-router'
 import { useProduct } from '../hook/useProduct'
 import { useSelector } from 'react-redux'
+import ProductGrid from '../components/ProductGrid'
+import EmptyProductState from '../components/EmptyProductState'
 
 // ---- Mock data (backend already wired — just swap this for the real fetch) ----
 const FILTER_TABS = ['All', 'In Stock', 'Out of Stock']
@@ -79,22 +81,23 @@ const ImageSlider = ({ images, alt, className = '', arrowSize = 14, dotClassName
 // This page renders inside <SellerLayout /> (sidebar + mobile bottom nav
 // already provided there) — it only owns its own content, no app shell.
 const ProductList = () => {
-  const PRODUCTS = useSelector((state) => state.product.sellerProduct)
+  // Guard against the redux slice being undefined/null before the fetch
+  // resolves — without this, .filter()/.reduce() below throw and nothing
+  // (including the empty state) ever renders.
+  const PRODUCTS = useSelector((state) => state.product.sellerProduct) || []
   const [activeFilter, setActiveFilter] = useState('All')
 
   const filteredProducts = PRODUCTS.filter((p) => {
     if (activeFilter === 'In Stock') return p.status === 'In-Stock'
-    if (activeFilter === 'Out of Stock') return p.status === 'out-of-stock'
+    if (activeFilter === 'Out of Stock') return p.status === 'Out of Stock'
     return true
   })
 
   const { handleGetProductList } = useProduct()
 
-  useEffect(()=>{
+  useEffect(() => {
     handleGetProductList()
-},[])
-
-
+  }, [])
 
   const totalStock = PRODUCTS.reduce((sum, p) => sum + p.stock, 0)
   const activeSales = PRODUCTS.filter((p) => p.status === 'In-Stock').length
@@ -145,13 +148,13 @@ const ProductList = () => {
 
         {/* Add product */}
         <div className="px-5 mb-5">
-             <Link
-              to="/seller/inventory/new"
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-black text-white py-3 text-[13px] font-bold hover:opacity-90 transition-opacity"
-            >
-              <Plus size={15} strokeWidth={2.5} />
-              Add Product
-            </Link>
+          <Link
+            to="/seller/inventory/new"
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-black text-white py-3 text-[13px] font-bold hover:opacity-90 transition-opacity"
+          >
+            <Plus size={15} strokeWidth={2.5} />
+            Add Product
+          </Link>
         </div>
 
         {/* Stats */}
@@ -171,44 +174,7 @@ const ProductList = () => {
         </div>
 
         {/* Product list */}
-        <div className="flex flex-col gap-4 px-5">
-          {PRODUCTS.map((product) => (
-            <div
-              key={product.id}
-              className="flex rounded-lg border border-gray-200 bg-white overflow-hidden"
-            >
-              <ImageSlider
-                images={product.images}
-                alt={product.title}
-                className="w-[110px] h-[110px] shrink-0"
-                arrowSize={11}
-              />
-              <div className="flex-1 flex flex-col justify-center px-4 py-3 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-[15.5px] font-bold leading-snug truncate">
-                    {product.title}
-                  </h3>
-                  <button
-                    type="button"
-                    aria-label="Product options"
-                    className="shrink-0 text-gray-500"
-                  >
-                    <MoreVertical size={16} />
-                  </button>
-                </div>
-                <div className="flex items-center gap-1.5 mt-1.5 mb-2.5">
-                  <StatusDot status={product.status} />
-                  <span className="text-[12px] font-medium text-gray-500">
-                    {product.status === 'In-Stock'
-                      ? `IN STOCK (${product.stock})`
-                      : 'OUT OF STOCK'}
-                  </span>
-                </div>
-                <div className="text-[17px] font-bold">${product.price.amount}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {PRODUCTS.length === 0 ? <EmptyProductState /> : <ProductGrid products={PRODUCTS} />}
       </div>
 
       {/* ============================================================ */}
@@ -243,106 +209,114 @@ const ProductList = () => {
           </div>
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex items-center gap-2 mb-7">
-          {FILTER_TABS.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveFilter(tab)}
-              className={`px-4 py-2 rounded-lg text-[12.5px] font-semibold tracking-wide uppercase border transition-colors ${
-                activeFilter === tab
-                  ? 'bg-black text-white border-black'
-                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        {/* Empty state takes over the whole content area — no point showing
+            filter tabs / pagination chrome around zero products. */}
+        {PRODUCTS.length === 0 ? (
+          <EmptyProductState />
+        ) : (
+          <>
+            {/* Filter tabs */}
+            <div className="flex items-center gap-2 mb-7">
+              {FILTER_TABS.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveFilter(tab)}
+                  className={`px-4 py-2 rounded-lg text-[12.5px] font-semibold tracking-wide uppercase border transition-colors ${
+                    activeFilter === tab
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
 
-        {/* Product grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((product) => (
-            <div
-              key={product.id}
-              className="rounded-xl border border-gray-200 bg-white overflow-hidden"
-            >
-              <div className="relative">
-                <ImageSlider images={product.images} alt={product.title} className="w-full h-56" />
+            {/* Product grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+                >
+                  <div className="relative">
+                    <ImageSlider images={product.images} alt={product.title} className="w-full h-56" />
+                    <button
+                      type="button"
+                      aria-label="Product options"
+                      className="absolute top-3 right-11 w-8 h-8 rounded-md bg-white/90 backdrop-blur flex items-center justify-center text-gray-600 hover:bg-white z-10"
+                    >
+                      <MoreVertical size={15} />
+                    </button>
+                  </div>
+                  <div className="px-5 py-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-gray-500">
+                        {product.category}
+                      </span>
+                      <span
+                        className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase ${
+                          product.status === 'In-Stock' ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        <StatusDot status={product.status} />
+                        {product.status === 'In-Stock' ? 'In Stock' : 'Out of Stock'}
+                      </span>
+                    </div>
+                    <h3 className="text-[16.5px] font-bold mb-1">{product.title}</h3>
+                    <div className="text-[15px] font-bold text-gray-800">${product.price.amount}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
+              <span className="text-[13.5px] text-gray-500">
+                Showing 1-{filteredProducts.length} of 54 products
+              </span>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  aria-label="Product options"
-                  className="absolute top-3 right-11 w-8 h-8 rounded-md bg-white/90 backdrop-blur flex items-center justify-center text-gray-600 hover:bg-white z-10"
+                  aria-label="Previous page"
+                  className="w-9 h-9 rounded-lg border border-gray-300 flex items-center justify-center text-gray-400"
                 >
-                  <MoreVertical size={15} />
+                  <ChevronLeft size={16} />
                 </button>
-              </div>
-              <div className="px-5 py-4">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-gray-500">
-                    {product.category}
-                  </span>
-                  <span
-                    className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase ${
-                      product.status === 'In-Stock' ? 'text-green-600' : 'text-red-600'
+                {[1, 2, 3].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`w-9 h-9 rounded-lg text-[13px] font-semibold flex items-center justify-center ${
+                      n === 1
+                        ? 'bg-black text-white'
+                        : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
                     }`}
                   >
-                    <StatusDot status={product.status} />
-                    {product.status === 'In-Stock' ? 'In Stock' : 'Out of Stock'}
-                  </span>
-                </div>
-                <h3 className="text-[16.5px] font-bold mb-1">{product.title}</h3>
-                <div className="text-[15px] font-bold text-gray-800">${product.price.amount}</div>
+                    {n}
+                  </button>
+                ))}
+                <span className="w-9 h-9 flex items-center justify-center text-gray-400 text-[13px]">
+                  ...
+                </span>
+                <button
+                  type="button"
+                  className="w-9 h-9 rounded-lg border border-gray-300 text-[13px] font-semibold text-gray-700 hover:bg-gray-100 flex items-center justify-center"
+                >
+                  5
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next page"
+                  className="w-9 h-9 rounded-lg border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-100"
+                >
+                  <ChevronRight size={16} />
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-          <span className="text-[13.5px] text-gray-500">
-            Showing 1-{filteredProducts.length} of 54 products
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              aria-label="Previous page"
-              className="w-9 h-9 rounded-lg border border-gray-300 flex items-center justify-center text-gray-400"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            {[1, 2, 3].map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={`w-9 h-9 rounded-lg text-[13px] font-semibold flex items-center justify-center ${
-                  n === 1
-                    ? 'bg-black text-white'
-                    : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-            <span className="w-9 h-9 flex items-center justify-center text-gray-400 text-[13px]">
-              ...
-            </span>
-            <button
-              type="button"
-              className="w-9 h-9 rounded-lg border border-gray-300 text-[13px] font-semibold text-gray-700 hover:bg-gray-100 flex items-center justify-center"
-            >
-              5
-            </button>
-            <button
-              type="button"
-              aria-label="Next page"
-              className="w-9 h-9 rounded-lg border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-100"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   )

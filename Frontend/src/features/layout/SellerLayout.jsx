@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { NavLink, Outlet, Link } from 'react-router'
 import {
   LayoutDashboard,
@@ -12,6 +12,9 @@ import {
   User,
   Plus,
 } from 'lucide-react'
+import { useSelector } from 'react-redux'
+import { useAuth } from '../auth/hook/useAuth'
+import ZriveLogo from '../auth/components/ZriveLogo'
 
 // ---------------------------------------------------------------------
 // SINGLE SOURCE OF TRUTH for seller navigation.
@@ -37,19 +40,14 @@ const MOBILE_NAV_LINKS = [
   { to: '/seller/settings', label: 'Profile', icon: User },
 ]
 
-const Logo = () => (
-  <div className="flex items-center gap-2.5">
-    <span className="w-9 h-9 rounded-lg bg-black flex items-center justify-center shrink-0">
-      <span className="text-amber-400 text-[12px] font-extrabold tracking-tight">ZR</span>
-    </span>
-    <div className="leading-tight">
-      <div className="text-[13.5px] font-bold tracking-[0.16em] text-amber-500">ZRIVE</div>
-      <div className="text-[11px] text-gray-500">Seller</div>
-    </div>
-  </div>
-)
+
 
 const SellerLayout = () => {
+
+
+  const user = useSelector((state)=> state.auth.user)
+  console.log(user)
+
   return (
     <div className="min-h-screen bg-gray-50 text-black">
       {/* ============================================================ */}
@@ -59,7 +57,7 @@ const SellerLayout = () => {
         <aside className="w-64 shrink-0 h-screen flex flex-col justify-between border-r border-gray-200 bg-gray-50">
           <div>
             <div className="px-6 pt-7 pb-8">
-              <Logo />
+              <ZriveLogo />
             </div>
 
             <nav className="flex flex-col gap-1 px-3">

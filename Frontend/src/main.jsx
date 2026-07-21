@@ -5,11 +5,12 @@ import { store } from './app/app.store.js'
 import {RouterProvider} from 'react-router'
 import router from './router/routes.jsx'
 import './app/App.css'
+import App from './app/App.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
-      <RouterProvider router={router}  />
+      <App />
     </Provider>
   </StrictMode>,
 )

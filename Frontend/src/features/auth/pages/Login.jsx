@@ -5,42 +5,9 @@ import { useDispatch } from "react-redux";
 import { setError, setLoading } from "../state/authSlice";
 import { useAuth } from "../hook/useAuth";
 import { useNavigate, Link } from "react-router";
+import ZriveLogo from "../components/ZriveLogo";
 
-const EmailOrPhoneRegex =
-  /^([^\s@]+@[^\s@]+\.[^\s@]+|[6-9]\d{9})$/;
-
-const ZriveCompactLogo = () => (
-  <div className="flex h-14 w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-[#0F0F0F] py-2">
-    <svg width="18" height="18" viewBox="0 0 100 100" fill="none">
-      <rect
-        x="14"
-        y="14"
-        width="72"
-        height="72"
-        rx="10"
-        stroke="#A07F3A"
-        strokeWidth="5"
-      />
-      <path
-        d="M30 34H50L30 62H50"
-        stroke="#A07F3A"
-        strokeWidth="7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M48 62V34H59C64 34 67 37 67 42C67 47 64 50 59 50H48M59 50L67 62"
-        stroke="#A07F3A"
-        strokeWidth="7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-    <span className="text-[8px] font-bold tracking-[0.2em] text-[#A07F3A]">
-      ZRIVE
-    </span>
-  </div>
-);
+const EmailOrPhoneRegex = /^([^\s@]+@[^\s@]+\.[^\s@]+|[6-9]\d{9})$/;
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 48 48">
@@ -100,7 +67,15 @@ const Login = () => {
       <div className="w-full max-w-[420px]">
         {/* Logo */}
         <div className="flex justify-center">
-          <ZriveCompactLogo />
+          <div className="flex flex-col items-center">
+            <ZriveLogo />
+            <p className="mt-4 font-semibold tracking-[0.35em] text-[20px] text-[#111111]">
+              ZRIVE
+            </p>
+            <p className="mt-1 text-[11px] font-semibold tracking-[0.25em] text-[#5F5F5F]">
+              MEN&apos;S FASHION MARKETPLACE
+            </p>
+          </div>
         </div>
 
         {/* Heading */}
@@ -113,7 +88,11 @@ const Login = () => {
 
         {/* Card */}
         <div className="mt-8 rounded-[24px] bg-white p-6 shadow-card">
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            className="space-y-6"
+          >
             {/* Email or Phone */}
             <div>
               <label
@@ -220,8 +199,8 @@ const Login = () => {
           <div className="mt-6 space-y-3">
             <button
               type="button"
-              onClick={()=>{
-                 window.location.href = "/api/auth/google";
+              onClick={() => {
+                window.location.href = "/api/auth/google";
               }}
               className="flex w-full items-center justify-center gap-2 rounded-full border border-[#E7DDCB] bg-white py-3.5 text-[15px] font-semibold text-[#111111] transition-colors hover:bg-[#0F0F0F]/[0.03]"
             >
@@ -241,7 +220,10 @@ const Login = () => {
         {/* Footer */}
         <p className="mt-6 text-center text-[15px] text-[#5F5F5F]">
           Don&apos;t have an account?{" "}
-          <Link to="/register" className="font-semibold text-[#111111] hover:underline">
+          <Link
+            to="/register"
+            className="font-semibold text-[#111111] hover:underline"
+          >
             Sign Up
           </Link>
         </p>

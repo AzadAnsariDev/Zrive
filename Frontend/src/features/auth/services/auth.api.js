@@ -17,6 +17,7 @@ export const register = async (email, contact, username, password, isSeller = fa
 
     return response.data
 }
+
 export const login = async (identifier, password)=>{
     const response = await authApiInstance.post("/login", {
         identifier,
@@ -24,3 +25,19 @@ export const login = async (identifier, password)=>{
     })
     return response.data
 }
+
+
+export const getMe = async () => {
+  try {
+    console.log("Before API");
+
+    const response = await authApiInstance.get("/get-me");
+
+    console.log("After API", response);
+
+    return response.data;
+  } catch (err) {
+    console.log("GET ME ERROR", err);
+    throw err;
+  }
+};

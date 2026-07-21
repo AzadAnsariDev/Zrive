@@ -4,6 +4,7 @@ import Login from '../features/auth/pages/Login'
 import SellerLayout from '../features/layout/SellerLayout'
 import ProductList from '../features/product/pages/ProductList'
 import CreateProduct from '../features/product/pages/CreateProduct'
+import Protected from '../features/auth/components/Protected'
 
 
 const router = createBrowserRouter([
@@ -26,11 +27,11 @@ const router = createBrowserRouter([
         // Adding a new seller page later = adding one line here + one
         // line in SIDEBAR_LINKS / MOBILE_NAV_LINKS inside SellerLayout.jsx.
         path : '/seller',
-        element : <SellerLayout />,
+        element : <Protected role='seller'> <SellerLayout /> </Protected>,
         children : [
             {
                 path : 'inventory',
-                element : <ProductList />
+                element : <ProductList /> 
             },
             {
                 path : 'inventory/new',

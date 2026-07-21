@@ -5,52 +5,12 @@ import { useDispatch } from "react-redux";
 import { setError, setLoading } from "../state/authSlice";
 import { useAuth } from "../hook/useAuth";
 import { useNavigate } from "react-router";
+import ZriveLogo from "../components/ZriveLogo";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[6-9]\d{9}$/;
 
-const ZriveLogo = () => (
-  <div className="flex flex-col items-center">
-    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0F0F0F]">
-      <svg
-        width="34"
-        height="34"
-        viewBox="0 0 100 100"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Shield outline */}
-        <path
-          d="M20 14C20 11.7909 21.7909 10 24 10H76C78.2091 10 80 11.7909 80 14V52C80 74 65 86 50 92C35 86 20 74 20 52V14Z"
-          stroke="#A07F3A"
-          strokeWidth="3.5"
-        />
-        {/* Z */}
-        <path
-          d="M32 34H52L32 62H52"
-          stroke="#A07F3A"
-          strokeWidth="6.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {/* R */}
-        <path
-          d="M50 62V34H61C66 34 69 37 69 42C69 47 66 50 61 50H50M61 50L69 62"
-          stroke="#A07F3A"
-          strokeWidth="6.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
-    <p className="mt-4 font-semibold tracking-[0.35em] text-[20px] text-[#111111]">
-      ZRIVE
-    </p>
-    <p className="mt-1 text-[11px] font-semibold tracking-[0.25em] text-[#5F5F5F]">
-      MEN&apos;S FASHION MARKETPLACE
-    </p>
-  </div>
-);
+
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 48 48">
@@ -112,8 +72,17 @@ const Register = () => {
     <div className="min-h-screen w-full bg-[#F5E9DA] px-6 py-10">
       <div className="mx-auto w-full max-w-[420px]">
         {/* Logo */}
-        <ZriveLogo />
-
+         <div className="flex justify-center">
+          <div className="flex flex-col items-center">
+            <ZriveLogo />
+            <p className="mt-4 font-semibold tracking-[0.35em] text-[20px] text-[#111111]">
+              ZRIVE
+            </p>
+            <p className="mt-1 text-[11px] font-semibold tracking-[0.25em] text-[#5F5F5F]">
+              MEN&apos;S FASHION MARKETPLACE
+            </p>
+          </div>
+        </div>
         {/* Heading */}
         <h1 className="mt-6 text-[38px] font-bold leading-[1.1] tracking-tight text-[#111111]">
           Create Your Account

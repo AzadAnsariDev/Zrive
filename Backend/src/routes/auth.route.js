@@ -1,7 +1,8 @@
 import {Router} from 'express'
-import { googleCallback, login, register } from '../controllers/auth.controller.js'
+import { getMe, googleCallback, login, register } from '../controllers/auth.controller.js'
 import { validateLogin, validateRegister, } from '../validators/auth.validator.js'
 import passport from 'passport'
+import { authenticateUser } from '../middlewares/auth.middleware.js'
 
 const authRouter = Router()
 
@@ -21,4 +22,5 @@ authRouter.get("/google/callback",
     googleCallback
 )
 
+authRouter.get("/get-me", authenticateUser, getMe)
 export default authRouter
