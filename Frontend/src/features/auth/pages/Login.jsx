@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setError, setLoading } from "../state/authSlice";
 import { useAuth } from "../hook/useAuth";
 import { useNavigate, Link } from "react-router";
@@ -41,8 +41,8 @@ const Login = () => {
     dispatch(setLoading(true));
     const { identifier, password } = data;
     try {
-      await handleLogin(identifier, password);
-      navigate("/");
+     const user = await handleLogin(identifier, password);
+     user.role == "seller" ? navigate("/seller") : navigate("/")
     } catch (err) {
       dispatch(setError(err.message));
     } finally {

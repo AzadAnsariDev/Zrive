@@ -44,12 +44,12 @@ const Register = () => {
     dispatch(setLoading(true));
     const { email, phone, fullName, password } = data;
     try {
-      await handleRegister(email, phone, fullName, password, accountType === "seller");
+      const user = await handleRegister(email, phone, fullName, password, accountType === "seller");
+      user.role == "seller" ? navigate("/seller") : navigate("/")
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
       dispatch(setLoading(false));
-      navigate("/");
     }
   };
 

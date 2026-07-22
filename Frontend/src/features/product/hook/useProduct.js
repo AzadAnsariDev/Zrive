@@ -1,5 +1,5 @@
 import { setError, setLoading } from "../../auth/state/authSlice"
-import { createProduct, getProducts, getSellerProducts } from "../services/product.api"
+import { createProduct, getProductDetail, getProducts, getSellerProducts } from "../services/product.api"
 import {useDispatch} from 'react-redux'
 import { setCreateLoading, setFetchLoading, setProducts, setSellerProduct } from "../state/productSlice"
 import { Trophy } from "lucide-react"
@@ -47,9 +47,23 @@ export const useProduct = ()=>{
         }
     }
 
+    const handleGetProductDetail = async (productId)=>{
+        dispacth(setFetchLoading(true))
+        try{
+            const result = await getProductDetail(productId)
+            return result.product
+        }catch(err){
+            console.log(err)
+            dispacth(setError(err.message))
+        }finally{
+            dispacth(setFetchLoading(false))
+        }
+    }
+
     return{
         handleCreateProduct,
         handleGetSellerProducts,
-        handleGetProducts
+        handleGetProducts,
+        handleGetProductDetail
     }
 }

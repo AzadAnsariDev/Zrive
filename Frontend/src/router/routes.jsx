@@ -8,6 +8,7 @@ import Protected from '../features/auth/components/Protected'
 import Home from '../features/home/pages/Home'
 import UserLayout from '../features/layout/UserLayout'
 import AllProducts from '../features/product/pages/AllProducts'
+import SingleProduct from '../features/product/pages/SingleProduct'
 
 
 
@@ -25,6 +26,8 @@ const router = createBrowserRouter([
         { path: 'profile', element: <div>Profile page</div> },
         { path: 'wishlist', element: <div>Wishlist page</div> },
         { path: 'all-products', element: <AllProducts /> },
+        { path: 'product/:productId', element: <SingleProduct /> },
+
     ],
 },
     {
