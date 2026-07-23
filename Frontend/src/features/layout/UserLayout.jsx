@@ -4,7 +4,7 @@ import Navbar from '../home/components/Navbar'
 
 const UserLayout = () => {
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen bg-cream text-ink">
       <Navbar />
 
       {/* pb-20 clears the fixed mobile bottom nav; desktop needs no extra

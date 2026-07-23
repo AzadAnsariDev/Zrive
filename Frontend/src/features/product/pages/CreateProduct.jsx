@@ -11,8 +11,6 @@ const MAX_IMAGES = 7
 const MAX_SIZE_MB = 5
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
 
-// Mirrors the Mongoose `productSchema` enums exactly so the form never
-// drifts out of sync with what the backend will accept.
 const CURRENCIES = ['INR', 'USD', 'JPY', 'EUR', 'GBP']
 const STATUSES = ['In-Stock', 'Out of Stock']
 const CATEGORIES = [
@@ -28,26 +26,22 @@ const CATEGORIES = [
   'Ethnic Wear',
 ]
 
-// This page renders inside <SellerLayout /> (sidebar + mobile bottom nav
-// already provided there) — it only owns its own content, no app shell.
-
-// Small shared classnames so inputs/cards stay consistent without repeating
-// a huge string everywhere.
+// Small shared classnames
 const inputClasses =
-  'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-[14.5px] text-black placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-black/20 transition-shadow'
+  'w-full rounded-[3px] border border-border bg-cream-dark px-4 py-3.5 text-[14px] text-ink placeholder:text-ink-soft outline-none focus:border-ink transition-colors'
 
-const cardClasses = 'rounded-2xl border border-gray-200 bg-white shadow-sm p-6 lg:p-7'
+const cardClasses = 'rounded-[3px] border border-border bg-surface shadow-sm p-6 lg:p-8'
 
 const labelClasses =
-  'block text-[11px] font-semibold tracking-wide uppercase text-gray-500 mb-2'
+  'block text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-2'
 
-const errorClasses = 'text-[12px] text-red-600 mt-1.5'
+const errorClasses = 'text-[12px] text-error mt-1.5'
 
 const SectionEyebrow = ({ num, label }) => (
-  <div className="flex items-center gap-2.5 mb-1">
-    <span className="text-[11px] font-semibold tracking-[0.08em] text-gray-500">{num}</span>
-    <span className="w-4 h-px bg-gray-200" />
-    <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-gray-500">
+  <div className="flex items-center gap-2.5 mb-2">
+    <span className="text-[11px] font-semibold tracking-[0.08em] text-gold">{num}</span>
+    <span className="w-4 h-px bg-border" />
+    <span className="text-[11px] font-semibold tracking-[0.16em] uppercase text-gold">
       {label}
     </span>
   </div>
@@ -190,41 +184,40 @@ const CreateProduct = () => {
   const cover = images[0]
   const rest = images.slice(1)
 
-  // Dropzone border/bg swap when dragging — plain conditional classnames.
   const dropzoneClasses = (base) =>
     `${base} transition-colors ${
       isDragging
-        ? 'border-black bg-gray-50'
-        : 'border-gray-200 hover:border-gray-300'
+        ? 'border-gold bg-cream-dark'
+        : 'border-border hover:border-gold hover:bg-cream-dark'
     }`
 
   return (
-    <div className="bg-gray-50 min-h-full">
+    <div className="bg-cream min-h-full">
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="
-          px-5 pt-7 pb-32 max-w-md mx-auto
-          md:max-w-2xl md:px-10 md:py-12
-          lg:max-w-6xl lg:px-14 lg:py-14
-          lg:grid lg:grid-cols-[420px_1fr] lg:gap-8 lg:items-start lg:pb-16
+          px-5 pt-10 pb-32 max-w-md mx-auto
+          md:max-w-2xl md:px-10 md:py-16
+          lg:max-w-6xl lg:px-14 lg:py-16
+          lg:grid lg:grid-cols-[420px_1fr] lg:gap-10 lg:items-start lg:pb-24
         "
       >
         {/* ---------------- Page title ---------------- */}
-        <div className="mb-7 lg:col-span-2 lg:mb-9">
-          <h1 className="text-[24px] md:text-[34px] font-bold tracking-tight leading-none mb-2">
+        <div className="mb-10 lg:col-span-2">
+          <h1 className="font-display text-[32px] md:text-[42px] font-medium tracking-tight text-ink mb-2">
             List a Product
           </h1>
-          <p className="text-[13.5px] md:text-[14px] text-gray-500">
-            Add a new item to your Zrive inventory.
+          <p className="text-[13.5px] md:text-[14px] text-ink-soft">
+            Add a new item to your curated inventory.
           </p>
         </div>
 
         {/* ---------------- Photos ---------------- */}
-        <div className="mb-6 lg:mb-0">
+        <div className="mb-8 lg:mb-0">
           <div className={cardClasses}>
             <SectionEyebrow num="01" label="Media" />
-            <h2 className="text-[19px] font-bold tracking-tight mb-1.5">Product Photos</h2>
-            <p className="text-[13px] leading-relaxed text-gray-500 mb-5">
+            <h2 className="font-display text-[22px] font-medium text-ink mb-1.5">Product Photos</h2>
+            <p className="text-[13px] leading-relaxed text-ink-soft mb-6">
               Add up to {MAX_IMAGES} photos, {MAX_SIZE_MB}MB max each. Sharp, well-lit photos sell faster.
             </p>
 
@@ -237,45 +230,45 @@ const CreateProduct = () => {
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                className={dropzoneClasses('w-full aspect-[4/3] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3.5')}
+                className={dropzoneClasses('w-full aspect-[4/3] rounded-[3px] border-2 border-dashed flex flex-col items-center justify-center gap-4 bg-surface')}
               >
-                <span className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100">
-                  <UploadCloud size={20} strokeWidth={1.75} className="text-gray-500" />
+                <span className="w-12 h-12 rounded-full flex items-center justify-center bg-cream-dark">
+                  <UploadCloud size={20} strokeWidth={1} className="text-ink" />
                 </span>
                 <div className="text-center">
-                  <span className="block text-[13.5px] font-semibold">Cover Photo</span>
-                  <span className="block text-[12px] mt-0.5 text-gray-500">
+                  <span className="block text-[13px] font-semibold text-ink">Cover Photo</span>
+                  <span className="block text-[12px] mt-1 text-ink-soft">
                     Drag &amp; drop or click to upload
                   </span>
                 </div>
               </button>
             ) : (
-              <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border border-gray-200">
+              <div className="relative w-full aspect-[4/3] rounded-[3px] overflow-hidden border border-border">
                 <img src={cover.preview} alt="Cover" className="w-full h-full object-cover" />
                 <button
                   type="button"
                   onClick={() => removeImage(cover.id)}
                   aria-label="Remove cover photo"
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-charcoal/80 backdrop-blur flex items-center justify-center text-cream hover:bg-charcoal transition-colors"
                 >
                   <X size={15} />
                 </button>
-                <span className="absolute bottom-3 left-3 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-black/60 text-white backdrop-blur">
+                <span className="absolute bottom-4 left-4 text-[10px] font-semibold uppercase tracking-[0.1em] px-3 py-1.5 rounded-[3px] bg-charcoal/80 text-cream backdrop-blur">
                   Cover Photo
                 </span>
               </div>
             )}
 
             {(rest.length > 0 || cover) && (
-              <div className="grid grid-cols-3 gap-2.5 mt-2.5">
+              <div className="grid grid-cols-3 gap-3 mt-3">
                 {rest.map((img) => (
-                  <div key={img.id} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200">
+                  <div key={img.id} className="relative aspect-square rounded-[3px] overflow-hidden border border-border">
                     <img src={img.preview} alt="" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => removeImage(img.id)}
                       aria-label="Remove photo"
-                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 backdrop-blur flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-charcoal/80 backdrop-blur flex items-center justify-center text-cream hover:bg-charcoal transition-colors"
                     >
                       <X size={12} />
                     </button>
@@ -288,30 +281,30 @@ const CreateProduct = () => {
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
-                    className={dropzoneClasses('aspect-square rounded-xl border-2 border-dashed flex items-center justify-center')}
+                    className={dropzoneClasses('aspect-square rounded-[3px] border-2 border-dashed flex items-center justify-center bg-surface')}
                   >
-                    <Plus size={17} strokeWidth={2} className="text-gray-500" />
+                    <Plus size={20} strokeWidth={1} className="text-ink" />
                   </button>
                 )}
               </div>
             )}
 
-            <div className="flex items-center justify-between mt-4">
-              <span className="text-[12px] font-medium text-gray-500">
+            <div className="flex items-center justify-between mt-5">
+              <span className="text-[12px] font-medium text-ink-soft">
                 {images.length}/{MAX_IMAGES} photos added
               </span>
-              {imageError && <span className="text-[12px] font-medium max-w-[60%] text-right text-red-600">{imageError}</span>}
+              {imageError && <span className="text-[12px] font-medium max-w-[60%] text-right text-error">{imageError}</span>}
             </div>
           </div>
         </div>
 
         {/* ---------------- Right column ---------------- */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div className={cardClasses}>
             <SectionEyebrow num="02" label="Details" />
-            <h2 className="text-[19px] font-bold tracking-tight mb-5">Product Details</h2>
+            <h2 className="font-display text-[22px] font-medium text-ink mb-6">Product Details</h2>
 
-            <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-x-5 lg:gap-y-5 lg:space-y-0">
+            <div className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-6 lg:space-y-0">
               <div className="lg:col-span-2">
                 <label className={labelClasses}>Product Name</label>
                 <input
@@ -340,7 +333,7 @@ const CreateProduct = () => {
                       </option>
                     ))}
                   </select>
-                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-gray-500">▾</span>
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-ink-soft">▾</span>
                 </div>
                 {errors.category && <p className={errorClasses}>{errors.category.message}</p>}
               </div>
@@ -359,7 +352,7 @@ const CreateProduct = () => {
                       </option>
                     ))}
                   </select>
-                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-gray-500">▾</span>
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-ink-soft">▾</span>
                 </div>
                 {errors.status && <p className={errorClasses}>{errors.status.message}</p>}
               </div>
@@ -391,7 +384,7 @@ const CreateProduct = () => {
                       </option>
                     ))}
                   </select>
-                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-gray-500">▾</span>
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-ink-soft">▾</span>
                 </div>
                 {errors.priceCurrency && <p className={errorClasses}>{errors.priceCurrency.message}</p>}
               </div>
@@ -422,15 +415,15 @@ const CreateProduct = () => {
             </div>
           </div>
 
-          <div className="flex flex-col items-center lg:items-start gap-4 pt-1">
+          <div className="flex flex-col items-center lg:items-start gap-4 pt-4">
             <button
               type="submit"
-              className="w-full lg:w-auto lg:px-12 flex items-center justify-center gap-2 rounded-xl py-4 text-[14px] font-bold tracking-tight bg-black text-white shadow-lg shadow-black/10 hover:opacity-90 active:scale-[0.99] transition-all"
+              className="w-full lg:w-auto lg:px-12 flex items-center justify-center gap-3 rounded-[3px] py-4 text-[11px] font-semibold tracking-[0.1em] uppercase bg-charcoal text-cream hover:bg-ink transition-colors"
             >
               List Product
-              <ArrowRight size={16} strokeWidth={2.5} />
+              <ArrowRight size={16} />
             </button>
-            <p className="text-center lg:text-left text-[11.5px] leading-relaxed text-gray-500">
+            <p className="text-center lg:text-left text-[11px] leading-relaxed text-ink-soft">
               By listing, you agree to Zrive's Seller Terms &amp; Conditions.
             </p>
           </div>

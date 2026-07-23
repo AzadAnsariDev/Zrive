@@ -49,12 +49,12 @@ const SellerLayout = () => {
   console.log(user)
 
   return (
-    <div className="min-h-screen bg-gray-50 text-black">
+    <div className="min-h-screen bg-cream text-ink font-sans">
       {/* ============================================================ */}
       {/* DESKTOP / TABLET (>= md) — sidebar, full height              */}
       {/* ============================================================ */}
       <div className="hidden md:flex h-screen overflow-hidden">
-        <aside className="w-64 shrink-0 h-screen flex flex-col justify-between border-r border-gray-200 bg-gray-50">
+        <aside className="w-64 shrink-0 h-screen flex flex-col justify-between border-r border-border bg-cream">
           <div>
             <div className="px-6 pt-7 pb-8">
               <ZriveLogo />
@@ -66,10 +66,10 @@ const SellerLayout = () => {
                   key={to}
                   to={to}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] transition-colors border ${
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-[3px] text-[13px] font-medium tracking-[0.04em] transition-colors border-l-2 ${
                       isActive
-                        ? 'font-bold bg-gray-100 border-transparent border-r-2 border-r-black'
-                        : 'font-medium text-gray-600 border-transparent hover:border-gray-300'
+                        ? 'bg-charcoal text-cream border-gold'
+                        : 'text-ink-soft border-transparent hover:text-ink hover:bg-cream-dark'
                     }`
                   }
                 >
@@ -81,20 +81,20 @@ const SellerLayout = () => {
           </div>
 
           <div className="px-4 pb-6">
-            <div className="flex items-center gap-3 px-2 py-2 mb-3">
+            <div className="flex items-center gap-3 px-2 py-2 mb-4">
               <img
                 src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop"
                 alt="Seller profile"
                 className="w-9 h-9 rounded-full object-cover"
               />
               <div className="min-w-0">
-                <div className="text-[13px] font-bold truncate">Seller Profile</div>
-                <div className="text-[11.5px] text-gray-500">Manage Account</div>
+                <div className="text-[13px] font-bold text-ink truncate">Seller Profile</div>
+                <div className="text-[11.5px] text-ink-soft">Manage Account</div>
               </div>
             </div>
             <Link
               to="/seller/inventory/new"
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-black text-white py-3 text-[13px] font-bold hover:opacity-90 transition-opacity"
+              className="w-full flex items-center justify-center gap-2 rounded-[3px] bg-charcoal text-cream py-3.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
             >
               <Plus size={15} strokeWidth={2.5} />
               Add Product
@@ -104,7 +104,7 @@ const SellerLayout = () => {
 
         {/* Page content — every seller page renders here, and this is the
             only part of the screen that scrolls. The sidebar never moves. */}
-        <main className="flex-1 h-screen overflow-y-auto min-w-0">
+        <main className="flex-1 h-screen overflow-y-auto min-w-0 bg-cream">
           <Outlet />
         </main>
       </div>
@@ -112,25 +112,25 @@ const SellerLayout = () => {
       {/* ============================================================ */}
       {/* MOBILE (< md) — bottom tab bar                                */}
       {/* ============================================================ */}
-      <div className="md:hidden min-h-screen pb-20">
+      <div className="md:hidden min-h-screen pb-20 bg-cream">
         <Outlet />
 
-        <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur border-t border-gray-200">
+        <nav className="fixed bottom-0 left-0 right-0 z-20 bg-cream/95 backdrop-blur border-t border-border">
           <div className="max-w-md mx-auto flex items-center px-2 py-2.5">
             {MOBILE_NAV_LINKS.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `flex-1 flex flex-col items-center gap-1 py-1 ${
-                    isActive ? 'text-black' : 'text-gray-500'
+                  `flex-1 flex flex-col items-center gap-1 py-1 transition-colors ${
+                    isActive ? 'text-ink' : 'text-ink-soft'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={19} strokeWidth={isActive ? 2.25 : 1.75} />
-                    <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>
+                    <Icon size={19} strokeWidth={isActive ? 2 : 1.5} />
+                    <span className={`text-[10px] tracking-[0.06em] ${isActive ? 'font-semibold' : 'font-medium'}`}>
                       {label}
                     </span>
                   </>

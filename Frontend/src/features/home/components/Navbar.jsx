@@ -12,8 +12,8 @@ import {
   Package,
 } from 'lucide-react'
 
-// Placeholder data — replace with the real notifications feed once the
-// backend endpoint exists (e.g. from a useNotifications() hook).
+// Placeholder notifications — replace with a real useNotifications() hook
+// once the backend endpoint exists.
 const MOCK_NOTIFICATIONS = [
   { id: 1, text: 'Your order #10234 has been shipped', time: '2h ago', unread: true },
   { id: 2, text: 'Price drop on an item in your wishlist', time: '1d ago', unread: true },
@@ -23,7 +23,6 @@ const MOCK_NOTIFICATIONS = [
 // ---- Nav data -------------------------------------------------------------
 // `to` values are real routes — every route referenced here MUST exist as a
 // child under the UserLayout route in router.jsx, or the link 404s.
-// Active state is derived from the current URL via NavLink automatically.
 const DESKTOP_LINKS = [
   { label: 'Home', to: '/' },
   { label: 'Categories', to: '/categories' },
@@ -39,12 +38,6 @@ const MOBILE_NAV = [
   { key: 'orders', icon: Package, label: 'Orders', to: '/orders' },
   { key: 'profile', icon: User, label: 'Profile', to: '/profile' },
 ]
-
-// Shared active/inactive classnames for the desktop text links.
-const desktopLinkClasses = ({ isActive }) =>
-  `text-[13.5px] transition-colors ${
-    isActive ? 'text-black font-semibold' : 'text-gray-500 font-medium hover:text-black'
-  }`
 
 const Navbar = () => {
   const [notifOpen, setNotifOpen] = useState(false)
@@ -66,94 +59,105 @@ const Navbar = () => {
   return (
     <>
       {/* ================= MOBILE HEADER (< md) ================= */}
-      <header className="md:hidden sticky top-0 z-20 flex items-center justify-between px-5 py-4 bg-white/95 backdrop-blur border-b border-gray-100">
-        <NavLink to="/" className="text-[17px] font-extrabold tracking-[0.08em]">
+      <header className="md:hidden sticky top-0 z-20 flex items-center justify-between px-5 py-4 bg-cream/95 backdrop-blur border-b border-border">
+        <NavLink to="/" className="font-display text-[19px] font-medium tracking-[0.06em] text-ink">
           ZRIVE
         </NavLink>
-        <div className="flex items-center gap-4">
-          <button type="button" aria-label="Search" onClick={() => {}} className="hover:opacity-60 transition-opacity">
-            <Search size={19} strokeWidth={1.75} />
+        <div className="flex items-center gap-5">
+          <button type="button" aria-label="Search" onClick={() => {}} className="text-ink hover:text-gold transition-colors">
+            <Search size={18} strokeWidth={1.5} />
           </button>
-          <NavLink to="/cart" aria-label="Cart" className="relative hover:opacity-60 transition-opacity">
-            <ShoppingBag size={19} strokeWidth={1.75} />
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
+          <NavLink to="/cart" aria-label="Cart" className="relative text-ink hover:text-gold transition-colors">
+            <ShoppingBag size={18} strokeWidth={1.5} />
+            <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-gold" />
           </NavLink>
         </div>
       </header>
 
       {/* ================= DESKTOP / TABLET TOP NAVBAR (>= md) =================
-          Bar spans full width (bg + border), but its content sits inside a
-          centered max-width container so spacing stays deliberate and
-          premium on very wide screens instead of stretching thin. */}
-      <header className="hidden md:flex sticky top-0 z-30 w-full bg-white/95 backdrop-blur border-b border-gray-100">
-        <div className="w-full max-w-[1440px] mx-auto flex items-center gap-10 lg:gap-14 px-8 lg:px-14 py-5">
-          <NavLink to="/" className="text-[19px] font-extrabold tracking-[0.08em] flex-shrink-0">
+          Single-tier layout: logo, main nav, search, utilities.
+          Full-width bar bg + border; content sits inside a max-w container. */}
+      <header className="hidden md:block sticky top-0 z-30 w-full bg-cream/95 backdrop-blur border-b border-border">
+        {/* — Main Nav — */}
+        <div className="w-full max-w-[1440px] mx-auto flex items-center gap-10 lg:gap-14 px-8 lg:px-14 py-4">
+          {/* Logo */}
+          <NavLink to="/" className="font-display text-[22px] font-medium tracking-[0.08em] text-ink flex-shrink-0">
             ZRIVE
           </NavLink>
 
-          <nav className="flex items-center gap-8 flex-shrink-0">
+          {/* Primary nav links */}
+          <nav className="flex items-center gap-7 flex-shrink-0">
             {DESKTOP_LINKS.map(({ label, to }) => (
-              <NavLink key={label} to={to} end={to === '/'} className={desktopLinkClasses}>
+              <NavLink
+                key={label}
+                to={to}
+                end={to === '/'}
+                className={({ isActive }) =>
+                  `relative text-[13px] font-medium tracking-[0.04em] transition-colors pb-0.5 ${
+                    isActive
+                      ? 'text-ink after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gold'
+                      : 'text-ink-soft hover:text-ink'
+                  }`
+                }
+              >
                 {label}
               </NavLink>
             ))}
           </nav>
 
+          {/* Search — editorial bottom-border-only style */}
           <div className="flex-1 flex justify-center">
             <div className="relative w-full max-w-md">
-              <Search size={15} strokeWidth={1.75} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={14} strokeWidth={1.5} className="absolute left-0 top-1/2 -translate-y-1/2 text-ink-soft" />
               <input
                 type="text"
-                placeholder="Search collections..."
+                placeholder="Search collections…"
                 onChange={() => {}}
-                className="w-full rounded-full bg-gray-100 border border-transparent focus:border-gray-300 focus:bg-white pl-11 pr-4 py-2.5 text-[13px] outline-none transition-colors"
+                className="w-full bg-transparent border-0 border-b border-border focus:border-ink pl-6 pr-4 py-2 text-[13px] text-ink placeholder:text-ink-soft outline-none transition-colors"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-6 flex-shrink-0">
-            {/* Wishlist is a persistent list, same idea as Cart/Orders — it
-                gets its own page. Add `{ path: 'wishlist', element: <Wishlist /> }`
-                under UserLayout's children in router.jsx. */}
-            <NavLink to="/wishlist" aria-label="Wishlist" className="hover:opacity-60 transition-opacity">
-              <Heart size={18} strokeWidth={1.75} />
+          {/* Icon cluster */}
+          <div className="flex items-center gap-5 flex-shrink-0">
+            <NavLink to="/wishlist" aria-label="Wishlist" className="text-ink hover:text-gold transition-colors">
+              <Heart size={18} strokeWidth={1.5} />
             </NavLink>
 
-            {/* Notifications are transient, so they live in a dropdown
-                instead of a full page. */}
+            {/* Notifications dropdown */}
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
                 aria-label="Notifications"
                 onClick={() => setNotifOpen((open) => !open)}
-                className="relative hover:opacity-60 transition-opacity"
+                className="relative text-ink hover:text-gold transition-colors"
               >
-                <Bell size={18} strokeWidth={1.75} />
+                <Bell size={18} strokeWidth={1.5} />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
+                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-gold" />
                 )}
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 top-full mt-3 w-80 rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                    <span className="text-[13px] font-semibold">Notifications</span>
+                <div className="absolute right-0 top-full mt-3 w-80 border border-border bg-surface shadow-lg overflow-hidden rounded-[3px]">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                    <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-ink">Notifications</span>
                     {unreadCount > 0 && (
-                      <span className="text-[11px] text-gray-500">{unreadCount} unread</span>
+                      <span className="text-[11px] text-ink-soft">{unreadCount} unread</span>
                     )}
                   </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+                  <div className="max-h-72 overflow-y-auto divide-y divide-border">
                     {MOCK_NOTIFICATIONS.map((n) => (
                       <button
                         key={n.id}
                         type="button"
                         onClick={() => {}}
-                        className="w-full flex items-start gap-2.5 text-left px-4 py-3 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-start gap-2.5 text-left px-4 py-3 hover:bg-cream-dark transition-colors"
                       >
-                        {n.unread && <span className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 flex-shrink-0" />}
+                        {n.unread && <span className="w-1.5 h-1.5 rounded-full bg-gold mt-1.5 flex-shrink-0" />}
                         <div className={n.unread ? '' : 'pl-4'}>
-                          <p className="text-[13px] leading-snug">{n.text}</p>
-                          <p className="text-[11px] text-gray-500 mt-0.5">{n.time}</p>
+                          <p className="text-[12.5px] text-ink leading-snug">{n.text}</p>
+                          <p className="text-[11px] text-ink-soft mt-0.5">{n.time}</p>
                         </div>
                       </button>
                     ))}
@@ -162,33 +166,38 @@ const Navbar = () => {
               )}
             </div>
 
-            <NavLink to="/cart" aria-label="Cart" className="relative hover:opacity-60 transition-opacity">
-              <ShoppingBag size={18} strokeWidth={1.75} />
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
+            <NavLink to="/cart" aria-label="Cart" className="relative text-ink hover:text-gold transition-colors">
+              <ShoppingBag size={18} strokeWidth={1.5} />
+              <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-gold" />
             </NavLink>
-            <NavLink to="/profile" aria-label="Profile" className="hover:opacity-60 transition-opacity">
-              <User size={18} strokeWidth={1.75} />
+
+            <NavLink to="/profile" aria-label="Profile" className="text-ink hover:text-gold transition-colors">
+              <User size={18} strokeWidth={1.5} />
             </NavLink>
           </div>
         </div>
       </header>
 
       {/* ================= MOBILE BOTTOM NAV (< md only) ================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-transparent border-t border-neutral-800">
-        <div className="flex items-center px-2 py-1">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-cream/95 backdrop-blur border-t border-border">
+        <div className="flex items-center px-2 py-2">
           {MOBILE_NAV.map(({ key, icon: Icon, label, to }) => (
             <NavLink
               key={key}
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `flex-1 flex flex-col items-center gap-1 py-1 ${isActive ? 'text-black' : 'text-neutral-500'}`
+                `flex-1 flex flex-col items-center gap-1 py-1 transition-colors ${
+                  isActive ? 'text-ink' : 'text-ink-soft'
+                }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon size={19} strokeWidth={isActive ? 2.25 : 1.75} />
-                  <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>{label}</span>
+                  <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
+                  <span className={`text-[10px] tracking-[0.06em] ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                    {label}
+                  </span>
                 </>
               )}
             </NavLink>

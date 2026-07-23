@@ -1,4 +1,24 @@
 @import "tailwindcss";
+
+@theme {
+  /* ── Color Palette ─────────────────────────────────────── */
+  --color-cream:       #FAF7F1;   /* page background */
+  --color-surface:     #FFFEFC;   /* cards / elevated panels */
+  --color-cream-dark:  #F1ECE1;   /* secondary background */
+  --color-border:      #E5DFD1;   /* hairline borders (warm) */
+  --color-ink:         #18160F;   /* primary text */
+  --color-ink-soft:    #8A8371;   /* secondary/muted text */
+  --color-gold:        #9C8A5C;   /* eyebrow accent */
+  --color-gold-deep:   #7A6B45;   /* gold hover/pressed */
+  --color-success:     #4B7A5B;   /* muted forest green */
+  --color-error:       #AE4A3C;   /* muted brick red */
+  --color-charcoal:    #161412;   /* button fill / selected */
+
+  /* ── Font Families ─────────────────────────────────────── */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-sans:    'Inter', sans-serif;
+}
+
 html,
 body,
 #root {
@@ -6,4 +26,10 @@ body,
   padding: 0;
   width: 100%;
   min-height: 100%;
+  background-color: #FAF7F1;
+  color: #18160F;
 }
+
+/* Hide scrollbar but keep scroll behavior */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

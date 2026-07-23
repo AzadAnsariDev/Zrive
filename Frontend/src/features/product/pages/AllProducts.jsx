@@ -9,8 +9,7 @@ import { useNavigate } from 'react-router'
 // real sort/price/color logic once that's ready on the backend.
 //
 // NOTE: intentionally no "Size" filter here — there's no size data on the
-// backend yet. Add it back to this array once that's available:
-//   { key: 'size', label: 'Size' },
+// backend yet.
 const FILTERS = [
   { key: 'sort', label: 'Sort' },
   { key: 'price', label: 'Price' },
@@ -19,42 +18,42 @@ const FILTERS = [
 
 const ProductCardSkeleton = () => (
   <div>
-    <div className="animate-pulse aspect-[3/4] rounded-2xl bg-gray-100 mb-3" />
-    <div className="animate-pulse h-3.5 w-3/4 rounded bg-gray-100 mb-2" />
-    <div className="animate-pulse h-3.5 w-1/2 rounded bg-gray-100" />
+    <div className="animate-pulse aspect-[3/4] overflow-hidden bg-cream-dark mb-3" />
+    <div className="animate-pulse h-2 w-1/4 bg-cream-dark mb-2" />
+    <div className="animate-pulse h-3.5 w-3/4 bg-cream-dark mb-2" />
+    <div className="animate-pulse h-3 w-1/2 bg-cream-dark" />
   </div>
 )
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate()
   return (
-  <div onClick={()=>{navigate(`/product/${product._id}`)}}>
-    <div className="relative aspect-[2/2.5] rounded-2xl overflow-hidden bg-gray-50 mb-3">
-      {product.images ? (
-        <img src={product.images[0].url} alt={product.title} className="w-full h-full object-cover" />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <ImageIcon size={22} strokeWidth={1.5} className="text-gray-300" />
-        </div>
-      )}
-      <button
-        type="button"
-        aria-label="Add to wishlist"
-        onClick={() => {}}
-        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition-colors"
-      >
-        <Heart size={14} strokeWidth={1.75} />
-      </button>
+    <div className="group cursor-pointer" onClick={() => navigate(`/product/${product._id}`)}>
+      <div className="relative aspect-[3/4] overflow-hidden bg-cream-dark mb-3">
+        {product.images ? (
+          <img src={product.images[0].url} alt={product.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <ImageIcon size={22} strokeWidth={1} className="text-ink-soft" />
+          </div>
+        )}
+        <button
+          type="button"
+          aria-label="Add to wishlist"
+          onClick={(e) => { e.stopPropagation(); }}
+          className="absolute top-3 right-3 text-ink-soft hover:text-ink transition-colors"
+        >
+          <Heart size={18} strokeWidth={1} />
+        </button>
+      </div>
+      <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">
+        {product.brand || "Generic"}
+      </p>
+      <h3 className="font-display text-[14px] text-ink mb-1 truncate">{product.title}</h3>
+      <p className="font-sans text-[13px] font-semibold text-ink">
+        {formatPrice(product.price)}
+      </p>
     </div>
-    <h3 className="text-[13.5px] font-semibold leading-snug">{product.title}</h3>
-    <p className="text-[13px] text-gray-500 mt-1">
-      {formatPrice(product.price)} 
-      {/* Size range is product data (not the removed filter) — only shown
-          if the product actually has it. */}
-      {product.sizes?.length > 0 && <span> · {product.sizes.join('-')}</span>}
-    </p>
-  </div>
-
   )
 }
 
@@ -69,18 +68,32 @@ const AllProducts = () => {
   const isEmpty = !isLoading && products?.length === 0
 
   return (
-    <div className="bg-white text-black min-h-screen">
+    <div className="bg-cream text-ink min-h-screen">
+      {/* Header & Filters */}
+      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-14 pt-6 md:pt-8 pb-4">
+        <h1 className="font-display text-[32px] md:text-[42px] font-medium text-ink mb-8">All Products</h1>
+        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+          {FILTERS.map((filter) => (
+            <button
+              key={filter.key}
+              type="button"
+              className="px-6 py-3 border border-border text-ink text-[11px] font-semibold tracking-[0.1em] uppercase rounded-[3px] hover:bg-charcoal hover:text-cream hover:border-charcoal transition-colors whitespace-nowrap"
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* Product grid — generous gaps on desktop for breathing room. */}
-      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-14 py-8 md:py-10">
+      {/* Product grid */}
+      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-14 py-6 md:py-8">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <p className="text-[15px] font-medium mb-1.5">No products found</p>
-            <p className="text-[13px] text-gray-500">Check back soon, or try a different filter.</p>
+            <p className="font-display text-[22px] font-medium text-ink mb-2">No products found</p>
+            <p className="text-[13px] text-ink-soft">Check back soon, or try a different filter.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-7 lg:gap-8"
-          >
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-4 lg:gap-5">
             {isLoading
               ? Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)
               : products.map((product) => <ProductCard key={product._id} product={product} />)}

@@ -1,7 +1,7 @@
 import { setError, setLoading } from "../../auth/state/authSlice"
 import { createProduct, getProductDetail, getProducts, getSellerProducts } from "../services/product.api"
 import {useDispatch} from 'react-redux'
-import { setCreateLoading, setFetchLoading, setProducts, setSellerProduct } from "../state/productSlice"
+import { setCreateLoading, setFetchLoading, setProducts, setSellerProducts } from "../state/productSlice"
 import { Trophy } from "lucide-react"
 
 export const useProduct = ()=>{
