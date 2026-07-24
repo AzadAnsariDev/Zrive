@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Bell, Search, SlidersHorizontal, Plus, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useProduct } from '../hook/useProduct'
 import { useSelector } from 'react-redux'
 import EmptyProductState from '../components/EmptyProductState'
@@ -84,6 +84,8 @@ const ProductList = () => {
   })
 
   const { handleGetSellerProducts } = useProduct()
+
+  const navigate = useNavigate()
 
   useEffect(() => {
     handleGetSellerProducts()
@@ -268,18 +270,12 @@ const ProductList = () => {
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
               {filteredProducts.map((product) => (
                 <div
+                  onClick={()=>{navigate(`/seller/inventory/${product._id}/addVariant`)}}
                   key={product._id || product.id}
                   className="rounded-[3px] border border-border bg-surface overflow-hidden group"
                 >
                   <div className="relative">
                     <ImageSlider images={product.images} alt={product.title} className="w-full aspect-[3/4]" />
-                    <button
-                      type="button"
-                      aria-label="Product options"
-                      className="absolute top-3 right-3 w-8 h-8 rounded-[3px] bg-cream/90 backdrop-blur flex items-center justify-center text-ink hover:bg-cream z-10 transition-colors"
-                    >
-                      <MoreVertical size={16} strokeWidth={1.5} />
-                    </button>
                   </div>
                   <div className="px-5 py-5 border-t border-border">
                     <div className="flex items-center justify-between mb-2">

@@ -1,5 +1,5 @@
 import { setError, setLoading } from "../../auth/state/authSlice"
-import { createProduct, getProductDetail, getProducts, getSellerProducts } from "../services/product.api"
+import { addNewVariant, createProduct, getProductDetail, getProducts, getSellerProducts } from "../services/product.api"
 import {useDispatch} from 'react-redux'
 import { setCreateLoading, setFetchLoading, setProducts, setSellerProducts } from "../state/productSlice"
 import { Trophy } from "lucide-react"
@@ -59,11 +59,24 @@ export const useProduct = ()=>{
             dispacth(setFetchLoading(false))
         }
     }
+    const handleAddVariant = async (productId, formData)=>{
+        dispacth(setCreateLoading(true))
+        try{
+            const result = await addNewVariant(productId,formData)
+            return result.product
+        }catch(err){
+            console.log(err)
+            dispacth(setError(err.message))
+        }finally{
+            dispacth(setCreateLoading(false))
+        }
+    }
 
     return{
         handleCreateProduct,
         handleGetSellerProducts,
         handleGetProducts,
-        handleGetProductDetail
+        handleGetProductDetail,
+        handleAddVariant
     }
 }

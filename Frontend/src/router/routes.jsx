@@ -9,6 +9,7 @@ import Home from '../features/home/pages/Home'
 import UserLayout from '../features/layout/UserLayout'
 import AllProducts from '../features/product/pages/AllProducts'
 import SingleProduct from '../features/product/pages/SingleProduct'
+import AddVariant from '../features/product/pages/SellerProductDetail'
 
 
 
@@ -75,6 +76,10 @@ const router = createBrowserRouter([
             {
                 path : 'settings',
                 element : <div>Settings page</div>
+            },
+            {
+                path : 'inventory/:productId/addVariant',
+                element : <AddVariant />
             },
         ]
     }
