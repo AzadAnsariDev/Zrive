@@ -13,6 +13,21 @@ import {
 import { useProduct } from '../hook/useProduct'
 import { formatPrice } from '../../home/pages/Home'
 
+const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+
+// Shake keyframes for the size-selector error state — scoped via a plain <style> tag.
+const ShakeKeyframes = () => (
+  <style>{`
+    @keyframes shakeX {
+      10%, 90% { transform: translateX(-1px); }
+      20%, 80% { transform: translateX(2px); }
+      30%, 50%, 70% { transform: translateX(-4px); }
+      40%, 60% { transform: translateX(4px); }
+    }
+    .shake-once { animation: shakeX 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+  `}</style>
+)
+
 // Simple controlled accordion row — used for Product Description / Shipping.
 const AccordionRow = ({ title, children, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen)
@@ -79,6 +94,90 @@ const RelatedProductCard = ({ product }) => {
   )
 }
 
+// Color swatch + size chip selector — reads/writes selection via props only.
+const VariantSelector = ({
+  colors,
+  sizesForColor,
+  selectedColor,
+  selectedSize,
+  onSelectColor,
+  onSelectSize,
+  shakeSize,
+  sizeError,
+}) => (
+  <div className="mt-8 space-y-6">
+    <div>
+      <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-3">
+        Color{selectedColor ? ` · ${selectedColor}` : ''}
+      </p>
+      <div className="flex flex-wrap gap-2.5">
+        {colors.map((color) => (
+          <button
+            key={color}
+            type="button"
+            onClick={() => onSelectColor(color)}
+            className={`border px-4 py-2 text-[12px] font-medium rounded-[3px] transition-colors ${
+              color === selectedColor
+                ? 'bg-charcoal text-cream border-charcoal'
+                : 'border-border text-ink hover:border-charcoal'
+            }`}
+          >
+            {color}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div>
+      <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-3">
+        Size{selectedSize ? ` · ${selectedSize}` : ''}
+      </p>
+      <div className={`flex flex-wrap gap-2.5 ${shakeSize ? 'shake-once' : ''}`}>
+        {sizesForColor.map(({ size, stock }) => (
+          <button
+            key={size}
+            type="button"
+            disabled={stock === 0}
+            onClick={() => onSelectSize(size)}
+            className={`border px-4 py-2 text-[12px] font-medium rounded-[3px] transition-colors ${
+              size === selectedSize
+                ? sizeError
+                  ? 'bg-charcoal text-cream border-error'
+                  : 'bg-charcoal text-cream border-charcoal'
+                : stock === 0
+                ? 'border-border text-ink-soft/40 line-through cursor-not-allowed'
+                : sizeError
+                ? 'border-error text-ink hover:border-charcoal'
+                : 'border-border text-ink hover:border-charcoal'
+            }`}
+          >
+            {size}
+          </button>
+        ))}
+      </div>
+      {sizeError && (
+        <p className="mt-2.5 text-[12px] font-medium text-error">Please select a size to continue.</p>
+      )}
+    </div>
+  </div>
+)
+
+// Small live stock indicator driven by the resolved variant.
+const StockStatus = ({ variant, fallbackStatus }) => {
+  if (!variant) {
+    return fallbackStatus === 'In-Stock' ? (
+      <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-success">Select size &amp; color</div>
+    ) : null
+  }
+  if (variant.stock === 0) {
+    return <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-error">Out of Stock</div>
+  }
+  if (variant.stock < 5) {
+    return <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-error">Only {variant.stock} left</div>
+  }
+  return <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-success">In Stock</div>
+}
+
 const SingleProduct = () => {
   const { productId } = useParams()
   const navigate = useNavigate()
@@ -89,6 +188,11 @@ const SingleProduct = () => {
   const [wishlisted, setWishlisted] = useState(false)
   const [toastVisible, setToastVisible] = useState(false)
   const toastTimeoutRef = useRef(null)
+
+  const [selectedColor, setSelectedColor] = useState(null)
+  const [selectedSize, setSelectedSize] = useState(null)
+  const [sizeError, setSizeError] = useState(false)
+  const [shakeSize, setShakeSize] = useState(false)
 
   async function fetchProductDetail(){
     const product = await handleGetProductDetail(productId)
@@ -103,15 +207,71 @@ const SingleProduct = () => {
     return () => clearTimeout(toastTimeoutRef.current)
   }, [])
 
-  const images = product?.images?.length ? product.images : [product?.image].filter(Boolean)
+  // Default-select the first variant's color/size once the product loads.
+  useEffect(() => {
+    if (product?.variants?.length) {
+      setSelectedColor(product.variants[0].color)
+      setSelectedSize(product.variants[0].size)
+    }
+  }, [product])
+
+  const variants = product?.variants ?? []
+
+  const colors = [...new Set(variants.map((v) => v.color))]
+
+  const sizesForColor = variants
+    .filter((v) => v.color === selectedColor)
+    .map((v) => ({ size: v.size, stock: v.stock }))
+    .sort((a, b) => {
+      const ai = SIZE_ORDER.indexOf(a.size)
+      const bi = SIZE_ORDER.indexOf(b.size)
+      if (ai === -1 || bi === -1) return 0
+      return ai - bi
+    })
+
+  const selectedVariant = variants.find((v) => v.color === selectedColor && v.size === selectedSize) ?? null
+
+  // Reset gallery index whenever the resolved variant (and thus its image set) changes.
+  useEffect(() => {
+    setActiveImage(0)
+  }, [selectedVariant])
+
+  const images = selectedVariant?.images?.length
+    ? selectedVariant.images
+    : product?.images?.length
+    ? product.images
+    : [product?.image].filter(Boolean)
+
+  const effectivePrice = product?.price
+    ? { ...product.price, amount: selectedVariant?.priceOverride ?? product.price.amount }
+    : product?.price
 
   const handlePrevImage = () => setActiveImage((i) => (i - 1 + images.length) % images.length)
   const handleNextImage = () => setActiveImage((i) => (i + 1) % images.length)
 
   const related = product?.relatedProducts ?? []
 
+  const canAddToCart = variants.length === 0 || (selectedVariant && selectedVariant.stock > 0)
+
+  // Clear the error state the moment the person makes a valid size selection.
+  useEffect(() => {
+    if (canAddToCart) setSizeError(false)
+  }, [canAddToCart])
+
+  // Auto-remove the shake class so it can be re-triggered on the next invalid click.
+  useEffect(() => {
+    if (!shakeSize) return
+    const t = setTimeout(() => setShakeSize(false), 450)
+    return () => clearTimeout(t)
+  }, [shakeSize])
+
   const handleAddToCart = () => {
-    // TODO: dispatch the real add-to-cart action here.
+    if (!canAddToCart) {
+      setSizeError(true)
+      setShakeSize(true)
+      return
+    }
+    // TODO: dispatch the real add-to-cart action here (include selectedVariant.sku).
     clearTimeout(toastTimeoutRef.current)
     setToastVisible(true)
     toastTimeoutRef.current = setTimeout(() => setToastVisible(false), 2000)
@@ -123,10 +283,11 @@ const SingleProduct = () => {
 
   return (
     <div className="bg-cream text-ink min-h-screen">
+      <ShakeKeyframes />
       <AddedToCartToast productName={product.name || product.title} visible={toastVisible} />
 
       {/* ================= MOBILE (< md) ================= */}
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <div className="px-5 pt-6 pb-2">
           <button type="button" onClick={() => navigate('/all-products')} className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft hover:text-ink transition-colors">
             <ArrowLeft size={14} strokeWidth={2} />
@@ -135,7 +296,7 @@ const SingleProduct = () => {
         </div>
 
         <div className="px-5 mt-2">
-          <div className="relative aspect-[3/4] overflow-hidden bg-cream-dark">
+          <div className="relative aspect-[3/4] max-w-[420px] md:max-w-[440px] mx-auto overflow-hidden bg-cream-dark">
             {images[activeImage]?.url ? (
               <img src={images[activeImage].url} alt={product.name || product.title} className="w-full h-full object-cover" />
             ) : (
@@ -179,12 +340,23 @@ const SingleProduct = () => {
             {product.name || product.title}
           </h1>
           <div className="font-sans text-[20px] font-semibold text-ink">
-            {formatPrice(product.price)}
+            {formatPrice(effectivePrice)}
           </div>
-          {product.status === 'In-Stock' && (
-            <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-success mt-2">
-              In Stock
-            </div>
+          <div className="mt-2">
+            <StockStatus variant={selectedVariant} fallbackStatus={product.status} />
+          </div>
+
+          {variants.length > 0 && (
+            <VariantSelector
+              colors={colors}
+              sizesForColor={sizesForColor}
+              selectedColor={selectedColor}
+              selectedSize={selectedSize}
+              onSelectColor={setSelectedColor}
+              onSelectSize={setSelectedSize}
+              shakeSize={shakeSize}
+              sizeError={sizeError}
+            />
           )}
         </div>
 
@@ -219,7 +391,7 @@ const SingleProduct = () => {
       </div>
 
       {/* ================= DESKTOP / TABLET (>= md) ================= */}
-      <div className="hidden md:block max-w-[1440px] mx-auto px-8 lg:px-14 py-12">
+      <div className="hidden lg:block max-w-[1440px] mx-auto px-8 lg:px-14 py-12">
         <button type="button" onClick={() => navigate('/all-products')} className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft hover:text-ink transition-colors mb-8">
           <ArrowLeft size={14} strokeWidth={2} />
           Back to Collection
@@ -243,7 +415,7 @@ const SingleProduct = () => {
           </div>
 
           {/* Cover image — fixed max-height capped at 600px inside an aspect-[3/4] container */}
-          <div className="relative w-full max-w-[500px] mx-auto aspect-[3/4] h-[600px] overflow-hidden bg-cream-dark">
+          <div className="relative w-full max-w-[400px] mx-auto aspect-[3/4] h-[420px] overflow-hidden bg-cream-dark">
             {images[activeImage]?.url ? (
               <img src={images[activeImage].url} alt={product.name || product.title} className="w-full h-full object-cover" />
             ) : (
@@ -284,13 +456,22 @@ const SingleProduct = () => {
             </h1>
             
             <div className="font-sans text-[22px] font-semibold text-ink mb-2">
-              {formatPrice(product.price)}
+              {formatPrice(effectivePrice)}
             </div>
 
-            {product.status === 'In-Stock' && (
-              <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-success mb-6">
-                In Stock
-              </div>
+            <StockStatus variant={selectedVariant} fallbackStatus={product.status} />
+
+            {variants.length > 0 && (
+              <VariantSelector
+                colors={colors}
+                sizesForColor={sizesForColor}
+                selectedColor={selectedColor}
+                selectedSize={selectedSize}
+                onSelectColor={setSelectedColor}
+                onSelectSize={setSelectedSize}
+                shakeSize={shakeSize}
+                sizeError={sizeError}
+              />
             )}
 
             <div className="flex flex-col gap-3 mt-10">

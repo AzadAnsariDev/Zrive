@@ -54,6 +54,18 @@ export const getProducts = async (req, res) => {
         products
     })
 }
+
+
+
+
+
+
+
+
+
+
+
+
 export const getProductDetail = async (req, res) => {
     const { productId } = req.params
     const product = await productModel.findById(productId)
