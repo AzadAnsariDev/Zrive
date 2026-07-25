@@ -10,6 +10,7 @@ import UserLayout from '../features/layout/UserLayout'
 import AllProducts from '../features/product/pages/AllProducts'
 import SingleProduct from '../features/product/pages/SingleProduct'
 import AddVariant from '../features/product/pages/SellerProductDetail'
+import Cart from '../features/cart/pages/Cart'
 
 
 
@@ -21,7 +22,7 @@ const router = createBrowserRouter([
         { index: true, element: <Home /> },
         { path: 'categories', element: <div>Categories page</div> },
         { path: 'new-arrivals', element: <div>New Arrivals page</div> },  // ← add
-        { path: 'cart', element: <div>Cart page</div> },
+        { path: 'cart', element: <Cart /> },
         { path: 'orders', element: <div>Orders page</div> },
         { path: 'sale', element: <div>Sale page</div> },  // ← add
         { path: 'profile', element: <div>Profile page</div> },
