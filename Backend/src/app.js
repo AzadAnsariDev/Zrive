@@ -6,6 +6,7 @@ import passport from 'passport'
 import config from '../src/config/config.js'
 import {Strategy as GoogleStrategy} from 'passport-google-oauth20'
 import productRouter from './routes/product.route.js'
+import cartRouter from './routes/cart.route.js'
 
 const app = express()
 app.use(express.json())
@@ -29,7 +30,10 @@ passport.use(new GoogleStrategy({
 //Auth Router
 app.use("/api/auth", authRouter)
 
-//product Router
+//Product Router
 app.use("/api/product", productRouter)
+
+//Cart Router
+app.use("/api/cart", cartRouter)
 
 export default app

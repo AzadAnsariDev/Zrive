@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useProduct } from '../hook/useProduct'
 import { formatPrice } from '../../home/pages/Home'
+import useCart from '../../cart/hook/useCart'
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
@@ -265,13 +266,17 @@ const SingleProduct = () => {
     return () => clearTimeout(t)
   }, [shakeSize])
 
-  const handleAddToCart = () => {
+  const { handleAddToCart } = useCart()
+
+  const handleAddToBag = () => {
     if (!canAddToCart) {
       setSizeError(true)
       setShakeSize(true)
       return
     }
     // TODO: dispatch the real add-to-cart action here (include selectedVariant.sku).
+    handleAddToCart(product._id, selectedVariant._id)
+
     clearTimeout(toastTimeoutRef.current)
     setToastVisible(true)
     toastTimeoutRef.current = setTimeout(() => setToastVisible(false), 2000)
@@ -363,7 +368,7 @@ const SingleProduct = () => {
         <div className="px-5 mt-10 space-y-3">
           <button
             type="button"
-            onClick={handleAddToCart}
+            onClick={handleAddToBag}
             className="w-full bg-charcoal text-cream rounded-[3px] py-4 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
           >
             Add to Bag
@@ -477,7 +482,7 @@ const SingleProduct = () => {
             <div className="flex flex-col gap-3 mt-10">
               <button
                 type="button"
-                onClick={handleAddToCart}
+                onClick={handleAddToBag}
                 className="w-full bg-charcoal text-cream rounded-[3px] py-4 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
               >
                 Add to Bag
