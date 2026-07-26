@@ -16,6 +16,12 @@ const cartSlice = createSlice({
         addItem: (state, action)=>{
             state.items.push(action.payload)
         },
+        removeItem: (state, action)=>{
+            state.items.splice(action.payload, 1)
+        },
+        decrementItem : (state, action)=>{
+            state.items[action.payload].quantity--; 
+        },
         setFetchLoading: (state, action)=>{
             state.loading.fetch =  action.payload
         },
@@ -25,5 +31,5 @@ const cartSlice = createSlice({
     }
 })
 
-export const {addItem, setCreateLoading, setFetchLoading, setItems} = cartSlice.actions
+export const {addItem, setCreateLoading, setFetchLoading, setItems, removeItem, decrementItem} = cartSlice.actions
 export default cartSlice.reducer

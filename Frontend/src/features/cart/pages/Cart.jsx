@@ -208,7 +208,7 @@ const EmptyCart = () => (
 )
 
 const Cart = () => {
-  const { handleGetCart, handleAddToCart } = useCart()
+  const { handleGetCart, handleAddToCart, handleRemoveCartItem } = useCart()
   const items = useSelector((state) => state.cart.items)
 
   const [loading, setLoading] = useState(true)
@@ -245,16 +245,19 @@ const Cart = () => {
     await fetchCartItems()
   }
 
-  const handleDecrement = (item) => {
-    if (item.quantity <= 1) return
+  const handleDecrement = async (item) => {
     triggerPulse(item)
+    await handleRemoveCartItem(item.product._id, item.variant)
+    await fetchCartItems()
     // TODO: dispatch(updateCartQuantity({ itemId: item._id, quantity: item.quantity - 1 }))
     console.log('decrement', item._id)
   }
 
   // ---------------- Remove handler (animated, stub — wire to real cart action later) ----------------
-  const handleRemove = (item) => {
-    setRemovingIds((prev) => new Set(prev).add(item._id))
+  const handleRemove = async (item) => {
+
+    await handleRemoveCartItem(item.product._id, item.variant)
+    await fetchCartItems()
     setTimeout(() => {
       // TODO: dispatch(removeCartItem(item._id)) — once removed from the store,
       // this item will naturally drop out of `items` and this local flag is irrelevant.

@@ -1,13 +1,22 @@
 import { useDispatch } from "react-redux"
-import { setFetchLoading, setItems } from "../../cart/state/cartSlice"
-import { addToCart, getCart } from "../services/cart.api"
+import { decrementItem, removeItem, setFetchLoading, setItems } from "../../cart/state/cartSlice"
+import { addToCart, getCart, removeCartItem } from "../services/cart.api"
 
 const useCart = ()=>{
     const dispatch = useDispatch()
 
-
     const handleAddToCart = async(productId, variantId)=>{
         const result = await addToCart(productId, variantId)
+        return result
+    }
+
+    const handleRemoveCartItem = async(productId, variantId)=>{
+        const result = await removeCartItem(productId, variantId)
+        if(result.action === "decrement"){
+            dispatch(decrementItem(result.itemIndex))
+        }else if (result.action === "remove"){
+            dispatch(removeItem(result.itemIndex))
+        }
         return result
     }
 
@@ -27,7 +36,8 @@ const useCart = ()=>{
 
     return{
         handleAddToCart,
-        handleGetCart
+        handleGetCart,
+        handleRemoveCartItem
     }
 }
 
