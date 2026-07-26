@@ -172,6 +172,7 @@ const ProductList = () => {
           <div className="flex flex-col gap-4 px-5">
             {filteredProducts.map((product) => (
               <div
+                onClick={()=>{navigate(`/seller/inventory/${product._id}/addVariant`)}}
                 key={product._id || product.id}
                 className="flex rounded-[3px] border border-border bg-surface overflow-hidden"
               >

@@ -13,7 +13,7 @@ const upload = multer({
 
 const productRouter = Router()
 
-productRouter.post("/createProduct", authenticateSeller, upload.array("images", 7), validateProduct, createProduct )
+productRouter.post("/createProduct", authenticateSeller, upload.any(), validateProduct, createProduct )
 
 productRouter.get("/getSellerProducts", authenticateSeller, getSellerProduct)
 

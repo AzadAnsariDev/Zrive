@@ -59,12 +59,12 @@ const Navbar = () => {
   return (
     <>
       {/* ================= MOBILE HEADER (< md) ================= */}
-      <header className="md:hidden sticky top-0 z-20 flex items-center justify-between px-5 py-4 bg-cream/95 backdrop-blur border-b border-border">
+      <header className="md:hidden sticky top-0 z-20 flex items-center justify-between px-5 py-3 bg-cream/95 backdrop-blur border-b border-border">
         <NavLink to="/" className="font-display text-[19px] font-medium tracking-[0.06em] text-ink">
           ZRIVE
         </NavLink>
         <div className="flex items-center gap-5">
-          <button type="button" aria-label="Search" onClick={() => {}} className="text-ink hover:text-gold transition-colors">
+          <button type="button" aria-label="Search" onClick={() => { }} className="text-ink hover:text-gold transition-colors">
             <Search size={18} strokeWidth={1.5} />
           </button>
           <NavLink to="/cart" aria-label="Cart" className="relative text-ink hover:text-gold transition-colors">
@@ -93,10 +93,9 @@ const Navbar = () => {
                 to={to}
                 end={to === '/'}
                 className={({ isActive }) =>
-                  `relative text-[13px] font-medium tracking-[0.04em] transition-colors pb-0.5 ${
-                    isActive
-                      ? 'text-ink after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gold'
-                      : 'text-ink-soft hover:text-ink'
+                  `relative text-[13px] font-medium tracking-[0.04em] transition-colors pb-0.5 ${isActive
+                    ? 'text-ink after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gold'
+                    : 'text-ink-soft hover:text-ink'
                   }`
                 }
               >
@@ -112,7 +111,7 @@ const Navbar = () => {
               <input
                 type="text"
                 placeholder="Search collections…"
-                onChange={() => {}}
+                onChange={() => { }}
                 className="w-full bg-transparent border-0 border-b border-border focus:border-ink pl-6 pr-4 py-2 text-[13px] text-ink placeholder:text-ink-soft outline-none transition-colors"
               />
             </div>
@@ -151,7 +150,7 @@ const Navbar = () => {
                       <button
                         key={n.id}
                         type="button"
-                        onClick={() => {}}
+                        onClick={() => { }}
                         className="w-full flex items-start gap-2.5 text-left px-4 py-3 hover:bg-cream-dark transition-colors"
                       >
                         {n.unread && <span className="w-1.5 h-1.5 rounded-full bg-gold mt-1.5 flex-shrink-0" />}
@@ -180,22 +179,24 @@ const Navbar = () => {
 
       {/* ================= MOBILE BOTTOM NAV (< md only) ================= */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-cream/95 backdrop-blur border-t border-border">
-        <div className="flex items-center px-2 py-2">
+        <div className="flex items-center px-2 py-1">
           {MOBILE_NAV.map(({ key, icon: Icon, label, to }) => (
             <NavLink
               key={key}
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `flex-1 flex flex-col items-center gap-1 py-1 transition-colors ${
-                  isActive ? 'text-ink' : 'text-ink-soft'
+                `flex-1 flex flex-col items-center gap-0.5 py-0.5 transition-colors ${isActive ? 'text-ink' : 'text-ink-soft'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
-                  <span className={`text-[10px] tracking-[0.06em] ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                  <Icon size={16} strokeWidth={isActive ? 2 : 1.5} />
+                  <span
+                    className={`text-[9px] leading-none ${isActive ? 'font-semibold' : 'font-medium'
+                      }`}
+                  >
                     {label}
                   </span>
                 </>
