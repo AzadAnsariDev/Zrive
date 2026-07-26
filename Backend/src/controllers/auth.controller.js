@@ -1,4 +1,6 @@
 import config from "../config/config.js"
+import { stockOfVariant } from "../dao/product.dao.js"
+import cartModel from "../models/cart.model.js"
 import userModel from "../models/user.model.js"
 import jwt from 'jsonwebtoken'
 
@@ -53,6 +55,8 @@ export const register = async (req, res)=>{
         await user.save()
     }
 
+    await mergeGuestCart(req, res, user._id)
+
     await sendTokenResponse(user, res, 201, "User registered successfully")
 } 
 
@@ -83,6 +87,8 @@ export const login = async (req, res)=>{
             success : false
         })
     }
+    
+    await mergeGuestCart(req, res, user._id)
 
     await sendTokenResponse(user, res, 200, "User loggedIn successfully")
 
@@ -105,6 +111,8 @@ export const googleCallback = async (req, res)=>{
             username : displayName
         })
     }
+
+    await mergeGuestCart(req, res, user._id)
 
     const token = jwt.sign({
         id: user._id
@@ -131,4 +139,42 @@ export const getMe = async (req, res)=>{
         success: true,
         user
     })
+}
+
+export const mergeGuestCart = async (req, res, userId)=>{
+    const guestId = req.cookies.guestId
+    if(!guestId) return
+
+    const guestCart = await cartModel.findOne({guestId})
+
+    if(!guestCart || guestCart.items.length === 0 ) return
+
+    let userCart = await cartModel.findOne({user : userId})
+
+    if(!userCart){
+        guestCart.user = userId
+        guestCart.guestId = undefined
+        await guestCart.save()  
+    }else{
+        for(const guestItem of guestCart.items){
+            let stock = await stockOfVariant(guestItem.product, guestItem.variant)
+            const existing = userCart.items.find(i => i.product.equals(guestItem.product) && i.variant.equals(guestItem.variant))
+            if(existing){
+                existing.quantity = Math.min(
+                    existing.quantity + guestItem.quantity,
+                    stock
+                )
+            }else{
+                userCart.items.push({
+                    product: guestItem.product,
+                    variant: guestItem.variant,
+                    quantity : Math.min(guestItem.quantity, stock),
+                    price: guestItem.price
+                });
+            }
+        }
+        await userCart.save()
+        await guestCart.deleteOne()
+    }
+    res.clearCookie("guestId")
 }

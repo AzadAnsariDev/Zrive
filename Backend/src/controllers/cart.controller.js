@@ -3,11 +3,11 @@ import cartModel from "../models/cart.model.js"
 import productModel from "../models/product.model.js"
 
 export const addToCart = async (req, res)=>{
-    const userId = req.user.id
-
     const {productId, variantId}  = req.params
 
     const { quantity = 1 } = req.body
+
+    const filter = req.user ? { user : req.user._id }: {guestId: req.guestId}
 
     const product = await productModel.findOne({
         _id: productId,
@@ -23,7 +23,7 @@ export const addToCart = async (req, res)=>{
         })
     }
 
-    let cart = await cartModel.findOne({user : userId}) || await cartModel.create({user : userId})
+    let cart = await cartModel.findOne(filter) || await cartModel.create({...filter, items: []})
 
     const isItemAlreadyInCart = cart.items.some(item => item.product.toString() === productId.toString() && item.variant?.toString() === variantId.toString() )
 
@@ -38,7 +38,7 @@ export const addToCart = async (req, res)=>{
         }
 
         await cartModel.findOneAndUpdate(
-            {user: userId, "items.product" : productId, "items.variant": variantId},
+            {...filter , "items.product" : productId, "items.variant": variantId},
             {$inc : { "items.$.quantity" : quantity }  },
             {new : true}
         )
@@ -73,11 +73,11 @@ export const addToCart = async (req, res)=>{
 
 
 export const getCart = async (req, res)=>{
-    const userId = req.user.id
-    let cart = await cartModel.findOne({user: userId}).populate("items.product") 
+    const filter = req.user ? {user: req.user._id} : {guestId : req.guestId}
+    let cart = await cartModel.findOne(filter).populate("items.product") 
 
     if(!cart){
-        await cartModel.create({user: userId})
+        await cartModel.create({...filter, items: []})
     }
 
     return res.status(200).json({

@@ -5,7 +5,11 @@ const cartSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
-        required: true
+        required: false
+    },
+    guestId:{
+        type: String,
+        required: false
     },
     items: [
         {
@@ -33,7 +37,8 @@ const cartSchema = new mongoose.Schema({
     timestamps: true
 })
 
-cartSchema.index({ user: 1 }, { unique: true });
+cartSchema.index({ user: 1 }, { unique: true , sparse: true});
+cartSchema.index({guestId: 1}, {unique:true, sparse: true})
 
 const cartModel = mongoose.model("cart", cartSchema)
 
