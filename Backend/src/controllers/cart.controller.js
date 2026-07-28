@@ -90,6 +90,7 @@ export const getCart = async (req, res) => {
 export const removeCartItem = async (req, res) => {
     const { productId, variantId } = req.params;
 
+    const { action } = req.body
     const filter = req.user
         ? { user: req.user.id }
         : { guestId: req.guestId };
@@ -116,24 +117,26 @@ export const removeCartItem = async (req, res) => {
         });
     }
 
-    if(cart.items[itemIndex].quantity > 1){
+    if(cart.items[itemIndex].quantity > 1 && action === "decrement"){
         cart.items[itemIndex].quantity--
         await cart.save()
         return res.status(200).json({
             message : "Item quantity decremented successfully",
-            action: "decrement",
+            action,
             itemIndex
         })
     }
 
 
-    cart.items.splice(itemIndex, 1);
-    await cart.save();
-
-    res.status(200).json({
-        message: "Item removed from cart successfully",
-        success: true,
-        action: "remove",
-        itemIndex
-    });
+    if(action === "remove"){
+        cart.items.splice(itemIndex, 1);
+        await cart.save();
+    
+        res.status(200).json({
+            message: "Item removed from cart successfully",
+            success: true,
+            action,
+            itemIndex
+        });
+    }
 };

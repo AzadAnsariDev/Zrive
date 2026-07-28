@@ -90,6 +90,7 @@ export const createProduct = async (req, res) => {
         })
     }
 }
+
 export const getSellerProduct = async (req, res) => {
     const seller = req.user
 

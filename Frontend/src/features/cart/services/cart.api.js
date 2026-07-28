@@ -11,8 +11,10 @@ export const addToCart = async (productId, variantId) =>{
     })
     return response.data
 }
-export const removeCartItem = async (productId, variantId) =>{
-    const response = await cartApiInstance.delete(`/remove/${productId}/${variantId}`)
+export const removeCartItem = async (productId, variantId, action) =>{
+    const response = await cartApiInstance.delete(`/remove/${productId}/${variantId}`,{
+        data: { action } 
+    })
     return response.data
 }
 

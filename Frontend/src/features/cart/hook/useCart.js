@@ -10,11 +10,11 @@ const useCart = ()=>{
         return result
     }
 
-    const handleRemoveCartItem = async(productId, variantId)=>{
-        const result = await removeCartItem(productId, variantId)
-        if(result.action === "decrement"){
+    const handleRemoveCartItem = async(productId, variantId, action)=>{
+        const result = await removeCartItem(productId, variantId, action)
+        if(action === "decrement"){
             dispatch(decrementItem(result.itemIndex))
-        }else if (result.action === "remove"){
+        }else if (action === "remove"){
             dispatch(removeItem(result.itemIndex))
         }
         return result

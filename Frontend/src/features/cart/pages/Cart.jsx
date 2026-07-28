@@ -247,7 +247,7 @@ const Cart = () => {
 
   const handleDecrement = async (item) => {
     triggerPulse(item)
-    await handleRemoveCartItem(item.product._id, item.variant)
+    await handleRemoveCartItem(item.product._id, item.variant, "decrement")
     await fetchCartItems()
     // TODO: dispatch(updateCartQuantity({ itemId: item._id, quantity: item.quantity - 1 }))
     console.log('decrement', item._id)
@@ -256,7 +256,7 @@ const Cart = () => {
   // ---------------- Remove handler (animated, stub — wire to real cart action later) ----------------
   const handleRemove = async (item) => {
 
-    await handleRemoveCartItem(item.product._id, item.variant)
+    await handleRemoveCartItem(item.product._id, item.variant, "remove")
     await fetchCartItems()
     setTimeout(() => {
       // TODO: dispatch(removeCartItem(item._id)) — once removed from the store,
