@@ -30,7 +30,7 @@ const inputClasses =
   'w-full rounded-lg border border-border bg-cream-dark px-3.5 py-2.5 text-[13.5px] text-ink placeholder:text-ink-soft outline-none focus:border-ink transition-colors'
 const errorClasses = 'text-[11.5px] text-error mt-1'
 
-const emptyVariantForm = { size: '', color: '', sku: '', stock: '', priceOverride: '', images: [] }
+const emptyVariantForm = { size: '', color: '', sku: '', stock: '', priceAmount: '', images: [] }
 
 const CreateProduct = () => {
   // ---- general product images ----
@@ -207,9 +207,11 @@ const CreateProduct = () => {
     formData.append('priceCurrency', data.priceCurrency)
     formData.append('category', data.category)
 
-    const variantsPayload = variants.map(({ size, color, sku, stock, priceOverride }) => {
+    const variantsPayload = variants.map(({ size, color, sku, stock, priceAmount }) => {
       const v = { size, color, sku, stock }
-      if (priceOverride) v.priceOverride = priceOverride
+      if (priceAmount) {
+        v.price = { amount: Number(priceAmount), currency: data.priceCurrency || 'INR' }
+      }
       return v
     })
     formData.append('variants', JSON.stringify(variantsPayload))
@@ -405,7 +407,7 @@ const CreateProduct = () => {
                           <span className="text-[13px] text-ink-soft">{v.color}</span>
                           <span className="text-[11.5px] text-ink-soft truncate">{v.sku}</span>
                           <span className="text-[12.5px] text-ink-soft">
-                            {v.stock} in stock{v.priceOverride ? ` · +₹${v.priceOverride}` : ''}
+                            {v.stock} in stock{v.priceAmount ? ` · ₹${v.priceAmount}` : ''}
                           </span>
                         </div>
                         <button
@@ -473,12 +475,12 @@ const CreateProduct = () => {
 
                     <div className="grid sm:grid-cols-2 gap-3 mb-3">
                       <div>
-                        <label className={labelClasses}>Price Override (optional)</label>
+                        <label className={labelClasses}>Variant Price (optional)</label>
                         <input
                           type="number"
                           placeholder="Leave blank to use base price"
-                          value={variantForm.priceOverride}
-                          onChange={(e) => handleVariantFieldChange('priceOverride', e.target.value)}
+                          value={variantForm.priceAmount}
+                          onChange={(e) => handleVariantFieldChange('priceAmount', e.target.value)}
                           className={`${inputClasses} bg-surface`}
                         />
                       </div>

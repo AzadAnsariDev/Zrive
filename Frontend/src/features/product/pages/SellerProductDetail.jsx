@@ -27,7 +27,7 @@ const InfoRow = ({ label, value }) => (
 )
 
 const VariantCard = ({ variant, basePrice, currency, isEditing, onToggleEdit, editForm }) => {
-  const effectivePrice = variant.priceOverride ?? basePrice
+  const effectivePrice = variant.price?.amount ?? basePrice
   const cover = variant.images?.[0]?.url
 
   return (
@@ -109,7 +109,7 @@ const SellerProductDetail = () => {
     formData.append('color', data.color)
     formData.append('sku', data.sku)
     formData.append('stock', data.stock)
-    if (data.priceOverride) formData.append('priceOverride', data.priceOverride)
+    if (data.priceAmount) formData.append('priceAmount', data.priceAmount)
     if (data.images && data.images.length > 0) {
       Array.from(data.images).forEach((file) => formData.append('images', file))
     }
@@ -138,7 +138,7 @@ const SellerProductDetail = () => {
       color: variant.color,
       sku: variant.sku,
       stock: variant.stock,
-      priceOverride: variant.priceOverride ?? '',
+      priceAmount: variant.price?.amount ?? '',
     })
   }
 
@@ -333,12 +333,12 @@ const SellerProductDetail = () => {
                     </div>
                     <div>
                       <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                        Price Override
+                        Variant Price
                       </label>
                       <input
                         type="number"
                         placeholder={`Default ₹${product.price?.amount}`}
-                        {...registerEdit('priceOverride')}
+                        {...registerEdit('priceAmount')}
                         className="w-full rounded-[3px] border border-border bg-surface px-3.5 py-2.5 text-[13px] text-ink placeholder:text-ink-soft outline-none focus:border-charcoal"
                       />
                     </div>
@@ -446,13 +446,13 @@ const SellerProductDetail = () => {
 
                 <div>
                   <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                    Price Override
+                    Variant Price
                   </label>
                   <input
                     type="number"
                     placeholder={`Default ₹${product.price?.amount ?? ''}`}
                     className="w-full rounded-[3px] border border-border bg-surface px-3.5 py-2.5 text-[13px] text-ink placeholder:text-ink-soft outline-none focus:border-charcoal"
-                    {...registerAdd('priceOverride')}
+                    {...registerAdd('priceAmount')}
                   />
                 </div>
 

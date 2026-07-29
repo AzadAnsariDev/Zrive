@@ -57,11 +57,13 @@ export const addToCart = async (req, res) => {
         })
     }
 
+    const variantObj = product.variants.id?.(variantId) || product.variants.find(v => v._id.toString() === variantId.toString())
+
     cart.items.push({
         product: productId,
         variant: variantId,
         quantity: quantity,
-        price: product.price
+        price: variantObj?.price || product.price
     })
 
     await cart.save()
@@ -78,19 +80,34 @@ export const getCart = async (req, res) => {
 
     let existingCart = await cartModel.findOne(filter);
 
-if (!existingCart) {
-    await cartModel.create({
-        ...filter,
-        items: []
-    });
-}
+    if (!existingCart) {
+        existingCart = await cartModel.create({
+            ...filter,
+            items: []
+        });
+    }
 
-    existingCart = await cartModel.aggregate(
+    if (!existingCart.items || existingCart.items.length === 0) {
+        return res.status(200).json({
+            message: "Cart fetched successfully",
+            success: true,
+            cart: {
+                _id: existingCart._id,
+                user: existingCart.user,
+                guestId: existingCart.guestId,
+                items: [],
+                totalPrice: 0,
+                currency: "INR"
+            }
+        })
+    }
+
+    const aggregatedCart = await cartModel.aggregate(
         [
             {
                 $match: filter
             },
-            { $unwind: { path: '$items' , preserveNullAndEmptyArrays: true } },
+            { $unwind: { path: '$items' } },
             {
                 $lookup: {
                     from: 'products',
@@ -99,9 +116,9 @@ if (!existingCart) {
                     as: 'items.product'
                 }
             },
-            { $unwind: { path: '$items.product' , preserveNullAndEmptyArrays: true  } },
+            { $unwind: { path: '$items.product' } },
             {
-                $unwind: { path: '$items.product.variants', preserveNullAndEmptyArrays: true} 
+                $unwind: { path: '$items.product.variants' } 
             },
             {
                 $match: {
@@ -115,15 +132,35 @@ if (!existingCart) {
             },
             {
                 $addFields: {
+                    itemUnitPrice: {
+                        $ifNull: [
+                            '$items.product.variants.price.amount',
+                            '$items.product.variants.priceOverride',
+                            '$items.product.price.amount',
+                            '$items.price.amount',
+                            0
+                        ]
+                    },
+                    itemCurrency: {
+                        $ifNull: [
+                            '$items.product.variants.price.currency',
+                            '$items.product.price.currency',
+                            '$items.price.currency',
+                            'INR'
+                        ]
+                    }
+                }
+            },
+            {
+                $addFields: {
                     itemPrice: {
                         price: {
                             $multiply: [
-                                '$items.product.variants.priceOverride',
+                                '$itemUnitPrice',
                                 '$items.quantity'
                             ]
                         },
-                        currency:
-                            '$items.product.price.currency'
+                        currency: '$itemCurrency'
                     }
                 }
             },
@@ -141,14 +178,25 @@ if (!existingCart) {
         { maxTimeMS: 60000, allowDiskUse: true }
     )
 
-    // if (cart.length === 0) {
-    //     cart = await cartModel.create({ ...filter, items: [] })
-    // }
+    if (!aggregatedCart || aggregatedCart.length === 0) {
+        return res.status(200).json({
+            message: "Cart fetched successfully",
+            success: true,
+            cart: {
+                _id: existingCart._id,
+                user: existingCart.user,
+                guestId: existingCart.guestId,
+                items: [],
+                totalPrice: 0,
+                currency: "INR"
+            }
+        })
+    }
 
     return res.status(200).json({
         message: "Cart fetched successfully",
         success: true,
-        cart: existingCart.length > 0 ? existingCart[0] : null
+        cart: aggregatedCart[0]
     })
 }
 

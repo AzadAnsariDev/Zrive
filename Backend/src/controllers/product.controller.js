@@ -50,15 +50,20 @@ export const createProduct = async (req, res) => {
                 })
             }))
 
+            const variantAmount = variant.price?.amount ?? variant.priceAmount ?? priceAmount;
+            const variantCurrency = variant.price?.currency || priceCurrency || "INR";
+
             const built = {
                 size: variant.size,
                 color: variant.color,
                 sku: variant.sku,
                 stock: variant.stock,
+                price: {
+                    amount: Number(variantAmount),
+                    currency: variantCurrency
+                },
                 images: variantImages
             }
-
-            if (variant.priceOverride) built.priceOverride = variant.priceOverride
 
             return built
         }))
@@ -145,7 +150,7 @@ export const addNewVariant = async (req, res) => {
             })
         }
 
-        const { size, stock, color, priceOverride, sku } = req.body
+        const { size, stock, color, priceAmount, priceCurrency, price, sku } = req.body
         const files = req.files
 
         let images = []
@@ -166,11 +171,17 @@ export const addNewVariant = async (req, res) => {
             })
         )
 
+        const variantAmount = price?.amount ?? priceAmount ?? product.price.amount;
+        const variantCurrency = price?.currency || priceCurrency || product.price.currency || "INR";
+
         const variant = {
             size,
             stock,
             color,
-            priceOverride,
+            price: {
+                amount: Number(variantAmount),
+                currency: variantCurrency
+            },
             sku,
             images
         }

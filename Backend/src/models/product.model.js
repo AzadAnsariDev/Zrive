@@ -36,7 +36,7 @@ const productSchema = new mongoose.Schema(
           color: { type: String, required: true },
           sku: { type: String, required: true, unique: true },
           stock: { type: Number, required: true, default: 0 },
-          priceOverride: { type: Number, required: false},
+          price: { type: priceSchema, required: true },
           images: [{ url: { type: String, required: true } }],
         },
       ],
@@ -72,8 +72,11 @@ productSchema.pre("save", function () {
 
 productSchema.pre("validate", function () {
   this.variants.forEach((variant) => {
-    if (variant.priceOverride == null) {
-      variant.priceOverride = this.price.amount;
+    if (!variant.price || variant.price.amount == null) {
+      variant.price = {
+        amount: this.price?.amount,
+        currency: this.price?.currency || "INR",
+      };
     }
   });
 });

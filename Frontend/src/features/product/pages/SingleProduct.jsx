@@ -243,9 +243,7 @@ const SingleProduct = () => {
     ? product.images
     : [product?.image].filter(Boolean)
 
-  const effectivePrice = product?.price
-    ? { ...product.price, amount: selectedVariant?.priceOverride ?? product.price.amount }
-    : product?.price
+  const effectivePrice = selectedVariant?.price ?? product?.price
 
   const handlePrevImage = () => setActiveImage((i) => (i - 1 + images.length) % images.length)
   const handleNextImage = () => setActiveImage((i) => (i + 1) % images.length)
