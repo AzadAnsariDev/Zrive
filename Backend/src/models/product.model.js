@@ -36,7 +36,7 @@ const productSchema = new mongoose.Schema(
           color: { type: String, required: true },
           sku: { type: String, required: true, unique: true },
           stock: { type: Number, required: true, default: 0 },
-          priceOverride: { type: Number, required: false },
+          priceOverride: { type: Number, required: false},
           images: [{ url: { type: String, required: true } }],
         },
       ],
@@ -68,6 +68,14 @@ const productSchema = new mongoose.Schema(
 productSchema.pre("save", function () {
   const totalStock = this.variants.reduce((sum, v) => sum + v.stock, 0);
   this.status = totalStock > 0 ? "In-Stock" : "Out of Stock";
+});
+
+productSchema.pre("validate", function () {
+  this.variants.forEach((variant) => {
+    if (variant.priceOverride == null) {
+      variant.priceOverride = this.price.amount;
+    }
+  });
 });
 
 const productModel = mongoose.model("products", productSchema);

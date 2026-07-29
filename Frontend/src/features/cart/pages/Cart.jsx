@@ -58,17 +58,17 @@ const InfoRow = ({ label, value, strong }) => (
 )
 
 const CartItemRow = ({ item, index, isRemoving, isPulsing, onIncrement, onDecrement, onRemove }) => {
-  const variant = item.product?.variants?.find((v) => v._id === item.variant)
+  const variant = item.product?.variants
   const cover = variant?.images?.[0]?.url ?? item.product?.images?.[0]?.url
 
   return (
     <div
-      className={`flex gap-5 py-8 border-t border-border transition-all duration-400 ease-out ${
+      className={`flex gap-4 sm:gap-5 p-4 sm:p-0 bg-surface sm:bg-transparent border border-border sm:border-0 sm:border-t sm:border-border rounded-[3px] sm:rounded-none py-4 sm:py-8 transition-all duration-400 ease-out ${
         isRemoving ? 'cart-item-removing' : 'cart-item-enter'
       }`}
       style={{ transitionDelay: isRemoving ? '0ms' : `${index * 60}ms`, animationDelay: `${index * 60}ms` }}
     >
-      <div className="w-24 h-28 md:w-32 md:h-40 shrink-0 rounded-[3px] overflow-hidden bg-cream-dark">
+      <div className="w-24 h-28 sm:w-32 sm:h-40 shrink-0 rounded-[3px] overflow-hidden bg-cream-dark">
         {cover ? (
           <img src={cover} alt={item.product?.title} className="w-full h-full object-cover" />
         ) : (
@@ -79,20 +79,20 @@ const CartItemRow = ({ item, index, isRemoving, isPulsing, onIncrement, onDecrem
       </div>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-1.5">
               {item.product?.category}
             </p>
-            <h3 className="font-display text-[16px] md:text-[18px] text-ink leading-snug mb-1.5 truncate">
+            <h3 className="font-display text-[15px] sm:text-[18px] text-ink leading-snug mb-2 line-clamp-2 sm:truncate">
               {item.product?.title}
             </h3>
             {variant && (
-              <div className="flex items-center gap-2">
-                <span className="border border-border rounded-[3px] px-2.5 py-1 text-[10.5px] font-medium text-ink-soft">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="border border-border rounded-[3px] px-2 py-1 text-[10px] sm:text-[10.5px] font-medium text-ink-soft">
                   {variant.size}
                 </span>
-                <span className="border border-border rounded-[3px] px-2.5 py-1 text-[10.5px] font-medium text-ink-soft">
+                <span className="border border-border rounded-[3px] px-2 py-1 text-[10px] sm:text-[10.5px] font-medium text-ink-soft">
                   {variant.color}
                 </span>
               </div>
@@ -103,19 +103,19 @@ const CartItemRow = ({ item, index, isRemoving, isPulsing, onIncrement, onDecrem
             type="button"
             onClick={() => onRemove(item)}
             aria-label="Remove item"
-            className="shrink-0 text-ink-soft hover:text-error transition-colors"
+            className="shrink-0 text-ink-soft hover:text-error transition-colors p-1.5 -m-1.5"
           >
             <Trash2 size={16} strokeWidth={1.5} />
           </button>
         </div>
 
-        <div className="flex items-end justify-between mt-auto pt-6">
-          <div className="flex items-center border border-border rounded-[3px]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mt-auto pt-5 sm:pt-6">
+          <div className="flex items-center border border-border rounded-[3px] w-fit">
             <button
               type="button"
               onClick={() => onDecrement(item)}
               disabled={item.quantity <= 1}
-              className="w-8 h-8 flex items-center justify-center text-ink hover:bg-cream-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center text-ink hover:bg-cream-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Minus size={12} strokeWidth={2} />
             </button>
@@ -125,18 +125,18 @@ const CartItemRow = ({ item, index, isRemoving, isPulsing, onIncrement, onDecrem
             <button
               type="button"
               onClick={() => onIncrement(item)}
-              className="w-8 h-8 flex items-center justify-center text-ink hover:bg-cream-dark transition-colors"
+              className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center text-ink hover:bg-cream-dark transition-colors"
             >
               <Plus size={12} strokeWidth={2} />
             </button>
           </div>
 
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <p className={`font-sans text-[15px] font-semibold text-ink ${isPulsing ? 'cart-number-pop' : ''}`}>
-              {formatPrice({ ...item.price, amount: item.price.amount * item.quantity })}
+              {formatPrice({ ...item.price, amount: variant.priceOverride * item.quantity })}
             </p>
             {item.quantity > 1 && (
-              <p className="text-[11px] text-ink-soft mt-0.5">{formatPrice(item.price)} each</p>
+              <p className="text-[11px] text-ink-soft mt-0.5">{formatPrice(variant.priceOverride)} each</p>
             )}
           </div>
         </div>
@@ -180,26 +180,26 @@ const EmptyBagIllustration = () => (
 )
 
 const EmptyCart = () => (
-  <div className="flex flex-col items-center justify-center text-center px-5">
+  <div className="flex flex-col items-center justify-center text-center px-5 py-16 sm:py-10 min-h-[55vh] sm:min-h-0">
     <div className="empty-fade-1">
       <EmptyBagIllustration />
     </div>
-    <h2 className="empty-fade-2 font-display text-[26px] text-ink mt-2 mb-2">
+    <h2 className="empty-fade-2 font-display text-[24px] sm:text-[26px] text-ink mt-4 mb-2.5">
       An Empty Canvas
     </h2>
     <p className="empty-fade-2 text-[13px] text-ink-soft mb-8 max-w-xs leading-relaxed">
       Your bag has nothing to carry yet. Discover a piece worth adding.
     </p>
-    <div className="empty-fade-3 flex flex-col sm:flex-row items-center gap-3">
+    <div className="empty-fade-3 flex flex-col w-full max-w-xs sm:w-auto sm:max-w-none sm:flex-row items-center gap-3">
       <Link
         to="/all-products"
-        className="bg-charcoal text-cream rounded-[3px] px-8 py-3.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
+        className="w-full sm:w-auto text-center bg-charcoal text-cream rounded-[3px] px-8 py-3.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
       >
         Explore The Collection
       </Link>
       <Link
         to="/wishlist"
-        className="border border-charcoal text-charcoal rounded-[3px] px-8 py-3.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-cream-dark transition-colors"
+        className="w-full sm:w-auto text-center border border-charcoal text-charcoal rounded-[3px] px-8 py-3.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-cream-dark transition-colors"
       >
         From Your Wishlist
       </Link>
@@ -209,7 +209,7 @@ const EmptyCart = () => (
 
 const Cart = () => {
   const { handleGetCart, handleAddToCart, handleRemoveCartItem } = useCart()
-  const items = useSelector((state) => state.cart.items)
+  const { items, totalPrice: subtotal, currency } = useSelector((state) => state.cart)
 
   const [loading, setLoading] = useState(true)
   const [removingIds, setRemovingIds] = useState(new Set())
@@ -225,9 +225,6 @@ const Cart = () => {
     fetchCartItems()
   }, [])
 
-  useEffect(() => {
-    console.log('items updated:', items)
-  }, [items])
 
   // Fires an instant, localized pulse right where the click happened —
   // not tied to the network round-trip, so feedback is immediate.
@@ -265,8 +262,6 @@ const Cart = () => {
     }, 400)
   }
 
-  const currency = items?.[0]?.price?.currency ?? 'INR'
-  const subtotal = (items ?? []).reduce((sum, item) => sum + item.price.amount * item.quantity, 0)
   const isFreeShipping = subtotal >= 15000
 
   if (loading) {
@@ -281,17 +276,17 @@ const Cart = () => {
     <div className="min-h-screen bg-cream">
       <CartAnimations />
 
-      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-14 py-5 md:py-8">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-5 md:px-8 lg:px-14 py-5 md:py-8 pb-28 lg:pb-8">
         <Link
           to="/all-products"
-          className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft hover:text-ink transition-colors mb-5"
+          className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft hover:text-ink transition-colors mb-6 sm:mb-5"
         >
           <ArrowLeft size={14} strokeWidth={1.75} />
           Continue Shopping
         </Link>
 
-        <div className="mb-6">
-          <h1 className="font-display text-[30px] md:text-[36px] text-ink leading-tight">Your Bag</h1>
+        <div className="mb-7 sm:mb-6">
+          <h1 className="font-display text-[28px] sm:text-[30px] md:text-[36px] text-ink leading-tight">Your Bag</h1>
           {items?.length > 0 && (
             <p className="text-[12px] text-ink-soft mt-1.5">
               {items.length} {items.length === 1 ? 'item' : 'items'}
@@ -302,9 +297,9 @@ const Cart = () => {
         {(!items || items.length === 0) ? (
           <EmptyCart />
         ) : (
-          <div className="grid lg:grid-cols-[1fr_400px] gap-12 lg:gap-16 items-start">
+          <div className="grid lg:grid-cols-[1fr_400px] gap-8 lg:gap-16 items-start">
             {/* ── Item list ── */}
-            <div>
+            <div className="flex flex-col gap-4 sm:gap-0">
               {items.map((item, i) => (
                 <CartItemRow
                   key={item._id}
@@ -320,7 +315,7 @@ const Cart = () => {
             </div>
 
             {/* ── Order summary ── */}
-            <div className="bg-surface border border-border rounded-[3px] p-4 lg:p-5 lg:sticky lg:top-32">
+            <div className="bg-surface border border-border rounded-[3px] p-5 lg:sticky lg:top-32">
               <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-3">
                 Order Summary
               </p>
@@ -331,9 +326,9 @@ const Cart = () => {
                 value={isFreeShipping ? 'Complimentary' : `Free over ${formatPrice({ amount: 15000, currency })}`}
               />
 
-              <div className="flex justify-between items-center py-3 border-t border-border mt-1">
+              <div className="flex justify-between items-center py-4 border-t border-border mt-1">
                 <span className="text-[12px] font-semibold tracking-[0.08em] uppercase text-ink">Total</span>
-                <span className={`text-[20px] font-semibold text-ink ${pulseTotal ? 'cart-total-pulse' : ''}`}>
+                <span className={`text-[22px] sm:text-[20px] font-semibold text-ink ${pulseTotal ? 'cart-total-pulse' : ''}`}>
                   {formatPrice({ amount: subtotal, currency })}
                 </span>
               </div>

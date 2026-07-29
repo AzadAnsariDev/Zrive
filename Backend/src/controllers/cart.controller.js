@@ -1,3 +1,4 @@
+import mongoose from "mongoose"
 import { stockOfVariant } from "../dao/product.dao.js"
 import cartModel from "../models/cart.model.js"
 import productModel from "../models/product.model.js"
@@ -73,17 +74,81 @@ export const addToCart = async (req, res) => {
 
 
 export const getCart = async (req, res) => {
-    const filter = req.user ? { user: req.user.id } : { guestId: req.guestId }
-    let cart = await cartModel.findOne(filter).populate("items.product")
+    const filter = req.user ? { user: new mongoose.Types.ObjectId(req.user.id) }: { guestId: req.guestId }
 
-    if (!cart) {
-        cart = await cartModel.create({ ...filter, items: [] })
-    }
+    let existingCart = await cartModel.findOne(filter);
+
+if (!existingCart) {
+    await cartModel.create({
+        ...filter,
+        items: []
+    });
+}
+
+    existingCart = await cartModel.aggregate(
+        [
+            {
+                $match: filter
+            },
+            { $unwind: { path: '$items' , preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'items.product',
+                    foreignField: '_id',
+                    as: 'items.product'
+                }
+            },
+            { $unwind: { path: '$items.product' , preserveNullAndEmptyArrays: true  } },
+            {
+                $unwind: { path: '$items.product.variants', preserveNullAndEmptyArrays: true} 
+            },
+            {
+                $match: {
+                    $expr: {
+                        $eq: [
+                            '$items.product.variants._id',
+                            '$items.variant'
+                        ]
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    itemPrice: {
+                        price: {
+                            $multiply: [
+                                '$items.product.variants.priceOverride',
+                                '$items.quantity'
+                            ]
+                        },
+                        currency:
+                            '$items.product.price.currency'
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    totalPrice: { $sum: '$itemPrice.price' },
+                    currency: {
+                        $first: '$itemPrice.currency'
+                    },
+                    items: { $push: '$items' }
+                }
+            }
+        ],
+        { maxTimeMS: 60000, allowDiskUse: true }
+    )
+
+    // if (cart.length === 0) {
+    //     cart = await cartModel.create({ ...filter, items: [] })
+    // }
 
     return res.status(200).json({
         message: "Cart fetched successfully",
         success: true,
-        cart
+        cart: existingCart.length > 0 ? existingCart[0] : null
     })
 }
 
@@ -109,7 +174,7 @@ export const removeCartItem = async (req, res) => {
             i.product.toString() === productId &&
             i.variant.toString() === variantId
     );
-    
+
     if (itemIndex === -1) {
         return res.status(404).json({
             message: "No such item found in cart",
@@ -117,21 +182,21 @@ export const removeCartItem = async (req, res) => {
         });
     }
 
-    if(cart.items[itemIndex].quantity > 1 && action === "decrement"){
+    if (cart.items[itemIndex].quantity > 1 && action === "decrement") {
         cart.items[itemIndex].quantity--
         await cart.save()
         return res.status(200).json({
-            message : "Item quantity decremented successfully",
+            message: "Item quantity decremented successfully",
             action,
             itemIndex
         })
     }
 
 
-    if(action === "remove"){
+    if (action === "remove") {
         cart.items.splice(itemIndex, 1);
         await cart.save();
-    
+
         res.status(200).json({
             message: "Item removed from cart successfully",
             success: true,

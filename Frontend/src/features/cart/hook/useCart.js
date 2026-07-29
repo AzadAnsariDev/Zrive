@@ -1,5 +1,5 @@
 import { useDispatch } from "react-redux"
-import { decrementItem, removeItem, setFetchLoading, setItems } from "../../cart/state/cartSlice"
+import { decrementItem, removeItem, setFetchLoading, setItems, setCartDetails } from "../../cart/state/cartSlice"
 import { addToCart, getCart, removeCartItem } from "../services/cart.api"
 
 const useCart = ()=>{
@@ -24,8 +24,12 @@ const useCart = ()=>{
         dispatch(setFetchLoading(true))
         try{
             const result = await getCart()
-            dispatch(setItems(result.cart.items))
-            console.log(result.cart.items)
+            dispatch(setItems(result.cart?.items || []))
+            dispatch(setCartDetails({
+                totalPrice: result.cart?.totalPrice || 0,
+                currency: result.cart?.currency || "INR"
+            }))
+            console.log(result.cart?.items)
             return result
         }catch(err){
            console.log(err)
