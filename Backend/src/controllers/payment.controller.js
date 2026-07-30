@@ -84,7 +84,7 @@ export const verifyOrder = async(req, res) =>{
     payment.razorpay.payment_id = razorpay_payment_id,
     payment.razorpay.signature = razorpay_signature
 
-    payment.save()
+    await payment.save()
 
     return res.status(201).json({
         message : "Payment verified successfully",
