@@ -74,34 +74,7 @@ export const addToCart = async (req, res) => {
     })
 }
 
-
-export const getCart = async (req, res) => {
-    const filter = req.user ? { user: new mongoose.Types.ObjectId(req.user.id) }: { guestId: req.guestId }
-
-    let existingCart = await cartModel.findOne(filter);
-
-    if (!existingCart) {
-        existingCart = await cartModel.create({
-            ...filter,
-            items: []
-        });
-    }
-
-    if (!existingCart.items || existingCart.items.length === 0) {
-        return res.status(200).json({
-            message: "Cart fetched successfully",
-            success: true,
-            cart: {
-                _id: existingCart._id,
-                user: existingCart.user,
-                guestId: existingCart.guestId,
-                items: [],
-                totalPrice: 0,
-                currency: "INR"
-            }
-        })
-    }
-
+export const getCartDetails = async (filter)=>{
     const aggregatedCart = await cartModel.aggregate(
         [
             {
@@ -178,6 +151,39 @@ export const getCart = async (req, res) => {
         { maxTimeMS: 60000, allowDiskUse: true }
     )
 
+    return aggregatedCart[0] || null
+}
+
+
+export const getCart = async (req, res) => {
+    const filter = req.user ? { user: new mongoose.Types.ObjectId(req.user.id) }: { guestId: req.guestId }
+
+    let existingCart = await cartModel.findOne(filter);
+
+    if (!existingCart) {
+        existingCart = await cartModel.create({
+            ...filter,
+            items: []
+        });
+    }
+
+    if (!existingCart.items || existingCart.items.length === 0) {
+        return res.status(200).json({
+            message: "Cart fetched successfully",
+            success: true,
+            cart: {
+                _id: existingCart._id,
+                user: existingCart.user,
+                guestId: existingCart.guestId,
+                items: [],
+                totalPrice: 0,
+                currency: "INR"
+            }
+        })
+    }
+
+    const aggregatedCart = await getCartDetails(filter)
+
     if (!aggregatedCart || aggregatedCart.length === 0) {
         return res.status(200).json({
             message: "Cart fetched successfully",
@@ -196,7 +202,7 @@ export const getCart = async (req, res) => {
     return res.status(200).json({
         message: "Cart fetched successfully",
         success: true,
-        cart: aggregatedCart[0]
+        cart: aggregatedCart
     })
 }
 

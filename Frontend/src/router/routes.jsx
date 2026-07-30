@@ -11,6 +11,7 @@ import AllProducts from '../features/product/pages/AllProducts'
 import SingleProduct from '../features/product/pages/SingleProduct'
 import AddVariant from '../features/product/pages/SellerProductDetail'
 import Cart from '../features/cart/pages/Cart'
+import OrderPlaced from '../features/payment/pages/OrderPlaced'
 
 
 
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
         { path: 'wishlist', element: <div>Wishlist page</div> },
         { path: 'all-products', element: <AllProducts /> },
         { path: 'product/:productId', element: <SingleProduct /> },
+        { path: 'order-success/:orderId', element: <OrderPlaced /> },
 
     ],
 },

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useSelector } from 'react-redux'
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react'
 import useCart from '../hook/useCart'
 import { formatPrice } from '../../home/pages/Home'
+import usePayment from '../../payment/hook/usePayment'
+import { useRazorpay } from "react-razorpay";
 
 // Scoped keyframes for entrance / removal / total-pulse / instant-feedback animations.
 const CartAnimations = () => (
@@ -216,12 +218,18 @@ const EmptyCart = () => (
 
 const Cart = () => {
   const { handleGetCart, handleAddToCart, handleRemoveCartItem } = useCart()
+  const { handleCreateOrder, handleVerifyOrder } = usePayment()
+  const { error, isLoading, Razorpay } = useRazorpay();
+
   const { items, totalPrice: subtotal, currency } = useSelector((state) => state.cart)
+  const user = useSelector((state)=> state.auth.user)
 
   const [loading, setLoading] = useState(true)
   const [removingIds, setRemovingIds] = useState(new Set())
   const [pulseTotal, setPulseTotal] = useState(false)
   const [pulsingItemId, setPulsingItemId] = useState(null)
+
+  const navigate = useNavigate()
 
   const fetchCartItems = async () => {
     await handleGetCart()
@@ -277,6 +285,37 @@ const Cart = () => {
         <p className="font-display text-[20px] text-ink-soft animate-pulse">Loading your bag…</p>
       </div>
     )
+  }
+
+  const handleCheckOut = async ()=>{
+    const order = await handleCreateOrder()
+    console.log(order)
+
+    const options = {
+      key: "rzp_test_TJOYSvdezHvcAX",
+      amount: order.amount, // Amount in paise
+      currency: order.currency,
+      name: "Zrive",
+      description: "Test Transaction",
+      order_id: order.id, // Generate order_id on server
+      handler: async (response) => {  
+        const isPaymentDone = await handleVerifyOrder(response)
+        if(isPaymentDone){
+          navigate(`/order-success/${response.razorpay_order_id}`)
+        }
+      },
+      prefill: {
+        name: user.username,
+        email: user.email,
+        contact: user.contact,
+      },
+      theme: {
+        color: "#F37254",
+      },
+    };
+
+    const razorpayInstance = new Razorpay(options);
+    razorpayInstance.open();
   }
 
   return (
@@ -342,7 +381,7 @@ const Cart = () => {
 
               <button
                 type="button"
-                onClick={() => {}}
+                onClick={handleCheckOut}
                 className="w-full bg-charcoal text-cream rounded-[3px] py-4 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors mt-1"
               >
                 Proceed to Checkout
