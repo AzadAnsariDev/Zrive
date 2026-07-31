@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux'
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react'
 import useCart from '../hook/useCart'
 import { formatPrice } from '../../home/pages/Home'
-import usePayment from '../../payment/hook/usePayment'
 import { useRazorpay } from "react-razorpay";
 
 // Scoped keyframes for entrance / removal / total-pulse / instant-feedback animations.
@@ -218,7 +217,6 @@ const EmptyCart = () => (
 
 const Cart = () => {
   const { handleGetCart, handleAddToCart, handleRemoveCartItem } = useCart()
-  const { handleCreateOrder, handleVerifyOrder } = usePayment()
   const { error, isLoading, Razorpay } = useRazorpay();
 
   const { items, totalPrice: subtotal, currency } = useSelector((state) => state.cart)

@@ -11,7 +11,7 @@ import AllProducts from '../features/product/pages/AllProducts'
 import SingleProduct from '../features/product/pages/SingleProduct'
 import AddVariant from '../features/product/pages/SellerProductDetail'
 import Cart from '../features/cart/pages/Cart'
-import OrderPlaced from '../features/payment/pages/OrderPlaced'
+import OrderPlaced from '../features/order/pages/OrderPlaced'
 import Address from '../features/address/pages/Address'
 
 

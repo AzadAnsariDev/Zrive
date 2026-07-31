@@ -7,7 +7,7 @@ import config from "../config/config.js";
 import addressModel from "../models/address.model.js";
 import orderModel from "../models/order.model.js";
 
-export const createOrderController = async (req, res) => {
+export const createOrder = async (req, res) => {
   try {
     const { addressId } = req.body
 

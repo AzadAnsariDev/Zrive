@@ -15,7 +15,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import useAddress from "../hook/useAddress";
-import usePayment from "../../payment/hook/usePayment";
+import useOrder from "../../order/hook/useOrder";
 import { setSelectedAddress } from "../state/addressSlice";
 
 const emptyDefaults = {
@@ -44,7 +44,7 @@ const Address = () => {
     handleDeleteAddress,
   } = useAddress();
 
-  const { handleCreateOrder, handleVerifyOrder } = usePayment();
+  const { handleCreateOrder, handleVerifyOrder } = useOrder();
 
   const dispatch = useDispatch();
   const navigate = useNavigate();

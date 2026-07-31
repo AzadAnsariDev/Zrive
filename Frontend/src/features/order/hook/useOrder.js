@@ -1,6 +1,6 @@
-import { createOrder, verifyOrder } from "../services/payment.api"
+import { createOrder, verifyOrder } from "../services/order.api"
 
-const usePayment = ()=>{
+const useOrder = ()=>{
 
     const handleCreateOrder = async (addressId)=>{
         const result = await createOrder(addressId)
@@ -17,4 +17,4 @@ const usePayment = ()=>{
     }
 }
 
-export default usePayment
+export default useOrder
