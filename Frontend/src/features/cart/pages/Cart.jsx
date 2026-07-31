@@ -288,34 +288,7 @@ const Cart = () => {
   }
 
   const handleCheckOut = async ()=>{
-    const order = await handleCreateOrder()
-    console.log(order)
-
-    const options = {
-      key: "rzp_test_TJOYSvdezHvcAX",
-      amount: order.amount, // Amount in paise
-      currency: order.currency,
-      name: "Zrive",
-      description: "Test Transaction",
-      order_id: order.id, // Generate order_id on server
-      handler: async (response) => {  
-        const isPaymentDone = await handleVerifyOrder(response)
-        if(isPaymentDone){
-          navigate(`/order-success/${response.razorpay_order_id}`)
-        }
-      },
-      prefill: {
-        name: user.username,
-        email: user.email,
-        contact: user.contact,
-      },
-      theme: {
-        color: "#F37254",
-      },
-    };
-
-    const razorpayInstance = new Razorpay(options);
-    razorpayInstance.open();
+    navigate("/address")
   }
 
   return (

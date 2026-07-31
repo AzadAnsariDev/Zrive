@@ -26,36 +26,58 @@ const ProductCardSkeleton = () => (
 )
 
 const ProductCard = ({ product }) => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+
+  const imageUrl =
+    product.images?.[0]?.url ||
+    product.variants?.[0]?.images?.[0]?.url;
+
   return (
-    <div className="group cursor-pointer" onClick={() => navigate(`/product/${product._id}`)}>
+    <div
+      className="group cursor-pointer"
+      onClick={() => navigate(`/product/${product._id}`)}
+    >
       <div className="relative aspect-[3/4] overflow-hidden bg-cream-dark mb-3">
-        {product.images ? (
-          <img src={product.images[0].url} alt={product.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={product.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <ImageIcon size={22} strokeWidth={1} className="text-ink-soft" />
+            <ImageIcon
+              size={22}
+              strokeWidth={1}
+              className="text-ink-soft"
+            />
           </div>
         )}
+
         <button
           type="button"
           aria-label="Add to wishlist"
-          onClick={(e) => { e.stopPropagation(); }}
+          onClick={(e) => e.stopPropagation()}
           className="absolute top-3 right-3 text-ink-soft hover:text-ink transition-colors"
         >
           <Heart size={18} strokeWidth={1} />
         </button>
       </div>
+
       <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">
         {product.brand || "Generic"}
       </p>
-      <h3 className="font-display text-[14px] text-ink mb-1 truncate">{product.title}</h3>
+
+      <h3 className="font-display text-[14px] text-ink mb-1 truncate">
+        {product.title}
+      </h3>
+
       <p className="font-sans text-[13px] font-semibold text-ink">
         {formatPrice(product.price)}
       </p>
     </div>
-  )
-}
+  );
+};
 
 const AllProducts = () => {
   const { handleGetProducts } = useProduct()

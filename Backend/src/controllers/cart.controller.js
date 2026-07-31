@@ -74,7 +74,7 @@ export const addToCart = async (req, res) => {
     })
 }
 
-export const getCartDetails = async (filter)=>{
+export const getCartDetails = async (filter) => {
     const aggregatedCart = await cartModel.aggregate(
         [
             {
@@ -91,7 +91,7 @@ export const getCartDetails = async (filter)=>{
             },
             { $unwind: { path: '$items.product' } },
             {
-                $unwind: { path: '$items.product.variants' } 
+                $unwind: { path: '$items.product.variants' }
             },
             {
                 $match: {
@@ -138,6 +138,12 @@ export const getCartDetails = async (filter)=>{
                 }
             },
             {
+                $addFields: {
+                    'items.unitPrice': '$itemUnitPrice',
+                    'items.currency': '$itemCurrency'
+                }
+            },
+            {
                 $group: {
                     _id: '$_id',
                     totalPrice: { $sum: '$itemPrice.price' },
@@ -156,7 +162,7 @@ export const getCartDetails = async (filter)=>{
 
 
 export const getCart = async (req, res) => {
-    const filter = req.user ? { user: new mongoose.Types.ObjectId(req.user.id) }: { guestId: req.guestId }
+    const filter = req.user ? { user: new mongoose.Types.ObjectId(req.user.id) } : { guestId: req.guestId }
 
     let existingCart = await cartModel.findOne(filter);
 

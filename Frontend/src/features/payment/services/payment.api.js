@@ -5,8 +5,8 @@ const paymentAPiInstance = axios.create({
     withCredentials: true
 })
 
-export const createOrder = async ()=>{
-    const response = await paymentAPiInstance.post("/create/order")
+export const createOrder = async (addressId)=>{
+    const response = await paymentAPiInstance.post("/create/order", {addressId})
     return response.data
 }
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router";
 import {
   Home,
   Briefcase,
@@ -11,8 +12,10 @@ import {
   Plus,
   X,
   Star,
+  ArrowRight,
 } from "lucide-react";
 import useAddress from "../hook/useAddress";
+import usePayment from "../../payment/hook/usePayment";
 import { setSelectedAddress } from "../state/addressSlice";
 
 const emptyDefaults = {
@@ -41,14 +44,19 @@ const Address = () => {
     handleDeleteAddress,
   } = useAddress();
 
+  const { handleCreateOrder, handleVerifyOrder } = usePayment();
+
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const addresses = useSelector((state) => state.address.addresses);
   const selectedAddress = useSelector((state) => state.address.selectedAddress);
+  const user = useSelector((state) => state.auth.user);
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   const {
     register,
@@ -125,6 +133,46 @@ const Address = () => {
     handleUpdateAddress(address._id, { isDefault: true });
   };
 
+  const handleCheckout = async () => {
+    if (!selectedAddress?._id) return;
+
+    setCheckingOut(true);
+    try {
+      const order = await handleCreateOrder(selectedAddress._id);
+      console.log(order);
+
+      const options = {
+        key: "rzp_test_TJOYSvdezHvcAX",
+        amount: order.amount, // Amount in paise
+        currency: order.currency,
+        name: "Zrive",
+        description: "Test Transaction",
+        order_id: order.id, // Generate order_id on server
+        handler: async (response) => {
+          const isPaymentDone = await handleVerifyOrder(response);
+          if (isPaymentDone) {
+            navigate(`/order-success/${response.razorpay_order_id}`);
+          }
+        },
+        prefill: {
+          name: user?.username,
+          email: user?.email,
+          contact: user?.contact,
+        },
+        theme: {
+          color: "#F37254",
+        },
+      };
+
+      const razorpayInstance = new window.Razorpay(options);
+      razorpayInstance.open();
+    } catch (err) {
+      console.error("Checkout failed:", err);
+    } finally {
+      setCheckingOut(false);
+    }
+  };
+
   const inputBase =
     "w-full bg-transparent border-b border-border pb-2 text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-gold transition-colors duration-200";
 
@@ -167,151 +215,165 @@ const Address = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {addresses.map((address) => {
-                  const TypeIcon =
-                    addressTypes.find((t) => t.key === address.addressType)
-                      ?.icon || Home;
-                  const confirming = confirmDeleteId === address._id;
-                  const isSelected = selectedAddress?._id === address._id;
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {addresses.map((address) => {
+                    const TypeIcon =
+                      addressTypes.find((t) => t.key === address.addressType)
+                        ?.icon || Home;
+                    const confirming = confirmDeleteId === address._id;
+                    const isSelected = selectedAddress?._id === address._id;
 
-                  return (
-                    <div
-                      key={address._id}
-                      onClick={() => dispatch(setSelectedAddress(address))}
-                      className={`relative rounded-lg overflow-hidden flex flex-col cursor-pointer
+                    return (
+                      <div
+                        key={address._id}
+                        onClick={() => dispatch(setSelectedAddress(address))}
+                        className={`relative rounded-lg overflow-hidden flex flex-col cursor-pointer
         transition-all duration-300 ease-out
         ${
           isSelected
             ? "bg-surface border-2 border-gold shadow-[0_0_0_4px_rgba(156,138,92,0.12),0_8px_24px_-8px_rgba(122,107,69,0.35)] -translate-y-0.5"
             : "bg-surface border-2 border-transparent ring-1 ring-border hover:ring-gold/40 hover:-translate-y-0.5"
         }`}
-                    >
-                      {isSelected && (
-                        <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-gold/[0.06] via-transparent to-transparent" />
-                      )}
+                      >
+                        {isSelected && (
+                          <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-gold/[0.06] via-transparent to-transparent" />
+                        )}
 
-                      {/* ── Default banner — own line, top of card ── */}
-                      {address.isDefault && (
-                        <div className="flex items-center gap-1.5 bg-gold px-4 py-2">
-                          <Star
-                            size={12}
-                            strokeWidth={2}
-                            fill="currentColor"
-                            className="text-charcoal"
-                          />
-                          <span className="text-[11px] font-semibold tracking-[0.15em] uppercase text-charcoal">
-                            Default address
-                          </span>
-                        </div>
-                      )}
+                        {/* ── Default banner — own line, top of card ── */}
+                        {address.isDefault && (
+                          <div className="flex items-center gap-1.5 bg-gold px-4 py-2">
+                            <Star
+                              size={12}
+                              strokeWidth={2}
+                              fill="currentColor"
+                              className="text-charcoal"
+                            />
+                            <span className="text-[11px] font-semibold tracking-[0.15em] uppercase text-charcoal">
+                              Default address
+                            </span>
+                          </div>
+                        )}
 
-                      <div className="p-6 flex flex-col gap-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            {/* radio button */}
-                            <span
-                              className={`relative w-[18px] h-[18px] rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 ${
-                                isSelected ? "border-gold" : "border-border"
-                              }`}
-                            >
+                        <div className="p-6 flex flex-col gap-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              {/* radio button */}
                               <span
-                                className={`w-[9px] h-[9px] rounded-full bg-gold transition-all duration-300 ease-out ${
-                                  isSelected
-                                    ? "scale-100 opacity-100"
-                                    : "scale-0 opacity-0"
+                                className={`relative w-[18px] h-[18px] rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 ${
+                                  isSelected ? "border-gold" : "border-border"
                                 }`}
-                              />
-                            </span>
+                              >
+                                <span
+                                  className={`w-[9px] h-[9px] rounded-full bg-gold transition-all duration-300 ease-out ${
+                                    isSelected
+                                      ? "scale-100 opacity-100"
+                                      : "scale-0 opacity-0"
+                                  }`}
+                                />
+                              </span>
 
-                            <span className="flex items-center gap-1.5 text-xs text-ink-soft uppercase tracking-wide px-2.5 py-1 rounded-full border border-border">
-                              <TypeIcon size={12} strokeWidth={1.75} />
-                              {address.addressType || "Home"}
-                            </span>
+                              <span className="flex items-center gap-1.5 text-xs text-ink-soft uppercase tracking-wide px-2.5 py-1 rounded-full border border-border">
+                                <TypeIcon size={12} strokeWidth={1.75} />
+                                {address.addressType || "Home"}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditForm(address);
+                                }}
+                                className="p-2 rounded-full text-ink-soft hover:text-ink hover:bg-cream-dark transition-colors duration-200"
+                                aria-label="Edit address"
+                              >
+                                <Pencil size={15} strokeWidth={1.75} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setConfirmDeleteId(address._id);
+                                }}
+                                className="p-2 rounded-full text-ink-soft hover:text-error hover:bg-cream-dark transition-colors duration-200"
+                                aria-label="Delete address"
+                              >
+                                <Trash2 size={15} strokeWidth={1.75} />
+                              </button>
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-1">
+                          <div>
+                            <p className="font-display text-lg text-ink">
+                              {address.fullName}
+                            </p>
+                            <p className="text-ink-soft text-sm">
+                              {address.phone}
+                            </p>
+                          </div>
+
+                          <p className="text-ink text-sm leading-relaxed">
+                            {address.addressLine1}
+                            {address.addressLine2
+                              ? `, ${address.addressLine2}`
+                              : ""}
+                            <br />
+                            {address.city}, {address.state} — {address.pincode}
+                          </p>
+
+                          {!address.isDefault && !confirming && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                openEditForm(address);
+                                onSetDefault(address);
                               }}
-                              className="p-2 rounded-full text-ink-soft hover:text-ink hover:bg-cream-dark transition-colors duration-200"
-                              aria-label="Edit address"
+                              className="mt-1 flex items-center gap-1.5 text-xs text-gold hover:text-gold-deep w-fit"
                             >
-                              <Pencil size={15} strokeWidth={1.75} />
+                              <Star size={12} strokeWidth={1.75} />
+                              Set as default
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setConfirmDeleteId(address._id);
-                              }}
-                              className="p-2 rounded-full text-ink-soft hover:text-error hover:bg-cream-dark transition-colors duration-200"
-                              aria-label="Delete address"
+                          )}
+
+                          {confirming && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-1 flex items-center gap-3 pt-3 border-t border-border"
                             >
-                              <Trash2 size={15} strokeWidth={1.75} />
-                            </button>
-                          </div>
+                              <span className="text-xs text-ink-soft">
+                                Delete this address?
+                              </span>
+                              <button
+                                onClick={() => onDelete(address._id)}
+                                className="text-xs text-error hover:text-ink"
+                              >
+                                Yes, delete
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="text-xs text-ink-soft hover:text-ink"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          )}
                         </div>
-
-                        <div>
-                          <p className="font-display text-lg text-ink">
-                            {address.fullName}
-                          </p>
-                          <p className="text-ink-soft text-sm">
-                            {address.phone}
-                          </p>
-                        </div>
-
-                        <p className="text-ink text-sm leading-relaxed">
-                          {address.addressLine1}
-                          {address.addressLine2
-                            ? `, ${address.addressLine2}`
-                            : ""}
-                          <br />
-                          {address.city}, {address.state} — {address.pincode}
-                        </p>
-
-                        {!address.isDefault && !confirming && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSetDefault(address);
-                            }}
-                            className="mt-1 flex items-center gap-1.5 text-xs text-gold hover:text-gold-deep w-fit"
-                          >
-                            <Star size={12} strokeWidth={1.75} />
-                            Set as default
-                          </button>
-                        )}
-
-                        {confirming && (
-                          <div
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-1 flex items-center gap-3 pt-3 border-t border-border"
-                          >
-                            <span className="text-xs text-ink-soft">
-                              Delete this address?
-                            </span>
-                            <button
-                              onClick={() => onDelete(address._id)}
-                              className="text-xs text-error hover:text-ink"
-                            >
-                              Yes, delete
-                            </button>
-                            <button
-                              onClick={() => setConfirmDeleteId(null)}
-                              className="text-xs text-ink-soft hover:text-ink"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+
+                {/* ── Continue to payment ─────────────────────── */}
+                <div className="mt-10 flex justify-end">
+                  <button
+                    onClick={handleCheckout}
+                    disabled={!selectedAddress || checkingOut}
+                    className="flex items-center gap-2 px-8 py-4 rounded-full bg-charcoal text-cream text-sm tracking-wide transition-transform duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+                  >
+                    {checkingOut ? "Processing..." : "Continue to payment"}
+                    {!checkingOut && <ArrowRight size={16} strokeWidth={2} />}
+                  </button>
+                </div>
+              </>
             )}
           </>
         )}

@@ -2,8 +2,8 @@ import { createOrder, verifyOrder } from "../services/payment.api"
 
 const usePayment = ()=>{
 
-    const handleCreateOrder = async ()=>{
-        const result = await createOrder()
+    const handleCreateOrder = async (addressId)=>{
+        const result = await createOrder(addressId)
         return result.order
     }
     const handleVerifyOrder = async ({razorpay_order_id, razorpay_payment_id, razorpay_signature})=>{

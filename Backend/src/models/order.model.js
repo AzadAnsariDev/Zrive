@@ -1,5 +1,5 @@
 import mongoose, { mongo } from "mongoose";
-import priceSchema from "./price.schema";
+import priceSchema from "./price.schema.js";
 
 const orderItemSchema = new mongoose.Schema({
     title : {type: String, required: true},
@@ -44,8 +44,8 @@ const orderSchema = new mongoose.Schema({
     },
     orderStatus: {
         type: String,
-        enum: ["placed", "confirmed", "shipped", "delivered", "cancelled"],
-        default: "placed"
+        enum: ["pending_payment", "placed", "confirmed", "shipped", "delivered", "cancelled"],
+        default: "pending_payment"
     },
     shippingAddress: {
         name: { type: String, required: true },
@@ -54,7 +54,8 @@ const orderSchema = new mongoose.Schema({
         city: { type: String, required: true },
         state: { type: String, required: true },
         pincode: { type: String, required: true },
-        phone: { type: String, required: true }
+        phone: { type: String, required: true },
+        addressType: { type: String, enum: ["Home", "Work", "Other"] }
     }
 })
 
