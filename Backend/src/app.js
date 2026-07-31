@@ -8,6 +8,7 @@ import {Strategy as GoogleStrategy} from 'passport-google-oauth20'
 import productRouter from './routes/product.route.js'
 import cartRouter from './routes/cart.route.js'
 import paymentRouter from './routes/payment.route.js'
+import addressRouter from './routes/address.route.js'
 
 const app = express()
 app.use(express.json())
@@ -39,5 +40,8 @@ app.use("/api/cart", cartRouter)
 
 //payment Router
 app.use("/api/payment", paymentRouter)
+
+//address Router
+app.use("/api/address", addressRouter)
 
 export default app

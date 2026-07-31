@@ -6,13 +6,13 @@ const authApiInstance = axios.create({
 })
 
 
-export const register = async (email, contact, username, password, isSeller = false)=>{
+export const register = async (email, contact, username, password, role = "buyer")=>{
     const response = await authApiInstance.post("/register", {
         email, 
         contact,
         username,
         password,
-        isSeller
+        role
     })
 
     return response.data

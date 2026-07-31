@@ -1,25 +1,23 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
-import Login from '../pages/Login'
 import { Navigate } from 'react-router';
 
-const Protected = ({children , role="buyer"}) => {
+const Protected = ({ children, role = "buyer" }) => {
 
-const { user, loading } = useSelector((state) => state.auth);
+  const { user, loading } = useSelector((state) => state.auth);
 
-if (loading) {
-  return <div>Loading...</div>;
-}
+  if (loading) return <div>Loading...</div>;
 
-if (!user) {
-  return <Navigate to="/login" replace />;
-}
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-if(user.role !== role ){
-   return <Navigate to="/" replace />;
-}
+  // Role check sirf seller routes ke liye
+  if (role === "seller" && user.role !== "seller") {
+    return <Navigate to="/" replace />;
+  }
 
-return children;
+  return children;
 }
 
 export default Protected

@@ -11,7 +11,6 @@ const userSchema = new mongoose.Schema({
             return !this.googleId;
         },
         select : false},
-    isSeller : {type : Boolean, required : true, default : false},
     role : {
         type : String,
         enum : ["seller", "buyer"],

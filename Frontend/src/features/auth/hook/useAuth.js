@@ -6,10 +6,10 @@ export const useAuth = () =>{
 
     const dispatch = useDispatch()
 
-    const handleRegister = async (email, contact, username, password, isSeller)=>{
+    const handleRegister = async (email, contact, username, password, role)=>{
         dispatch(setLoading(true))
         try{
-            const data = await register(email, contact, username, password, isSeller)
+            const data = await register(email, contact, username, password, role)
             return data.user
         }catch(err){
             console.log(err)

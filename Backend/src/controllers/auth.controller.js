@@ -27,7 +27,7 @@ const sendTokenResponse = (user, res, statusCode, message)=>{
 }
 
 export const register = async (req, res)=>{
-    const {email, contact, username, password, isSeller } = req.body
+    const {email, contact, username, password, role } = req.body
 
     const existingUser = await userModel.findOne({
         $or :[
@@ -47,13 +47,8 @@ export const register = async (req, res)=>{
         contact,
         username,
         password,
-        isSeller
+        role: role || "buyer"
     })
-
-    if(user.isSeller){
-        user.role = "seller"
-        await user.save()
-    }
 
     await mergeGuestCart(req, res, user._id)
 
