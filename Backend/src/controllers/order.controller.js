@@ -6,6 +6,8 @@ import { validatePaymentVerification } from 'razorpay/dist/utils/razorpay-utils.
 import config from "../config/config.js";
 import addressModel from "../models/address.model.js";
 import orderModel from "../models/order.model.js";
+import cartModel from "../models/cart.model.js";
+import crypto from 'crypto'
 
 export const createOrder = async (req, res) => {
   try {
@@ -116,17 +118,17 @@ export const createOrder = async (req, res) => {
   }
 };
 
-
 export const verifyOrder = async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body
 
-  const payment = await paymentModel.findOne({ "razorpay.orderId": razorpay_order_id, status: "pending" })
+  const payment = await paymentModel.findOne({ "razorpay.orderId": razorpay_order_id })
 
   if (!payment) {
-    return res.status(400).json({
-      message: "Payment not found",
-      success: false
-    })
+    return res.status(404).json({ message: "Payment record not found", success: false })
+  }
+
+  if (payment.status === "paid") {
+    return res.status(200).json({ message: "Payment already processed", success: true })
   }
 
   const isValid = validatePaymentVerification({
@@ -138,25 +140,16 @@ export const verifyOrder = async (req, res) => {
   )
 
   if (!isValid) {
-    payment.status = "failed"
-
-    await payment.save()
-
-    await orderModel.updateMany(
-      { payment: payment._id },
-      { $set: { orderStatus: "cancelled" } }
-    );
-
     return res.status(400).json({
-      message: "Payment verification failed",
+      message: "Invalid payment verification data provided",
       success: false
     })
   }
 
-  payment.status = "paid",
-    payment.razorpay.payment_id = razorpay_payment_id,
-    payment.razorpay.signature = razorpay_signature
-
+  // Success path logic remains clean
+  payment.status = "paid"
+  payment.razorpay.payment_id = razorpay_payment_id
+  payment.razorpay.signature = razorpay_signature
   await payment.save()
 
   await orderModel.updateMany(
@@ -164,8 +157,66 @@ export const verifyOrder = async (req, res) => {
     { $set: { orderStatus: "placed" } }
   );
 
-  return res.status(201).json({
+  await cartModel.findOneAndUpdate(
+    { user: req.user.id },
+    { $set: { items: [] } }
+  );
+
+  return res.status(200).json({
     message: "Payment verified successfully",
     success: true
   })
 }
+
+export const webhook = async (req, res) => {
+  console.log("Webhook Hit");
+  try {
+    const webhookSignature = req.headers["x-razorpay-signature"];
+
+    const expectedSignature = crypto
+      .createHmac("sha256", config.RAZORPAY_WEBHOOK_SECRET)
+      .update(req.body) 
+      .digest("hex");
+    console.log("Webhook:", webhookSignature);
+    console.log("Expected:", expectedSignature);
+
+    if (expectedSignature !== webhookSignature) {
+      return res.status(400).json({ success: false, message: "Invalid webhook signature" });
+    }
+
+    const payload = JSON.parse(req.body.toString());
+    const event = payload.event; 
+    const razorpayOrderId = payload.payload.payment.entity.order_id;
+
+    const payment = await paymentModel.findOne({ "razorpay.orderId": razorpayOrderId });
+    console.log(payment);
+    if (!payment || payment.status !== "pending") {
+      return res.status(200).json({ success: true });
+    }
+
+    if (event === "payment.captured") {
+      payment.status = "paid";
+      await payment.save();
+
+      await orderModel.updateMany(
+        { payment: payment._id },
+        { $set: { orderStatus: "placed" } }
+      );
+
+    } else if (event === "payment.failed") {
+      payment.status = "failed";
+      await payment.save();
+
+      await orderModel.updateMany(
+        { payment: payment._id },
+        { $set: { orderStatus: "cancelled" } }
+      );
+    }
+
+    return res.status(200).json({ success: true });
+
+  } catch (err) {
+    console.error("Webhook error:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};

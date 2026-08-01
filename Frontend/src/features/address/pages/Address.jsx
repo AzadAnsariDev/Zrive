@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router";
+import toast from "react-hot-toast";
 import {
   Home,
   Briefcase,
@@ -150,9 +151,18 @@ const Address = () => {
         order_id: order.id, // Generate order_id on server
         handler: async (response) => {
           const isPaymentDone = await handleVerifyOrder(response);
+          setCheckingOut(false);
           if (isPaymentDone) {
             navigate(`/order-success/${response.razorpay_order_id}`);
-          }
+          }else {
+          toast.error("Payment verification failed");
+        }
+        },
+        modal: {
+          ondismiss: () => {
+            setCheckingOut(false);
+            toast.error("Payment cancelled");
+          },
         },
         prefill: {
           name: user?.username,
@@ -168,8 +178,8 @@ const Address = () => {
       razorpayInstance.open();
     } catch (err) {
       console.error("Checkout failed:", err);
-    } finally {
       setCheckingOut(false);
+      toast.error("Something went wrong. Please try again.");
     }
   };
 
@@ -230,11 +240,10 @@ const Address = () => {
                         onClick={() => dispatch(setSelectedAddress(address))}
                         className={`relative rounded-lg overflow-hidden flex flex-col cursor-pointer
         transition-all duration-300 ease-out
-        ${
-          isSelected
-            ? "bg-surface border-2 border-gold shadow-[0_0_0_4px_rgba(156,138,92,0.12),0_8px_24px_-8px_rgba(122,107,69,0.35)] -translate-y-0.5"
-            : "bg-surface border-2 border-transparent ring-1 ring-border hover:ring-gold/40 hover:-translate-y-0.5"
-        }`}
+        ${isSelected
+                            ? "bg-surface border-2 border-gold shadow-[0_0_0_4px_rgba(156,138,92,0.12),0_8px_24px_-8px_rgba(122,107,69,0.35)] -translate-y-0.5"
+                            : "bg-surface border-2 border-transparent ring-1 ring-border hover:ring-gold/40 hover:-translate-y-0.5"
+                          }`}
                       >
                         {isSelected && (
                           <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-gold/[0.06] via-transparent to-transparent" />
@@ -260,16 +269,14 @@ const Address = () => {
                             <div className="flex items-center gap-3">
                               {/* radio button */}
                               <span
-                                className={`relative w-[18px] h-[18px] rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 ${
-                                  isSelected ? "border-gold" : "border-border"
-                                }`}
+                                className={`relative w-[18px] h-[18px] rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 ${isSelected ? "border-gold" : "border-border"
+                                  }`}
                               >
                                 <span
-                                  className={`w-[9px] h-[9px] rounded-full bg-gold transition-all duration-300 ease-out ${
-                                    isSelected
+                                  className={`w-[9px] h-[9px] rounded-full bg-gold transition-all duration-300 ease-out ${isSelected
                                       ? "scale-100 opacity-100"
                                       : "scale-0 opacity-0"
-                                  }`}
+                                    }`}
                                 />
                               </span>
 
@@ -532,11 +539,10 @@ const Address = () => {
                           type="button"
                           key={key}
                           onClick={() => setValue("addressType", key)}
-                          className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm transition-all duration-200 ${
-                            active
+                          className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm transition-all duration-200 ${active
                               ? "bg-charcoal border-charcoal text-cream"
                               : "border-border text-ink-soft hover:border-gold hover:text-ink"
-                          }`}
+                            }`}
                         >
                           <Icon size={14} strokeWidth={1.75} />
                           {key}
@@ -548,17 +554,15 @@ const Address = () => {
 
                 <label className="flex items-center gap-3 cursor-pointer w-fit">
                   <span
-                    className={`relative w-10 h-6 rounded-full transition-colors duration-200 ${
-                      isDefault
+                    className={`relative w-10 h-6 rounded-full transition-colors duration-200 ${isDefault
                         ? "bg-gold"
                         : "bg-cream-dark border border-border"
-                    }`}
+                      }`}
                     onClick={() => setValue("isDefault", !isDefault)}
                   >
                     <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface shadow-sm transition-transform duration-200 ${
-                        isDefault ? "translate-x-4" : "translate-x-0"
-                      }`}
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface shadow-sm transition-transform duration-200 ${isDefault ? "translate-x-4" : "translate-x-0"
+                        }`}
                     />
                   </span>
                   <span className="text-sm text-ink-soft">

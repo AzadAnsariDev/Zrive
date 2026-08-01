@@ -11,7 +11,18 @@ import addressRouter from './routes/address.route.js'
 import orderRouter from './routes/order.route.js'
 
 const app = express()
-app.use(express.json())
+
+app.use(
+  "/api/order/webhook",
+  express.raw({ type: "application/json" })
+);
+app.use((req, res, next) => {
+  if (req.originalUrl === "/api/order/webhook") {
+    return next(); // webhook route ke liye json() ko skip kardo
+  }
+  express.json()(req, res, next);
+});
+
 // app.use(cors({
 //     origin : "http://localhost:5173",
 //     credentials : true
