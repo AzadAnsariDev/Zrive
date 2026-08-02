@@ -1,19 +1,52 @@
-import { createOrder, verifyOrder } from "../services/order.api"
+import { useDispatch } from "react-redux"
+import { createOrder, getOrderById, getOrders, verifyOrder } from "../services/order.api"
+import { setCurrentOrder, setError, setLoading, setOrders } from "../state/orderSlice"
 
-const useOrder = ()=>{
+const useOrder = () => {
 
-    const handleCreateOrder = async (addressId)=>{
+    const dispatch = useDispatch()
+
+    const handleCreateOrder = async (addressId) => {
         const result = await createOrder(addressId)
         return result.order
     }
-    const handleVerifyOrder = async ({razorpay_order_id, razorpay_payment_id, razorpay_signature})=>{
-        const result = await verifyOrder({razorpay_order_id, razorpay_payment_id, razorpay_signature})
+    const handleVerifyOrder = async ({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
+        const result = await verifyOrder({ razorpay_order_id, razorpay_payment_id, razorpay_signature })
         return result.success
     }
 
-    return{
-        handleCreateOrder, 
-        handleVerifyOrder
+    const handleGetOrders = async ()=>{
+        dispatch(setLoading(true))
+        try{
+            const result = await getOrders()
+            dispatch(setOrders(result.orders))
+        }catch(err){
+            console.log(err)
+            dispatch(setError(err.message))
+        }finally{
+            dispatch(setLoading(false))
+        }
+
+    }
+    const handleGetOrderById = async (orderId)=>{
+        dispatch(setLoading(true))
+        try{
+            const result = await getOrderById(orderId)
+            dispatch(setCurrentOrder(result.order))
+        }catch(err){
+            console.log(err)
+            dispatch(setError(err.message))
+        }finally{
+            dispatch(setLoading(false))
+        }
+
+    }
+
+    return {
+        handleCreateOrder,
+        handleVerifyOrder,
+        handleGetOrderById,
+        handleGetOrders
     }
 }
 

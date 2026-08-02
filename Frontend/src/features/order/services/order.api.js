@@ -16,3 +16,12 @@ export const verifyOrder = async ({razorpay_order_id, razorpay_payment_id, razor
     )
     return response.data
 }
+
+export const getOrders = async()=>{
+    const response = await orderApiInstance.get("/getOrders")
+    return response.data
+}
+export const getOrderById = async(orderId)=>{
+    const response = await orderApiInstance.get(`/${orderId}`)
+    return response.data
+}

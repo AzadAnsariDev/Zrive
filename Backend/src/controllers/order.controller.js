@@ -175,7 +175,7 @@ export const webhook = async (req, res) => {
 
     const expectedSignature = crypto
       .createHmac("sha256", config.RAZORPAY_WEBHOOK_SECRET)
-      .update(req.body) 
+      .update(req.body)
       .digest("hex");
     console.log("Webhook:", webhookSignature);
     console.log("Expected:", expectedSignature);
@@ -185,7 +185,7 @@ export const webhook = async (req, res) => {
     }
 
     const payload = JSON.parse(req.body.toString());
-    const event = payload.event; 
+    const event = payload.event;
     const razorpayOrderId = payload.payload.payment.entity.order_id;
 
     const payment = await paymentModel.findOne({ "razorpay.orderId": razorpayOrderId });
@@ -201,6 +201,11 @@ export const webhook = async (req, res) => {
       await orderModel.updateMany(
         { payment: payment._id },
         { $set: { orderStatus: "placed" } }
+      );
+
+      await cartModel.findOneAndUpdate(
+        { user: req.user.id },
+        { $set: { items: [] } }
       );
 
     } else if (event === "payment.failed") {
@@ -220,3 +225,33 @@ export const webhook = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+export const getOrders = async (req, res) => {
+  const orders = await orderModel.find({ user: req.user.id }).sort({ createdAt: -1 });
+
+  res.status(200).json({
+    message: orders.length ? "Orders fetched successfully" : "No orders found",
+    success: true,
+    orders
+  });
+};
+
+export const getOrderById = async (req, res)=>{
+
+  const { orderId } = req.params
+
+  const order = await orderModel.findOne({_id: orderId, user: req.user.id})
+
+  if(!order){
+    return res.status(200).json({
+      message : "No order found",
+      success: false
+    })
+  }
+
+  res.status(200).json({
+    message: "Order fetched successfully",
+    success: true,
+    order
+  })
+}

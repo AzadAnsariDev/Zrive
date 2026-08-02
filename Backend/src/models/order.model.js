@@ -57,7 +57,8 @@ const orderSchema = new mongoose.Schema({
         phone: { type: String, required: true },
         addressType: { type: String, enum: ["Home", "Work", "Other"] }
     }
-})
+},
+{timestamps: true })
 
 const orderModel = mongoose.model("orders", orderSchema)
 

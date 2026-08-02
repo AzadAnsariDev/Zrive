@@ -13,6 +13,8 @@ import AddVariant from '../features/product/pages/SellerProductDetail'
 import Cart from '../features/cart/pages/Cart'
 import OrderPlaced from '../features/order/pages/OrderPlaced'
 import Address from '../features/address/pages/Address'
+import AllOrders from '../features/order/pages/AllOrders'
+import OrderDetail from '../features/order/pages/OrderDetail'
 
 
 
@@ -25,14 +27,15 @@ const router = createBrowserRouter([
         { path: 'categories', element: <div>Categories page</div> },
         { path: 'new-arrivals', element: <div>New Arrivals page</div> },  // ← add
         { path: 'cart', element: <Cart /> },
-        { path: 'orders', element: <div>Orders page</div> },
         { path: 'sale', element: <div>Sale page</div> },  // ← add
         { path: 'profile', element: <div>Profile page</div> },
         { path: 'wishlist', element: <div>Wishlist page</div> },
         { path: 'all-products', element: <AllProducts /> },
         { path: 'product/:productId', element: <SingleProduct /> },
-        { path: 'order-success/:orderId', element: <Protected>  <OrderPlaced /> </Protected> },
+        { path: 'order-success/', element: <Protected>  <OrderPlaced /> </Protected> },
         { path: 'address', element:<Protected> <Address /> </Protected>  },
+        { path: 'orders', element:<Protected> <AllOrders /> </Protected>  },
+        { path: 'orders/:orderId', element:<Protected> <OrderDetail /> </Protected>  },
 
     ],
 },
