@@ -1,26 +1,37 @@
 import mongoose from "mongoose";
-import { createRazorpayOrder } from "../services/razorpay.service.js";
+import {
+  createRazorpayOrder,
+  createRefund,
+} from "../services/razorpay.service.js";
 import { getCartDetails } from "./cart.controller.js";
 import paymentModel from "../models/payment.model.js";
-import { validatePaymentVerification } from 'razorpay/dist/utils/razorpay-utils.js'
+import { validatePaymentVerification } from "razorpay/dist/utils/razorpay-utils.js";
 import config from "../config/config.js";
 import addressModel from "../models/address.model.js";
 import orderModel from "../models/order.model.js";
 import cartModel from "../models/cart.model.js";
-import crypto from 'crypto'
+import crypto from "crypto";
+import orderRouter from "../routes/order.route.js";
 
 export const createOrder = async (req, res) => {
   try {
-    const { addressId } = req.body
+    const { addressId } = req.body;
 
     if (!addressId) {
-      return res.status(400).json({ success: false, message: "Address is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Address is required" });
     }
 
-    const address = await addressModel.findOne({ _id: addressId, user: req.user.id })
+    const address = await addressModel.findOne({
+      _id: addressId,
+      user: req.user.id,
+    });
 
     if (!address) {
-      return res.status(404).json({ success: false, message: "Address not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Address not found" });
     }
 
     const shippingAddressSnapshot = {
@@ -55,12 +66,12 @@ export const createOrder = async (req, res) => {
       user: req.user.id,
       price: {
         amount: cart.totalPrice,
-        currency: cart.currency
+        currency: cart.currency,
       },
       razorpay: {
-        orderId: razorpayOrder.id
-      }
-    })
+        orderId: razorpayOrder.id,
+      },
+    });
 
     const sellerGroups = {};
     for (const item of cart.items) {
@@ -84,7 +95,7 @@ export const createOrder = async (req, res) => {
 
       const sellerAmount = items.reduce(
         (sum, item) => sum + item.unitPrice * item.quantity,
-        0
+        0,
       );
 
       const order = await orderModel.create({
@@ -119,54 +130,62 @@ export const createOrder = async (req, res) => {
 };
 
 export const verifyOrder = async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+    req.body;
 
-  const payment = await paymentModel.findOne({ "razorpay.orderId": razorpay_order_id })
+  const payment = await paymentModel.findOne({
+    "razorpay.orderId": razorpay_order_id,
+  });
 
   if (!payment) {
-    return res.status(404).json({ message: "Payment record not found", success: false })
+    return res
+      .status(404)
+      .json({ message: "Payment record not found", success: false });
   }
 
   if (payment.status === "paid") {
-    return res.status(200).json({ message: "Payment already processed", success: true })
+    return res
+      .status(200)
+      .json({ message: "Payment already processed", success: true });
   }
 
-  const isValid = validatePaymentVerification({
-    order_id: razorpay_order_id,
-    payment_id: razorpay_payment_id
-  },
+  const isValid = validatePaymentVerification(
+    {
+      order_id: razorpay_order_id,
+      payment_id: razorpay_payment_id,
+    },
     razorpay_signature,
-    config.RAZORPAY_KEY_SECRET
-  )
+    config.RAZORPAY_KEY_SECRET,
+  );
 
   if (!isValid) {
     return res.status(400).json({
       message: "Invalid payment verification data provided",
-      success: false
-    })
+      success: false,
+    });
   }
 
   // Success path logic remains clean
-  payment.status = "paid"
-  payment.razorpay.payment_id = razorpay_payment_id
-  payment.razorpay.signature = razorpay_signature
-  await payment.save()
+  payment.status = "paid";
+  payment.razorpay.payment_id = razorpay_payment_id;
+  payment.razorpay.signature = razorpay_signature;
+  await payment.save();
 
   await orderModel.updateMany(
     { payment: payment._id },
-    { $set: { orderStatus: "placed" } }
+    { $set: { orderStatus: "placed" } },
   );
 
   await cartModel.findOneAndUpdate(
     { user: req.user.id },
-    { $set: { items: [] } }
+    { $set: { items: [] } },
   );
 
   return res.status(200).json({
     message: "Payment verified successfully",
-    success: true
-  })
-}
+    success: true,
+  });
+};
 
 export const webhook = async (req, res) => {
   console.log("Webhook Hit");
@@ -181,14 +200,18 @@ export const webhook = async (req, res) => {
     console.log("Expected:", expectedSignature);
 
     if (expectedSignature !== webhookSignature) {
-      return res.status(400).json({ success: false, message: "Invalid webhook signature" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid webhook signature" });
     }
 
     const payload = JSON.parse(req.body.toString());
     const event = payload.event;
     const razorpayOrderId = payload.payload.payment.entity.order_id;
 
-    const payment = await paymentModel.findOne({ "razorpay.orderId": razorpayOrderId });
+    const payment = await paymentModel.findOne({
+      "razorpay.orderId": razorpayOrderId,
+    });
     console.log(payment);
     if (!payment || payment.status !== "pending") {
       return res.status(200).json({ success: true });
@@ -200,26 +223,24 @@ export const webhook = async (req, res) => {
 
       await orderModel.updateMany(
         { payment: payment._id },
-        { $set: { orderStatus: "placed" } }
+        { $set: { orderStatus: "placed" } },
       );
 
       await cartModel.findOneAndUpdate(
         { user: req.user.id },
-        { $set: { items: [] } }
+        { $set: { items: [] } },
       );
-
     } else if (event === "payment.failed") {
       payment.status = "failed";
       await payment.save();
 
       await orderModel.updateMany(
         { payment: payment._id },
-        { $set: { orderStatus: "cancelled" } }
+        { $set: { orderStatus: "cancelled" } },
       );
     }
 
     return res.status(200).json({ success: true });
-
   } catch (err) {
     console.error("Webhook error:", err);
     return res.status(500).json({ success: false, message: err.message });
@@ -227,31 +248,116 @@ export const webhook = async (req, res) => {
 };
 
 export const getOrders = async (req, res) => {
-  const orders = await orderModel.find({ user: req.user.id }).sort({ createdAt: -1 });
+  const orders = await orderModel
+    .find({ user: req.user.id })
+    .sort({ createdAt: -1 });
 
   res.status(200).json({
     message: orders.length ? "Orders fetched successfully" : "No orders found",
     success: true,
-    orders
+    orders,
   });
 };
 
-export const getOrderById = async (req, res)=>{
+export const getOrderById = async (req, res) => {
+  const { orderId } = req.params;
 
-  const { orderId } = req.params
+  const order = await orderModel.findOne({ _id: orderId, user: req.user.id });
 
-  const order = await orderModel.findOne({_id: orderId, user: req.user.id})
-
-  if(!order){
+  if (!order) {
     return res.status(200).json({
-      message : "No order found",
-      success: false
-    })
+      message: "No order found",
+      success: false,
+    });
   }
 
   res.status(200).json({
     message: "Order fetched successfully",
     success: true,
-    order
-  })
-}
+    order,
+  });
+};
+
+export const cancelOrder = async (req, res) => {
+  const { orderId } = req.params;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const order = await orderModel
+      .findOneAndUpdate(
+        {
+          _id: orderId,
+          orderStatus: "placed",
+          cancelInProgress: { $ne: true },
+        },
+        { $set: { cancelInProgress: true } },
+        { session, new: true },
+      )
+      .populate("payment");
+
+    if (!order) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.user.toString() !== req.user.id.toString()) {
+      await session.abortTransaction();
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    if (order.orderStatus !== "placed") {
+      await session.abortTransaction();
+      return res.status(400).json({
+        message: "This order can no longer be cancelled",
+        success: false,
+      });
+    }
+
+    const payment = order.payment;
+    const refundAmount = order.sellerAmount.amount;
+
+    const refund = await createRefund({
+      paymentId: payment.razorpay.payment_id,
+      amount: refundAmount * 100,
+      notes: { orderId: order._id.toString() },
+    });
+
+    order.orderStatus = "cancelled";
+    order.cancelInProgress = false; 
+    order.cancelledAt = new Date();
+    order.refund = {
+      refundId: refund.id,
+      amount: refundAmount,
+      status: "initiated",
+      initiatedAt: new Date(),
+    };
+    await order.save({ session });
+
+    payment.refunds.push({
+      orderId: order._id,
+      refundId: refund.id,
+      amount: refundAmount,
+      status: "initiated",
+    });
+    payment.refundedAmount = (payment.refundedAmount || 0) + refundAmount;
+
+    payment.status =
+      payment.refundedAmount >= payment.price.amount
+        ? "refunded"
+        : "partially_refunded";
+
+    await payment.save({ session });
+
+    await session.commitTransaction();
+
+    return res.status(200).json({ message: "Order cancelled", order });
+  } catch (err) {
+    await session.abortTransaction();
+    console.error(err);
+    return res.status(500).json({ message: "Cancellation failed" });
+  } finally {
+    session.endSession();
+  }
+};

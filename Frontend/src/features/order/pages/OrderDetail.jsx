@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useSelector } from "react-redux";
 import {
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import useOrder from "../hook/useOrder";
+import CancelOrderModal from "../components/CancelOrderModal";
 
 // ── Status → hero badge + note ─────────────────────────────
 const STATUS_CONFIG = {
@@ -45,10 +46,13 @@ const formatDate = (iso) =>
 const OrderDetail = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const { handleGetOrderById } = useOrder();
+  const { handleGetOrderById, handleCancelOrder } = useOrder();
 
   const order = useSelector((state) => state.order.currentOrder);
   const loading = useSelector((state) => state.order.loading);
+
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     handleGetOrderById(orderId);
@@ -63,6 +67,18 @@ const OrderDetail = () => {
   }
 
   if (!order) return null;
+
+  const onConfirmCancel = async () => {
+    setCancelling(true);
+    const result = await handleCancelOrder(order._id);
+    setCancelling(false);
+    setShowCancelModal(false);
+    if (result.success) {
+      toast.success("Order cancelled");
+    } else {
+      toast.error(result.error || "Could not cancel order");
+    }
+  };
 
   const config = STATUS_CONFIG[order.orderStatus] || STATUS_CONFIG.placed;
   const items = order.orderItems || [];
@@ -186,9 +202,33 @@ const OrderDetail = () => {
           {isTerminal ? (
             <div className="flex items-start gap-3 rounded-lg bg-error/5 border border-error/20 p-4">
               <XCircle size={18} className="text-error shrink-0 mt-0.5" strokeWidth={2} />
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-ink">{config.label}</p>
                 <p className="text-xs text-ink-soft mt-0.5">{config.note}</p>
+
+                {order.orderStatus === "cancelled" && order.refund?.refundId && (
+                  <div className="mt-4 pt-4 border-t border-error/10 space-y-2">
+                    <p className="text-xs tracking-[0.1em] uppercase text-ink-soft mb-2">
+                      Refund summary
+                    </p>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-ink-soft">Order Cancelled</span>
+                      <span className="text-ink">{formatDate(order.cancelledAt)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-ink-soft">
+                        Refund {order.refund.status === "processed" ? "Successful" : "Initiated"}
+                      </span>
+                      <span className="text-ink">
+                        ₹{order.refund.amount?.toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-ink-soft">Reference ID</span>
+                      <span className="text-ink font-mono text-[11px]">{order.refund.refundId}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -296,6 +336,14 @@ const OrderDetail = () => {
 
         {/* ── Actions ────────────────────────────────── */}
         <div className="od-in space-y-4" style={{ animationDelay: "240ms" }}>
+          {order.orderStatus === "placed" && (
+            <button
+              onClick={() => setShowCancelModal(true)}
+              className="w-full py-4 rounded-full border border-error/30 text-error text-xs tracking-[0.15em] uppercase font-medium hover:bg-error/5 transition-colors duration-200"
+            >
+              Cancel order
+            </button>
+          )}
           <button
             onClick={() => toast("Invoice download coming soon")}
             className="w-full py-4 rounded-full border border-border text-ink text-xs tracking-[0.15em] uppercase font-medium hover:bg-cream-dark transition-colors duration-200"
@@ -310,6 +358,13 @@ const OrderDetail = () => {
           </a>
         </div>
       </div>
+
+      <CancelOrderModal
+        open={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={onConfirmCancel}
+        loading={cancelling}
+      />
     </div>
   );
 };

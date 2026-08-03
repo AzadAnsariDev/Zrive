@@ -1,55 +1,92 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useSelector } from "react-redux";
-import { CheckCircle2, Truck, Clock, XCircle, ChevronRight, Inbox } from "lucide-react";
+import {
+  CheckCircle2,
+  Truck,
+  Clock,
+  XCircle,
+  ChevronRight,
+  Inbox,
+} from "lucide-react";
 import useOrder from "../hook/useOrder";
 
 // ── Status → badge config ──────────────────────────────────
 const STATUS_CONFIG = {
   pending_payment: { icon: Clock, tone: "pending", label: "Awaiting payment" },
-  placed:          { icon: CheckCircle2, tone: "neutral", label: "Confirmed" },
-  shipped:         { icon: Truck, tone: "success", label: "Shipped" },
-  delivered:       { icon: CheckCircle2, tone: "neutral", label: "Delivered" },
-  cancelled:       { icon: XCircle, tone: "error", label: "Cancelled" },
-  failed:          { icon: XCircle, tone: "error", label: "Payment failed" },
+  placed: { icon: CheckCircle2, tone: "neutral", label: "Confirmed" },
+  shipped: { icon: Truck, tone: "success", label: "Shipped" },
+  delivered: { icon: CheckCircle2, tone: "neutral", label: "Delivered" },
+  cancelled: { icon: XCircle, tone: "error", label: "Cancelled" },
+  failed: { icon: XCircle, tone: "error", label: "Payment failed" },
+  partially_cancelled: {
+    icon: XCircle,
+    tone: "pending",
+    label: "Partially Cancelled",
+  },
 };
 
 const TONE_CLASSES = {
   neutral: "bg-cream-dark text-ink-soft",
   success: "bg-success/10 text-success",
   pending: "bg-gold/10 text-gold-deep",
-  error:   "bg-error/10 text-error",
+  error: "bg-error/10 text-error",
 };
 
 // Progression order — jab ek group ke andar alag-alag status ho, sabse "kam advanced" wala dikhao
-const STATUS_PRIORITY = { pending_payment: 0, failed: 0, cancelled: 0, placed: 1, shipped: 2, delivered: 3 };
+const STATUS_PRIORITY = {
+  pending_payment: 0,
+  failed: 0,
+  cancelled: 0,
+  placed: 1,
+  shipped: 2,
+  delivered: 3,
+};
 
 // ── Filter pills ─────────────────────────────────────────
 const FILTERS = [
-  { key: "all",       label: "All",       match: () => true },
-  { key: "ongoing",   label: "Ongoing",   match: (s) => ["pending_payment", "placed", "shipped"].includes(s) },
+  { key: "all", label: "All", match: () => true },
+  {
+    key: "ongoing",
+    label: "Ongoing",
+    match: (s) =>
+      ["pending_payment", "placed", "shipped", "partially_cancelled"].includes(
+        s,
+      ),
+  },
   { key: "delivered", label: "Delivered", match: (s) => s === "delivered" },
-  { key: "cancelled", label: "Cancelled", match: (s) => ["cancelled", "failed"].includes(s) },
+  {
+    key: "cancelled",
+    label: "Cancelled",
+    match: (s) => ["cancelled", "failed"].includes(s),
+  },
 ];
 
 const formatDate = (iso, opts) => {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(
     "en-IN",
-    opts || { day: "numeric", month: "short", year: "numeric" }
+    opts || { day: "numeric", month: "short", year: "numeric" },
   );
 };
 
 // ── Grouping helpers ─────────────────────────────────────
 const getPaymentId = (order) =>
-  order.payment && typeof order.payment === "object" ? order.payment._id : order.payment;
+  order.payment && typeof order.payment === "object"
+    ? order.payment._id
+    : order.payment;
 
 const getGroupStatus = (group) => {
   const statuses = group.map((o) => o.orderStatus);
   const unique = [...new Set(statuses)];
   if (unique.length === 1) return unique[0];
+
+  const hasCancelled = statuses.includes("cancelled");
+  const hasActive = statuses.some((s) => s !== "cancelled");
+  if (hasCancelled && hasActive) return "partially_cancelled";
+
   return statuses.reduce((min, s) =>
-    STATUS_PRIORITY[s] < STATUS_PRIORITY[min] ? s : min
+    STATUS_PRIORITY[s] < STATUS_PRIORITY[min] ? s : min,
   );
 };
 
@@ -63,13 +100,33 @@ const groupOrdersByPayment = (orders) => {
 
   return Array.from(map.values()).map((group) => {
     const allItems = group.flatMap((o) => o.orderItems || []);
+    const originalTotal = group.reduce(
+      (sum, o) => sum + (o.sellerAmount?.amount || 0),
+      0,
+    );
+    const activeTotal = group
+      .filter((o) => o.orderStatus !== "cancelled")
+      .reduce((sum, o) => sum + (o.sellerAmount?.amount || 0), 0);
+
+    const cancelledOrders = group.filter((o) => o.orderStatus === "cancelled");
+    const refundStatus = cancelledOrders.length
+      ? cancelledOrders.every((o) => o.refund?.status === "processed")
+        ? "processed"
+        : cancelledOrders.some((o) => o.refund?.status === "failed")
+          ? "failed"
+          : "initiated"
+      : null;
+
     return {
       paymentId: getPaymentId(group[0]) || group[0]._id,
       orders: group,
       isMultiSeller: group.length > 1,
       primaryItem: allItems[0],
       extraCount: allItems.length - 1,
-      total: group.reduce((sum, o) => sum + (o.sellerAmount?.amount || 0), 0),
+      total: originalTotal,
+      activeTotal,
+      refundStatus,
+      refundedTotal: originalTotal - activeTotal,
       status: getGroupStatus(group),
       createdAt: group[0].createdAt,
     };
@@ -185,7 +242,11 @@ const AllOrders = () => {
         {/* ── Empty state ────────────────────────────── */}
         {!loading && filteredGroups.length === 0 && (
           <div className="border border-dashed border-border rounded-2xl py-16 text-center">
-            <Inbox className="mx-auto mb-4 text-ink-soft" size={28} strokeWidth={1.5} />
+            <Inbox
+              className="mx-auto mb-4 text-ink-soft"
+              size={28}
+              strokeWidth={1.5}
+            />
             <p className="text-ink-soft mb-4">
               {orders.length === 0 ? "No orders yet." : "Nothing here."}
             </p>
@@ -213,7 +274,10 @@ const AllOrders = () => {
                 className="ord-card cursor-pointer rounded-2xl bg-surface border border-border/60 shadow-[0_1px_2px_rgba(24,22,15,0.04)] p-5 transition-all duration-300 hover:border-gold/40 hover:-translate-y-0.5"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <StatusBadge status={g.status} updatedAt={g.orders[0].updatedAt} />
+                  <StatusBadge
+                    status={g.status}
+                    updatedAt={g.orders[0].updatedAt}
+                  />
                   <span className="text-xs text-ink-soft tracking-wide">
                     ID: #ZR-{g.paymentId.slice(-5).toUpperCase()}
                   </span>
@@ -230,7 +294,10 @@ const AllOrders = () => {
                       <p className="font-display text-lg text-ink leading-snug truncate">
                         {g.primaryItem?.title}
                         {g.extraCount > 0 && (
-                          <span className="text-ink-soft text-sm font-sans"> +{g.extraCount} more</span>
+                          <span className="text-ink-soft text-sm font-sans">
+                            {" "}
+                            +{g.extraCount} more
+                          </span>
                         )}
                       </p>
                       <p className="text-sm text-ink-soft mt-1">
@@ -238,9 +305,32 @@ const AllOrders = () => {
                       </p>
                     </div>
                     <div className="flex items-center justify-between mt-2">
-                      <p className="font-display text-xl text-ink">
-                        ₹{g.total.toLocaleString("en-IN")}
-                      </p>
+                      <div>
+                        {g.refundedTotal > 0 ? (
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-sm text-ink-soft/50 line-through">
+                              ₹{g.total.toLocaleString("en-IN")}
+                            </p>
+                            <p className="font-display text-xl text-ink">
+                              ₹{g.activeTotal.toLocaleString("en-IN")}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="font-display text-xl text-ink">
+                            ₹{g.total.toLocaleString("en-IN")}
+                          </p>
+                        )}
+                        {g.refundedTotal > 0 && (
+                          <p className="text-[11px] text-error mt-0.5">
+                            ₹{g.refundedTotal.toLocaleString("en-IN")}{" "}
+                            {g.refundStatus === "processed"
+                              ? "refunded"
+                              : g.refundStatus === "failed"
+                                ? "refund failed"
+                                : "refund initiated"}
+                          </p>
+                        )}
+                      </div>
                       <ChevronRight size={18} className="text-ink-soft" />
                     </div>
                   </div>

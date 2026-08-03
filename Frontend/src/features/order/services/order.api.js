@@ -25,3 +25,8 @@ export const getOrderById = async(orderId)=>{
     const response = await orderApiInstance.get(`/${orderId}`)
     return response.data
 }
+
+export const cancelOrder = async (orderId) => {
+  const response = await orderApiInstance.patch(`/${orderId}/cancel`)
+  return response.data
+}
