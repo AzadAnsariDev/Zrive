@@ -17,11 +17,11 @@ import useOrder from "../hook/useOrder";
 // ── Status → hero badge + note ─────────────────────────────
 const STATUS_CONFIG = {
   pending_payment: { label: "Awaiting payment", note: "We're waiting for your payment to confirm.", icon: Clock, tone: "pending" },
-  placed:          { label: "Confirmed",        note: "Your order is being prepared.",              icon: Check, tone: "success" },
-  shipped:         { label: "Shipped",          note: "Your order is on its way.",                   icon: Truck, tone: "info" },
-  delivered:       { label: "Delivered",        note: "This order has been delivered.",              icon: Package, tone: "success" },
-  cancelled:       { label: "Cancelled",        note: "This order was cancelled.",                   icon: XCircle, tone: "error" },
-  failed:          { label: "Payment failed",   note: "The payment for this order didn't go through.", icon: XCircle, tone: "error" },
+  placed: { label: "Confirmed", note: "Your order is being prepared.", icon: Check, tone: "success" },
+  shipped: { label: "Shipped", note: "Your order is on its way.", icon: Truck, tone: "info" },
+  delivered: { label: "Delivered", note: "This order has been delivered.", icon: Package, tone: "success" },
+  cancelled: { label: "Cancelled", note: "This order was cancelled.", icon: XCircle, tone: "error" },
+  failed: { label: "Payment failed", note: "The payment for this order didn't go through.", icon: XCircle, tone: "error" },
 };
 
 // ── Delivery progress steps ─────────────────────────────────
@@ -34,12 +34,12 @@ const STEPS = [
 const formatDate = (iso) =>
   iso
     ? new Date(iso).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
     : "—";
 
 const OrderDetail = () => {
@@ -85,47 +85,49 @@ const OrderDetail = () => {
       `}</style>
 
       {/* ── Hero image ─────────────────────────────────── */}
-      <div className="relative w-full h-72 md:h-80 overflow-hidden">
-        <img
-          src={heroItem?.images?.[0]?.url}
-          alt={heroItem?.title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal/85 via-charcoal/10 to-charcoal/30" />
+      <div className="mx-auto max-w-2xl px-6 pt-4">
+        <div className="relative w-full aspect-[4/5] sm:aspect-[16/10] rounded-2xl overflow-hidden">
+          <img
+            src={heroItem?.images?.[0]?.url}
+            alt={heroItem?.title}
+            className="w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-charcoal/85 via-charcoal/10 to-charcoal/30" />
 
-        {/* top bar */}
-        <div className="absolute top-0 inset-x-0 flex items-center justify-between px-5 pt-5">
-          <button
-            onClick={() => navigate("/orders")}
-            className="w-9 h-9 rounded-full bg-cream/90 backdrop-blur flex items-center justify-center hover:bg-cream transition-colors"
-            aria-label="Back to orders"
-          >
-            <ArrowLeft size={17} strokeWidth={1.75} className="text-ink" />
-          </button>
-          <Link
-            to="/cart"
-            className="w-9 h-9 rounded-full bg-cream/90 backdrop-blur flex items-center justify-center hover:bg-cream transition-colors"
-            aria-label="Cart"
-          >
-            <ShoppingBag size={16} strokeWidth={1.75} className="text-ink" />
-          </Link>
-        </div>
-
-        {/* bottom overlay content */}
-        <div className="absolute bottom-0 inset-x-0 px-6 pb-6">
-          <div className="inline-block bg-cream/95 backdrop-blur rounded-md px-3.5 py-2 mb-3">
-            <p className="text-[10px] tracking-[0.15em] text-ink-soft uppercase mb-0.5">
-              Order reference
-            </p>
-            <p className="font-display text-base text-ink">
-              #ZR-{order._id.slice(-5).toUpperCase()}
-            </p>
+          {/* top bar */}
+          <div className="absolute top-0 inset-x-0 flex items-center justify-between px-5 pt-5">
+            <button
+              onClick={() => navigate("/orders")}
+              className="w-9 h-9 rounded-full bg-cream/90 backdrop-blur flex items-center justify-center hover:bg-cream transition-colors"
+              aria-label="Back to orders"
+            >
+              <ArrowLeft size={17} strokeWidth={1.75} className="text-ink" />
+            </button>
+            <Link
+              to="/cart"
+              className="w-9 h-9 rounded-full bg-cream/90 backdrop-blur flex items-center justify-center hover:bg-cream transition-colors"
+              aria-label="Cart"
+            >
+              <ShoppingBag size={16} strokeWidth={1.75} className="text-ink" />
+            </Link>
           </div>
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-charcoal text-cream text-[11px] font-medium tracking-[0.1em] uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-cream" />
-              {config.label}
-            </span>
+
+          {/* bottom overlay content */}
+          <div className="absolute bottom-0 inset-x-0 px-6 pb-6">
+            <div className="inline-block bg-cream/95 backdrop-blur rounded-md px-3.5 py-2 mb-3">
+              <p className="text-[10px] tracking-[0.15em] text-ink-soft uppercase mb-0.5">
+                Order reference
+              </p>
+              <p className="font-display text-base text-ink">
+                #ZR-{order._id.slice(-5).toUpperCase()}
+              </p>
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-charcoal text-cream text-[11px] font-medium tracking-[0.1em] uppercase">
+                <span className="w-1.5 h-1.5 rounded-full bg-cream" />
+                {config.label}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -201,21 +203,18 @@ const OrderDetail = () => {
                   <div key={step.key} className="relative flex gap-4 pb-8 last:pb-0">
                     {!isLast && (
                       <span
-                        className={`absolute left-[7px] top-4 w-px h-full ${
-                          idx < currentStepIndex ? "bg-ink" : "bg-border"
-                        }`}
+                        className={`absolute left-[7px] top-4 w-px h-full ${idx < currentStepIndex ? "bg-ink" : "bg-border"
+                          }`}
                       />
                     )}
                     <span
-                      className={`relative shrink-0 w-3.5 h-3.5 rounded-full mt-0.5 ${
-                        reached ? "bg-ink" : "bg-cream-dark border border-border"
-                      }`}
+                      className={`relative shrink-0 w-3.5 h-3.5 rounded-full mt-0.5 ${reached ? "bg-ink" : "bg-cream-dark border border-border"
+                        }`}
                     />
                     <div className="-mt-0.5">
                       <p
-                        className={`text-xs font-semibold tracking-[0.1em] uppercase ${
-                          reached ? "text-ink" : "text-ink-soft/60"
-                        }`}
+                        className={`text-xs font-semibold tracking-[0.1em] uppercase ${reached ? "text-ink" : "text-ink-soft/60"
+                          }`}
                       >
                         {step.label}
                       </p>

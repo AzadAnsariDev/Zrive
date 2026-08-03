@@ -153,7 +153,7 @@ const Address = () => {
           const isPaymentDone = await handleVerifyOrder(response);
           setCheckingOut(false);
           if (isPaymentDone) {
-            navigate(`/order-success/${response.razorpay_order_id}`);
+            navigate(`/order-success`);
           }else {
           toast.error("Payment verification failed");
         }

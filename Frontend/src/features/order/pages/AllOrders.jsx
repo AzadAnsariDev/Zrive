@@ -21,6 +21,9 @@ const TONE_CLASSES = {
   error:   "bg-error/10 text-error",
 };
 
+// Progression order — jab ek group ke andar alag-alag status ho, sabse "kam advanced" wala dikhao
+const STATUS_PRIORITY = { pending_payment: 0, failed: 0, cancelled: 0, placed: 1, shipped: 2, delivered: 3 };
+
 // ── Filter pills ─────────────────────────────────────────
 const FILTERS = [
   { key: "all",       label: "All",       match: () => true },
@@ -37,12 +40,48 @@ const formatDate = (iso, opts) => {
   );
 };
 
-const StatusBadge = ({ order }) => {
-  const config = STATUS_CONFIG[order.orderStatus] || STATUS_CONFIG.placed;
+// ── Grouping helpers ─────────────────────────────────────
+const getPaymentId = (order) =>
+  order.payment && typeof order.payment === "object" ? order.payment._id : order.payment;
+
+const getGroupStatus = (group) => {
+  const statuses = group.map((o) => o.orderStatus);
+  const unique = [...new Set(statuses)];
+  if (unique.length === 1) return unique[0];
+  return statuses.reduce((min, s) =>
+    STATUS_PRIORITY[s] < STATUS_PRIORITY[min] ? s : min
+  );
+};
+
+const groupOrdersByPayment = (orders) => {
+  const map = new Map();
+  for (const order of orders) {
+    const key = getPaymentId(order) || order._id; // fallback agar payment kabhi missing ho
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(order);
+  }
+
+  return Array.from(map.values()).map((group) => {
+    const allItems = group.flatMap((o) => o.orderItems || []);
+    return {
+      paymentId: getPaymentId(group[0]) || group[0]._id,
+      orders: group,
+      isMultiSeller: group.length > 1,
+      primaryItem: allItems[0],
+      extraCount: allItems.length - 1,
+      total: group.reduce((sum, o) => sum + (o.sellerAmount?.amount || 0), 0),
+      status: getGroupStatus(group),
+      createdAt: group[0].createdAt,
+    };
+  });
+};
+
+const StatusBadge = ({ status, updatedAt }) => {
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.placed;
   const Icon = config.icon;
   const label =
-    order.orderStatus === "delivered"
-      ? `Delivered on ${formatDate(order.updatedAt, { day: "numeric", month: "short" })}`
+    status === "delivered"
+      ? `Delivered on ${formatDate(updatedAt, { day: "numeric", month: "short" })}`
       : config.label;
 
   return (
@@ -83,10 +122,12 @@ const AllOrders = () => {
     handleGetOrders();
   }, []);
 
-  const filteredOrders = useMemo(() => {
+  const groupedOrders = useMemo(() => groupOrdersByPayment(orders), [orders]);
+
+  const filteredGroups = useMemo(() => {
     const filter = FILTERS.find((f) => f.key === activeFilter);
-    return orders.filter((o) => filter.match(o.orderStatus));
-  }, [orders, activeFilter]);
+    return groupedOrders.filter((g) => filter.match(g.status));
+  }, [groupedOrders, activeFilter]);
 
   return (
     <div className="min-h-screen bg-cream px-6 pt-6 pb-16 md:pt-8">
@@ -142,7 +183,7 @@ const AllOrders = () => {
         )}
 
         {/* ── Empty state ────────────────────────────── */}
-        {!loading && filteredOrders.length === 0 && (
+        {!loading && filteredGroups.length === 0 && (
           <div className="border border-dashed border-border rounded-2xl py-16 text-center">
             <Inbox className="mx-auto mb-4 text-ink-soft" size={28} strokeWidth={1.5} />
             <p className="text-ink-soft mb-4">
@@ -158,56 +199,54 @@ const AllOrders = () => {
         )}
 
         {/* ── Order cards ────────────────────────────── */}
-        {!loading && filteredOrders.length > 0 && (
+        {!loading && filteredGroups.length > 0 && (
           <div className="space-y-5">
-            {filteredOrders.map((order, i) => {
-              const items = order.orderItems || [];
-              const primary = items[0];
-              const extraCount = items.length - 1;
+            {filteredGroups.map((g, i) => (
+              <div
+                key={g.paymentId}
+                onClick={() =>
+                  g.isMultiSeller
+                    ? navigate(`/orders/group/${g.paymentId}`)
+                    : navigate(`/orders/${g.orders[0]._id}`)
+                }
+                style={{ animationDelay: `${i * 60}ms` }}
+                className="ord-card cursor-pointer rounded-2xl bg-surface border border-border/60 shadow-[0_1px_2px_rgba(24,22,15,0.04)] p-5 transition-all duration-300 hover:border-gold/40 hover:-translate-y-0.5"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <StatusBadge status={g.status} updatedAt={g.orders[0].updatedAt} />
+                  <span className="text-xs text-ink-soft tracking-wide">
+                    ID: #ZR-{g.paymentId.slice(-5).toUpperCase()}
+                  </span>
+                </div>
 
-              return (
-                <div
-                  key={order._id}
-                  onClick={() => navigate(`/orders/${order._id}`)}
-                  style={{ animationDelay: `${i * 60}ms` }}
-                  className="ord-card cursor-pointer rounded-2xl bg-surface border border-border/60 shadow-[0_1px_2px_rgba(24,22,15,0.04)] p-5 transition-all duration-300 hover:border-gold/40 hover:-translate-y-0.5"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <StatusBadge order={order} />
-                    <span className="text-xs text-ink-soft tracking-wide">
-                      ID: #ZR-{order._id.slice(-5).toUpperCase()}
-                    </span>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <img
-                      src={primary?.images?.[0]?.url}
-                      alt={primary?.title}
-                      className="w-24 h-24 rounded-xl object-cover shrink-0 border border-border/40"
-                    />
-                    <div className="flex-1 flex flex-col justify-between min-w-0">
-                      <div>
-                        <p className="font-display text-lg text-ink leading-snug truncate">
-                          {primary?.title}
-                          {extraCount > 0 && (
-                            <span className="text-ink-soft text-sm font-sans"> +{extraCount} more</span>
-                          )}
-                        </p>
-                        <p className="text-sm text-ink-soft mt-1">
-                          Purchased on {formatDate(order.createdAt)}
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <p className="font-display text-xl text-ink">
-                          ₹{order.sellerAmount?.amount?.toLocaleString("en-IN")}
-                        </p>
-                        <ChevronRight size={18} className="text-ink-soft" />
-                      </div>
+                <div className="flex gap-4">
+                  <img
+                    src={g.primaryItem?.images?.[0]?.url}
+                    alt={g.primaryItem?.title}
+                    className="w-24 h-24 rounded-xl object-cover shrink-0 border border-border/40"
+                  />
+                  <div className="flex-1 flex flex-col justify-between min-w-0">
+                    <div>
+                      <p className="font-display text-lg text-ink leading-snug truncate">
+                        {g.primaryItem?.title}
+                        {g.extraCount > 0 && (
+                          <span className="text-ink-soft text-sm font-sans"> +{g.extraCount} more</span>
+                        )}
+                      </p>
+                      <p className="text-sm text-ink-soft mt-1">
+                        Purchased on {formatDate(g.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="font-display text-xl text-ink">
+                        ₹{g.total.toLocaleString("en-IN")}
+                      </p>
+                      <ChevronRight size={18} className="text-ink-soft" />
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>
