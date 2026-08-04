@@ -143,12 +143,23 @@ export const verifyOrder = async (req, res) => {
       .json({ message: "Payment record not found", success: false });
   }
 
-  if (payment.status === "paid") {
-    return res
-      .status(200)
-      .json({ message: "Payment already processed", success: true });
-  }
+if (payment.status === "paid") {
 
+    if (!payment.razorpay.payment_id) {
+        payment.razorpay.payment_id = razorpay_payment_id;
+    }
+
+    if (!payment.razorpay.signature) {
+        payment.razorpay.signature = razorpay_signature;
+    }
+
+    await payment.save();
+
+    return res.status(200).json({
+        success: true,
+        message: "Payment already processed"
+    });
+}
   const isValid = validatePaymentVerification(
     {
       order_id: razorpay_order_id,
@@ -165,6 +176,7 @@ export const verifyOrder = async (req, res) => {
     });
   }
 
+  console.log("Setted all paymwnt");
   // Success path logic remains clean
   payment.status = "paid";
   payment.razorpay.payment_id = razorpay_payment_id;
@@ -207,6 +219,50 @@ export const webhook = async (req, res) => {
 
     const payload = JSON.parse(req.body.toString());
     const event = payload.event;
+
+    // ── Refund events — alag branch, kyunki payload me order_id nahi
+    // payment_id hota hai, aur payment.status yahan "pending" nahi hoga
+    if (event === "refund.processed" || event === "refund.failed") {
+      const refundEntity = payload.payload.refund.entity;
+      const razorpayRefundId = refundEntity.id; // e.g. rfnd_xxxxx
+
+      const payment = await paymentModel.findOne({
+        "refunds.refundId": razorpayRefundId,
+      });
+
+      if (!payment) {
+        console.log("Webhook: no payment found for refund", razorpayRefundId);
+        return res.status(200).json({ success: true });
+      }
+
+      const refundSub = payment.refunds.find(
+        (r) => r.refundId === razorpayRefundId,
+      );
+      if (!refundSub) return res.status(200).json({ success: true });
+
+      const newStatus = event === "refund.processed" ? "processed" : "failed";
+      refundSub.status = newStatus;
+
+      if (newStatus === "processed") {
+        payment.refundedAmount =
+          (payment.refundedAmount || 0) + refundSub.amount;
+        payment.status =
+          payment.refundedAmount >= payment.price.amount
+            ? "refunded"
+            : "partially_refunded";
+      }
+
+      await payment.save();
+
+      await orderModel.updateMany(
+        { payment: payment._id, "refund.refundId": razorpayRefundId },
+        { $set: { "refund.status": newStatus } },
+      );
+
+      return res.status(200).json({ success: true });
+    }
+
+    // ── Payment events (existing logic) ──────────────────────
     const razorpayOrderId = payload.payload.payment.entity.order_id;
 
     const payment = await paymentModel.findOne({
@@ -219,6 +275,7 @@ export const webhook = async (req, res) => {
 
     if (event === "payment.captured") {
       payment.status = "paid";
+      payment.razorpay.payment_id = payload.payload.payment.entity.id;
       await payment.save();
 
       await orderModel.updateMany(
@@ -226,8 +283,10 @@ export const webhook = async (req, res) => {
         { $set: { orderStatus: "placed" } },
       );
 
+     const order = await orderModel.findOne({ payment: payment._id });
+
       await cartModel.findOneAndUpdate(
-        { user: req.user.id },
+        { user: order.user },
         { $set: { items: [] } },
       );
     } else if (event === "payment.failed") {
@@ -318,6 +377,9 @@ export const cancelOrder = async (req, res) => {
     const payment = order.payment;
     const refundAmount = order.sellerAmount.amount;
 
+    console.log("Payment doc:", payment);
+    console.log("payment_id:", payment.razorpay?.payment_id);
+
     const refund = await createRefund({
       paymentId: payment.razorpay.payment_id,
       amount: refundAmount * 100,
@@ -325,7 +387,7 @@ export const cancelOrder = async (req, res) => {
     });
 
     order.orderStatus = "cancelled";
-    order.cancelInProgress = false; 
+    order.cancelInProgress = false;
     order.cancelledAt = new Date();
     order.refund = {
       refundId: refund.id,
