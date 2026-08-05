@@ -10,6 +10,7 @@ export const useAuth = () =>{
         dispatch(setLoading(true))
         try{
             const data = await register(email, contact, username, password, role)
+            dispatch(setUser(data.user))
             return data.user
         }catch(err){
             console.log(err)
@@ -23,6 +24,7 @@ export const useAuth = () =>{
         dispatch(setLoading(true))
         try{
             const data = await login(identifier, password)
+            dispatch(setUser(data.user))
             return data.user
         }catch(err){
             console.log(err)

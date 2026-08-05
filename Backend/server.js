@@ -1,6 +1,8 @@
 import config from './src/config/config.js'
 import { connectToDB } from './src/config/database.js'
 import app from './src/app.js'
+import { startOrderTimeoutCron } from './src/jobs/orderTimeout.job.js'
+import { startSellerUnbanCron } from './src/jobs/sellerUnban.job.js'
 
 const PORT = config.PORT || "5000"
 
@@ -10,6 +12,8 @@ const startServer = async()=>{
 
     app.listen(PORT, ()=>{
         console.log(`Server is running on port ${PORT}`)
+        startOrderTimeoutCron();
+        startSellerUnbanCron();
     })
 
 }

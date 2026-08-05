@@ -1,18 +1,11 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import priceSchema from "./price.schema.js";
 
 const orderItemSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    productId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "products",
-      required: true,
-    },
-    variantId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-    },
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: "products", required: true },
+    variantId: { type: mongoose.Schema.Types.ObjectId, required: true },
     quantity: { type: Number, required: true, min: 1 },
     price: { type: priceSchema, required: true },
     images: [{ url: String }],
@@ -22,42 +15,50 @@ const orderItemSchema = new mongoose.Schema(
 
 const orderSchema = new mongoose.Schema(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "users",
-      required: true,
-    },
-    seller: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "users",
-      required: true,
-    },
-    payment: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "payments",
-      required: true,
-    },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+    seller: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+    payment: { type: mongoose.Schema.Types.ObjectId, ref: "payments", required: true },
     orderItems: {
       type: [orderItemSchema],
       required: true,
       validate: [(arr) => arr.length > 0, "Order must have at least one item"],
     },
-    sellerAmount: {
-      type: priceSchema,
-      required: true,
-    },
+    sellerAmount: { type: priceSchema, required: true },
+
     orderStatus: {
       type: String,
       enum: [
         "pending_payment",
         "placed",
         "confirmed",
+        "packed",
         "shipped",
         "delivered",
         "cancelled",
       ],
       default: "pending_payment",
     },
+
+    // Seller confirmation tracking
+    confirmationStatus: {
+      type: String,
+      enum: ["pending", "accepted", "rejected", "expired"],
+      default: "pending",
+    },
+    confirmationDeadline: { type: Date },
+
+    // Cancellation reason
+    cancelReason: {
+      type: String,
+      enum: [
+        "out_of_stock",
+        "unable_to_fulfill",
+        "other",
+        "buyer_cancelled", 
+      ],
+    },
+    rejectionNote: { type: String },   // seller ka optional free-text note
+
     shippingAddress: {
       name: { type: String, required: true },
       line1: { type: String, required: true },
@@ -81,5 +82,4 @@ const orderSchema = new mongoose.Schema(
 );
 
 const orderModel = mongoose.model("orders", orderSchema);
-
 export default orderModel;

@@ -1,4 +1,5 @@
 import productModel from "../models/product.model.js"
+import userModel from "../models/user.model.js"
 import { uploadFiles } from "../services/storage.service.js"
 
 export const createProduct = async (req, res) => {
@@ -108,7 +109,12 @@ export const getSellerProduct = async (req, res) => {
 }
 
 export const getProducts = async (req, res) => {
-    const products = await productModel.find()
+    const bannedSellers = await userModel.find({ isBanned: true }).select("_id")
+    const bannedSellerIds = bannedSellers.map(s => s._id)
+
+    const products = await productModel.find({
+        seller: { $nin: bannedSellerIds }
+    })
 
     res.status(200).json({
         message: "All products fetched succesfully",
@@ -118,9 +124,16 @@ export const getProducts = async (req, res) => {
 
 export const getProductDetail = async (req, res) => {
     const { productId } = req.params
-    const product = await productModel.findById(productId)
+    const product = await productModel.findById(productId).populate("seller", "isBanned")
 
     if (!product) {
+        return res.status(404).json({
+            message: "Product Not Found",
+            success: false
+        })
+    }
+
+    if (product.seller?.isBanned) {
         return res.status(404).json({
             message: "Product Not Found",
             success: false

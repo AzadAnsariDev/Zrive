@@ -16,6 +16,7 @@ import Address from '../features/address/pages/Address'
 import AllOrders from '../features/order/pages/AllOrders'
 import OrderDetail from '../features/order/pages/OrderDetail'
 import OrderGroupItems from '../features/order/pages/OrderGroupItems'
+import SellerOrders from '../features/seller/pages/SellerOrders'
 
 
 
@@ -73,7 +74,7 @@ const router = createBrowserRouter([
             },
             {
                 path : 'orders',
-                element : <div>Orders page</div>
+                element : <SellerOrders />
             },
             {
                 path : 'analytics',

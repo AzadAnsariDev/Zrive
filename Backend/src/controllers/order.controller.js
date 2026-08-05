@@ -11,7 +11,8 @@ import addressModel from "../models/address.model.js";
 import orderModel from "../models/order.model.js";
 import cartModel from "../models/cart.model.js";
 import crypto from "crypto";
-import orderRouter from "../routes/order.route.js";
+import { processOrderRejection } from "../services/orderRejection.service.js";
+import { deductStock } from "../services/inventory.service.js";
 
 export const createOrder = async (req, res) => {
   try {
@@ -143,23 +144,23 @@ export const verifyOrder = async (req, res) => {
       .json({ message: "Payment record not found", success: false });
   }
 
-if (payment.status === "paid") {
+  if (payment.status === "paid") {
 
     if (!payment.razorpay.payment_id) {
-        payment.razorpay.payment_id = razorpay_payment_id;
+      payment.razorpay.payment_id = razorpay_payment_id;
     }
 
     if (!payment.razorpay.signature) {
-        payment.razorpay.signature = razorpay_signature;
+      payment.razorpay.signature = razorpay_signature;
     }
 
     await payment.save();
 
     return res.status(200).json({
-        success: true,
-        message: "Payment already processed"
+      success: true,
+      message: "Payment already processed"
     });
-}
+  }
   const isValid = validatePaymentVerification(
     {
       order_id: razorpay_order_id,
@@ -185,7 +186,12 @@ if (payment.status === "paid") {
 
   await orderModel.updateMany(
     { payment: payment._id },
-    { $set: { orderStatus: "placed" } },
+    {
+      $set: {
+        orderStatus: "placed",
+        confirmationDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      }
+    },
   );
 
   await cartModel.findOneAndUpdate(
@@ -208,8 +214,6 @@ export const webhook = async (req, res) => {
       .createHmac("sha256", config.RAZORPAY_WEBHOOK_SECRET)
       .update(req.body)
       .digest("hex");
-    console.log("Webhook:", webhookSignature);
-    console.log("Expected:", expectedSignature);
 
     if (expectedSignature !== webhookSignature) {
       return res
@@ -280,10 +284,15 @@ export const webhook = async (req, res) => {
 
       await orderModel.updateMany(
         { payment: payment._id },
-        { $set: { orderStatus: "placed" } },
+        {
+          $set: {
+            orderStatus: "placed",
+            confirmationDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        },
       );
 
-     const order = await orderModel.findOne({ payment: payment._id });
+      const order = await orderModel.findOne({ payment: payment._id });
 
       await cartModel.findOneAndUpdate(
         { user: order.user },
@@ -344,66 +353,98 @@ export const cancelOrder = async (req, res) => {
   session.startTransaction();
 
   try {
+    // Lock order to prevent duplicate cancellation requests
     const order = await orderModel
       .findOneAndUpdate(
         {
           _id: orderId,
-          orderStatus: "placed",
+          orderStatus: { $in: ["placed", "confirmed"] },
           cancelInProgress: { $ne: true },
         },
-        { $set: { cancelInProgress: true } },
-        { session, new: true },
+        {
+          $set: { cancelInProgress: true },
+        },
+        {
+          new: true,
+          session,
+        }
       )
       .populate("payment");
 
     if (!order) {
       await session.abortTransaction();
-      return res.status(404).json({ message: "Order not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Order not found or cannot be cancelled.",
+      });
     }
 
     if (order.user.toString() !== req.user.id.toString()) {
       await session.abortTransaction();
-      return res.status(403).json({ message: "Not authorized" });
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized.",
+      });
     }
 
-    if (order.orderStatus !== "placed") {
-      await session.abortTransaction();
-      return res.status(400).json({
-        message: "This order can no longer be cancelled",
-        success: false,
-      });
+    if (!order.payment) {
+      throw new Error("Payment record not found.");
+    }
+
+    const wasConfirmed = order.orderStatus === "confirmed";
+
+    // Restore inventory only if stock was deducted earlier
+    if (wasConfirmed) {
+      for (const item of order.orderItems) {
+        await restoreStock({
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          orderId: order._id,
+          reason: "order_cancelled",
+          performedBy: req.user.id,
+          session,
+        });
+      }
     }
 
     const payment = order.payment;
     const refundAmount = order.sellerAmount.amount;
 
-    console.log("Payment doc:", payment);
-    console.log("payment_id:", payment.razorpay?.payment_id);
-
+    // Initiate Razorpay refund
     const refund = await createRefund({
       paymentId: payment.razorpay.payment_id,
       amount: refundAmount * 100,
-      notes: { orderId: order._id.toString() },
+      notes: {
+        orderId: order._id.toString(),
+      },
     });
 
+    // Update order
     order.orderStatus = "cancelled";
-    order.cancelInProgress = false;
     order.cancelledAt = new Date();
+    order.cancelReason = "buyer_cancelled";
+    order.cancelInProgress = false;
+
     order.refund = {
       refundId: refund.id,
       amount: refundAmount,
       status: "initiated",
       initiatedAt: new Date(),
     };
+
     await order.save({ session });
 
+    // Update payment
     payment.refunds.push({
       orderId: order._id,
       refundId: refund.id,
       amount: refundAmount,
       status: "initiated",
     });
-    payment.refundedAmount = (payment.refundedAmount || 0) + refundAmount;
+
+    payment.refundedAmount =
+      (payment.refundedAmount || 0) + refundAmount;
 
     payment.status =
       payment.refundedAmount >= payment.price.amount
@@ -414,12 +455,145 @@ export const cancelOrder = async (req, res) => {
 
     await session.commitTransaction();
 
-    return res.status(200).json({ message: "Order cancelled", order });
+    return res.status(200).json({
+      success: true,
+      message: "Order cancelled successfully.",
+      order,
+    });
   } catch (err) {
     await session.abortTransaction();
-    console.error(err);
-    return res.status(500).json({ message: "Cancellation failed" });
+
+    console.error("Cancel Order Error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to cancel order.",
+    });
   } finally {
     session.endSession();
   }
 };
+
+export const acceptOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const order = await orderModel.findOne({
+      _id: orderId,
+      orderStatus: "placed",
+      confirmationStatus: "pending",
+    }).session(session);
+
+    if (!order) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: "Order not found or already actioned" });
+    }
+
+    if (order.seller.toString() !== req.user.id.toString()) {
+      await session.abortTransaction();
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    for (const item of order.orderItems) {
+      await deductStock({
+        productId: item.productId,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        orderId: order._id,
+        performedBy: req.user.id,
+        session,
+      });
+    }
+
+    order.orderStatus = "confirmed";
+    order.confirmationStatus = "accepted";
+    await order.save({ session });
+
+    await session.commitTransaction();
+    return res.status(200).json({ success: true, message: "Order accepted", order });
+  } catch (err) {
+    await session.abortTransaction();
+    console.error(err);
+
+    const isStockError = err.message?.includes("Insufficient stock");
+    return res.status(isStockError ? 400 : 500).json({
+      success: false,
+      message: isStockError ? "Not enough stock to confirm this order" : "Could not accept order",
+    });
+  } finally {
+    session.endSession();
+  }
+};
+
+export const rejectOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { reason, note } = req.body;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const order = await orderModel
+      .findOne({
+        _id: orderId,
+        orderStatus: "placed",
+        confirmationStatus: "pending",
+      })
+      .populate("payment")
+      .session(session);
+
+    if (!order) {
+      await session.abortTransaction();
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found or already actioned" });
+    }
+
+    if (order.seller.toString() !== req.user.id.toString()) {
+      await session.abortTransaction();
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    await processOrderRejection({
+      order,
+      reason: reason || "seller_rejected_out_of_stock",
+      weight: 1,
+      note,
+      session,
+    });
+
+    await session.commitTransaction();
+    return res
+      .status(200)
+      .json({ success: true, message: "Order rejected, refund initiated", order });
+  } catch (err) {
+    await session.abortTransaction();
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Could not reject order" });
+  } finally {
+    session.endSession();
+  }
+};
+
+export const getSellerOrders = async (req, res) => {
+    try {
+        const sellerId = req.user.id
+
+        const orders = await orderModel.find({
+            seller: sellerId,
+        }).sort({ createdAt: -1 })
+
+        res.status(200).json({
+            message: "Seller orders fetched successfully",
+            success: true,
+            orders,
+        })
+    } catch (err) {
+        res.status(500).json({
+            message: err.message,
+            success: false,
+        })
+    }
+}
