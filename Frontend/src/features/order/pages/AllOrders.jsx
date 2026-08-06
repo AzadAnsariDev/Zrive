@@ -12,9 +12,13 @@ import {
 import useOrder from "../hook/useOrder";
 
 // ── Status → badge config ──────────────────────────────────
+// "confirmed" and "packed" are internal seller-side stages — the
+// buyer only ever sees "Placed" until the order actually ships.
 const STATUS_CONFIG = {
   pending_payment: { icon: Clock, tone: "pending", label: "Awaiting payment" },
-  placed: { icon: CheckCircle2, tone: "neutral", label: "Confirmed" },
+  placed: { icon: CheckCircle2, tone: "neutral", label: "Placed" },
+  confirmed: { icon: CheckCircle2, tone: "neutral", label: "Placed" },
+  packed: { icon: CheckCircle2, tone: "neutral", label: "Placed" },
   shipped: { icon: Truck, tone: "success", label: "Shipped" },
   delivered: { icon: CheckCircle2, tone: "neutral", label: "Delivered" },
   cancelled: { icon: XCircle, tone: "error", label: "Cancelled" },
@@ -34,11 +38,14 @@ const TONE_CLASSES = {
 };
 
 // Progression order — jab ek group ke andar alag-alag status ho, sabse "kam advanced" wala dikhao
+// Progression order — jab ek group ke andar alag-alag status ho, sabse "kam advanced" wala dikhao
 const STATUS_PRIORITY = {
   pending_payment: 0,
   failed: 0,
   cancelled: 0,
   placed: 1,
+  confirmed: 1,  
+  packed: 1,      
   shipped: 2,
   delivered: 3,
 };
@@ -50,7 +57,7 @@ const FILTERS = [
     key: "ongoing",
     label: "Ongoing",
     match: (s) =>
-      ["pending_payment", "placed", "shipped", "partially_cancelled"].includes(
+      ["pending_payment", "placed", "confirmed", "packed", "shipped", "partially_cancelled"].includes(
         s,
       ),
   },
@@ -61,7 +68,6 @@ const FILTERS = [
     match: (s) => ["cancelled", "failed"].includes(s),
   },
 ];
-
 const formatDate = (iso, opts) => {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(
