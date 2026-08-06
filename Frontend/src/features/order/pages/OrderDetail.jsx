@@ -10,19 +10,51 @@ import {
   Package,
   XCircle,
   MapPin,
+  ShieldAlert,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import useOrder from "../hook/useOrder";
 import CancelOrderModal from "../components/CancelOrderModal";
 
 // ── Status → hero badge + note ─────────────────────────────
+// NOTE: "confirmed" and "packed" are seller-side/internal stages.
+// The buyer only ever sees "Placed" until the order actually ships —
+// showing "Confirmed" was leaking internal seller workflow state.
 const STATUS_CONFIG = {
   pending_payment: { label: "Awaiting payment", note: "We're waiting for your payment to confirm.", icon: Clock, tone: "pending" },
-  placed: { label: "Confirmed", note: "Your order is being prepared.", icon: Check, tone: "success" },
+  placed: { label: "Placed", note: "Your order is being prepared.", icon: Check, tone: "success" },
+  confirmed: { label: "Placed", note: "Your order is being prepared.", icon: Check, tone: "success" },
+  packed: { label: "Placed", note: "Your order is being prepared.", icon: Check, tone: "success" },
   shipped: { label: "Shipped", note: "Your order is on its way.", icon: Truck, tone: "info" },
   delivered: { label: "Delivered", note: "This order has been delivered.", icon: Package, tone: "success" },
   cancelled: { label: "Cancelled", note: "This order was cancelled.", icon: XCircle, tone: "error" },
   failed: { label: "Payment failed", note: "The payment for this order didn't go through.", icon: XCircle, tone: "error" },
+};
+
+// Buyer-facing delivery progress only has 3 simplified stages.
+// "confirmed" and "packed" both map to "placed" so the tracker still
+// highlights the right step instead of showing nothing reached.
+const EFFECTIVE_STEP = {
+  pending_payment: "placed",
+  placed: "placed",
+  confirmed: "placed",
+  packed: "placed",
+  shipped: "shipped",
+  delivered: "delivered",
+};
+
+// Cancel is allowed for the buyer up until the order actually ships —
+// once shipped, the courier already has it, so cancelling stops making sense.
+const CANCELLABLE_STATUSES = ["placed", "confirmed", "packed"];
+
+// cancelReason values that mean the SELLER rejected the order
+// (as opposed to "buyer_cancelled", which the buyer initiated themselves).
+const SELLER_REJECTION_REASONS = ["out_of_stock", "unable_to_fulfill", "other"];
+
+const SELLER_REJECTION_LABEL = {
+  out_of_stock: "the item went out of stock",
+  unable_to_fulfill: "the seller couldn't fulfill it in time",
+  other: "the seller was unable to fulfill this order",
 };
 
 // ── Delivery progress steps ─────────────────────────────────
@@ -80,12 +112,21 @@ const OrderDetail = () => {
     }
   };
 
-  const config = STATUS_CONFIG[order.orderStatus] || STATUS_CONFIG.placed;
+  const isCancelled = order.orderStatus === "cancelled";
+  const isSellerRejected = isCancelled && SELLER_REJECTION_REASONS.includes(order.cancelReason);
+
+  const config = isSellerRejected
+    ? { label: "Cancelled by seller", note: "This order was cancelled by the seller.", icon: ShieldAlert, tone: "error" }
+    : STATUS_CONFIG[order.orderStatus] || STATUS_CONFIG.placed;
+
   const items = order.orderItems || [];
   const heroItem = items[0];
   const subtotal = order.sellerAmount?.amount ?? 0;
   const isTerminal = order.orderStatus === "cancelled" || order.orderStatus === "failed";
-  const currentStepIndex = STEPS.findIndex((s) => s.key === order.orderStatus);
+  const currentStepIndex = STEPS.findIndex(
+    (s) => s.key === (EFFECTIVE_STEP[order.orderStatus] || "placed")
+  );
+  const canCancel = CANCELLABLE_STATUSES.includes(order.orderStatus);
 
   return (
     <div className="min-h-screen bg-cream pb-20">
@@ -139,7 +180,11 @@ const OrderDetail = () => {
               </p>
             </div>
             <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-charcoal text-cream text-[11px] font-medium tracking-[0.1em] uppercase">
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-cream text-[11px] font-medium tracking-[0.1em] uppercase ${
+                  isSellerRejected ? "bg-error" : "bg-charcoal"
+                }`}
+              >
                 <span className="w-1.5 h-1.5 rounded-full bg-cream" />
                 {config.label}
               </span>
@@ -200,44 +245,94 @@ const OrderDetail = () => {
           </p>
 
           {isTerminal ? (
-            <div className="flex items-start gap-3 rounded-lg bg-error/5 border border-error/20 p-4">
-              <XCircle size={18} className="text-error shrink-0 mt-0.5" strokeWidth={2} />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-ink">{config.label}</p>
-                <p className="text-xs text-ink-soft mt-0.5">{config.note}</p>
-
-                {order.orderStatus === "cancelled" && order.refund?.refundId && (
-                  <div className="mt-4 pt-4 border-t border-error/10 space-y-2">
-                    <p className="text-xs tracking-[0.1em] uppercase text-ink-soft mb-2">
-                      Refund summary
-                    </p>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-ink-soft">Order Cancelled</span>
-                      <span className="text-ink">{formatDate(order.cancelledAt)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-ink-soft">
-                        Refund {order.refund.status === "processed" ? "Successful" : "Initiated"}
-                      </span>
-                      <span className="text-ink">
-                        ₹{order.refund.amount?.toLocaleString("en-IN")}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-ink-soft">Reference ID</span>
-                      <span className="text-ink font-mono text-[11px]">{order.refund.refundId}</span>
-                    </div>
+            isSellerRejected ? (
+              // ── Seller-rejected apology block ──────────────────
+              <div className="relative rounded-xl bg-error/5 border border-error/20 p-6 overflow-hidden">
+                <div className="flex items-start gap-3.5">
+                  <div className="shrink-0 w-9 h-9 rounded-full bg-error/10 flex items-center justify-center">
+                    <ShieldAlert size={17} className="text-error" strokeWidth={2} />
                   </div>
-                )}
+                  <div className="flex-1">
+                    <p className="font-display text-lg text-ink mb-1">
+                      We're sorry about this one
+                    </p>
+                    <p className="text-sm text-ink-soft leading-relaxed">
+                      This order was cancelled because {SELLER_REJECTION_LABEL[order.cancelReason]}.
+                      {order.rejectionNote ? ` The seller added a note: "${order.rejectionNote}"` : ""}
+                    </p>
+                    <div className="flex items-center gap-2 mt-4 px-3 py-2 rounded-lg bg-cream border border-border/60 w-fit">
+                      <ShieldAlert size={13} className="text-gold-deep shrink-0" />
+                      <p className="text-[11.5px] text-ink-soft">
+                        We've flagged this seller's account for review.
+                      </p>
+                    </div>
+
+                    {order.refund?.refundId && (
+                      <div className="mt-5 pt-5 border-t border-error/10 space-y-2">
+                        <p className="text-xs tracking-[0.1em] uppercase text-ink-soft mb-2">
+                          Refund summary
+                        </p>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-ink-soft">Order cancelled</span>
+                          <span className="text-ink">{formatDate(order.cancelledAt)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-ink-soft">
+                            Refund {order.refund.status === "processed" ? "successful" : "initiated"}
+                          </span>
+                          <span className="text-ink">
+                            ₹{order.refund.amount?.toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-ink-soft">Reference ID</span>
+                          <span className="text-ink font-mono text-[11px]">{order.refund.refundId}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              // ── Generic cancelled / failed block ──────────────
+              <div className="flex items-start gap-3 rounded-lg bg-error/5 border border-error/20 p-4">
+                <XCircle size={18} className="text-error shrink-0 mt-0.5" strokeWidth={2} />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-ink">{config.label}</p>
+                  <p className="text-xs text-ink-soft mt-0.5">{config.note}</p>
+
+                  {order.orderStatus === "cancelled" && order.refund?.refundId && (
+                    <div className="mt-4 pt-4 border-t border-error/10 space-y-2">
+                      <p className="text-xs tracking-[0.1em] uppercase text-ink-soft mb-2">
+                        Refund summary
+                      </p>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-ink-soft">Order Cancelled</span>
+                        <span className="text-ink">{formatDate(order.cancelledAt)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-ink-soft">
+                          Refund {order.refund.status === "processed" ? "Successful" : "Initiated"}
+                        </span>
+                        <span className="text-ink">
+                          ₹{order.refund.amount?.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-ink-soft">Reference ID</span>
+                        <span className="text-ink font-mono text-[11px]">{order.refund.refundId}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
           ) : (
             <div className="relative pl-1">
               {STEPS.map((step, idx) => {
-                const done = idx < currentStepIndex || order.orderStatus === "delivered" && idx <= currentStepIndex;
+                const reached = idx <= currentStepIndex;
                 const active = idx === currentStepIndex;
                 const isLast = idx === STEPS.length - 1;
-                const reached = idx <= currentStepIndex;
 
                 return (
                   <div key={step.key} className="relative flex gap-4 pb-8 last:pb-0">
@@ -336,7 +431,7 @@ const OrderDetail = () => {
 
         {/* ── Actions ────────────────────────────────── */}
         <div className="od-in space-y-4" style={{ animationDelay: "240ms" }}>
-          {order.orderStatus === "placed" && (
+          {canCancel && (
             <button
               onClick={() => setShowCancelModal(true)}
               className="w-full py-4 rounded-full border border-error/30 text-error text-xs tracking-[0.15em] uppercase font-medium hover:bg-error/5 transition-colors duration-200"

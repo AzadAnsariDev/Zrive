@@ -6,7 +6,7 @@ const refundSchema = new mongoose.Schema(
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: "orders" },
     refundId: String,
     amount: Number,
-    status: String,
+    status: { type: String, enum:["pending", "initiated", "processed", "failed"]},
     createdAt: { type: Date, default: Date.now },
   },
   { _id: false }   // yahan set karo

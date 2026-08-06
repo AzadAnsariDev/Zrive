@@ -54,7 +54,7 @@ const orderSchema = new mongoose.Schema(
         "out_of_stock",
         "unable_to_fulfill",
         "other",
-        "buyer_cancelled", 
+        "buyer_cancelled",
       ],
     },
     rejectionNote: { type: String },   // seller ka optional free-text note
@@ -74,8 +74,11 @@ const orderSchema = new mongoose.Schema(
     refund: {
       refundId: String,
       amount: Number,
-      status: { type: String, enum: ["initiated", "processed", "failed"] },
+      status: { type: String, enum: ["pending", "initiated", "processed", "failed", "permanently_failed"] },
       initiatedAt: Date,
+      completedAt: Date,     
+      failureReason: String,
+      retryCount: { type: Number, default: 0 },
     },
   },
   { timestamps: true },

@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import mongoose from "mongoose";
 import orderModel from "../models/order.model.js"; 
-import { processOrderRejection } from "../services/orderRejection.service.js";
+import { prepareOrderRejection } from "../services/orderRejection.service.js";
 
 const processExpiredOrders = async () => {
   const now = new Date();
@@ -37,7 +37,7 @@ const processExpiredOrders = async () => {
         continue;
       }
 
-      await processOrderRejection({
+      await prepareOrderRejection({
         order,
         reason: "seller_no_response",
         weight: 1.5,

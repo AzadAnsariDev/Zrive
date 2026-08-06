@@ -11,8 +11,8 @@ import addressModel from "../models/address.model.js";
 import orderModel from "../models/order.model.js";
 import cartModel from "../models/cart.model.js";
 import crypto from "crypto";
-import { processOrderRejection } from "../services/orderRejection.service.js";
-import { deductStock } from "../services/inventory.service.js";
+import { prepareOrderRejection, processRefund } from "../services/orderRejection.service.js";
+import { deductStock, restoreStock } from "../services/inventory.service.js";
 
 export const createOrder = async (req, res) => {
   try {
@@ -534,8 +534,9 @@ export const rejectOrder = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
+  let order;
   try {
-    const order = await orderModel
+    order = await orderModel
       .findOne({
         _id: orderId,
         orderStatus: "placed",
@@ -546,9 +547,7 @@ export const rejectOrder = async (req, res) => {
 
     if (!order) {
       await session.abortTransaction();
-      return res
-        .status(404)
-        .json({ success: false, message: "Order not found or already actioned" });
+      return res.status(404).json({ success: false, message: "Order not found or already actioned" });
     }
 
     if (order.seller.toString() !== req.user.id.toString()) {
@@ -556,18 +555,15 @@ export const rejectOrder = async (req, res) => {
       return res.status(403).json({ success: false, message: "Not authorized" });
     }
 
-    await processOrderRejection({
+    await prepareOrderRejection({
       order,
-      reason: reason || "seller_rejected_out_of_stock",
+      reason: reason || "out_of_stock",
       weight: 1,
       note,
       session,
     });
 
     await session.commitTransaction();
-    return res
-      .status(200)
-      .json({ success: true, message: "Order rejected, refund initiated", order });
   } catch (err) {
     await session.abortTransaction();
     console.error(err);
@@ -575,8 +571,19 @@ export const rejectOrder = async (req, res) => {
   } finally {
     session.endSession();
   }
-};
 
+  try {
+    order = await processRefund(order._id);
+  } catch (err) {
+    console.error("Refund failed, will need retry:", err.message);
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Order rejected" + (order.refund?.status === "processed" ? ", refund processed" : ", refund pending"),
+    order,
+  });
+};
 export const getSellerOrders = async (req, res) => {
     try {
         const sellerId = req.user.id
