@@ -28,7 +28,14 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     images: [{ url: { type: String, required: true } }],
-
+    shippingDefaults: {
+      weight: { type: Number, required: true },  // kg
+      dimensions: {
+        length: { type: Number, required: true }, // cm
+        width: { type: Number, required: true },
+        height: { type: Number, required: true },
+      }
+    },
     variants: {
       type: [
         {
@@ -38,6 +45,12 @@ const productSchema = new mongoose.Schema(
           stock: { type: Number, required: true, default: 0 },
           price: { type: priceSchema, required: true },
           images: [{ url: { type: String, required: true } }],
+          weight: { type: Number, default: null },
+          dimensions: {
+            length: { type: Number, default: null },
+            width: { type: Number, default: null },
+            height: { type: Number, default: null },
+          }
         },
       ],
       validate: [

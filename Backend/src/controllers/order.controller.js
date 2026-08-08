@@ -478,9 +478,10 @@ export const acceptOrder = async (req, res) => {
   const { orderId } = req.params;
   const session = await mongoose.startSession();
   session.startTransaction();
+  let order;
 
   try {
-    const order = await orderModel.findOne({
+    order = await orderModel.findOne({
       _id: orderId,
       orderStatus: "placed",
       confirmationStatus: "pending",
@@ -512,7 +513,6 @@ export const acceptOrder = async (req, res) => {
     await order.save({ session });
 
     await session.commitTransaction();
-    return res.status(200).json({ success: true, message: "Order accepted", order });
   } catch (err) {
     await session.abortTransaction();
     console.error(err);
@@ -524,6 +524,20 @@ export const acceptOrder = async (req, res) => {
     });
   } finally {
     session.endSession();
+  }
+  try {
+    await createDeliveryForOrder(order._id)
+    return res.status(200).json({
+      success: true,
+      message: "Order accepted and delivery created successfully",
+    });
+
+  } catch (error) {
+    return res.status(200).json({
+      message: "Order accepted, but Shiprocket sync failed — will retry",
+      success: true,
+      shiprocketError: error.message,
+    })
   }
 };
 
@@ -584,23 +598,24 @@ export const rejectOrder = async (req, res) => {
     order,
   });
 };
+
 export const getSellerOrders = async (req, res) => {
-    try {
-        const sellerId = req.user.id
+  try {
+    const sellerId = req.user.id
 
-        const orders = await orderModel.find({
-            seller: sellerId,
-        }).sort({ createdAt: -1 })
+    const orders = await orderModel.find({
+      seller: sellerId,
+    }).sort({ createdAt: -1 })
 
-        res.status(200).json({
-            message: "Seller orders fetched successfully",
-            success: true,
-            orders,
-        })
-    } catch (err) {
-        res.status(500).json({
-            message: err.message,
-            success: false,
-        })
-    }
+    res.status(200).json({
+      message: "Seller orders fetched successfully",
+      success: true,
+      orders,
+    })
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+      success: false,
+    })
+  }
 }

@@ -27,7 +27,7 @@ const sendTokenResponse = (user, res, statusCode, message)=>{
 }
 
 export const register = async (req, res)=>{
-    const {email, contact, username, password, role } = req.body
+    const {email, contact, username, password } = req.body
 
     const existingUser = await userModel.findOne({
         $or :[
@@ -46,15 +46,16 @@ export const register = async (req, res)=>{
         email,
         contact,
         username,
-        password,
-        role: role || "buyer"
+        password
+        // role intentionally not accepted from client — always defaults to
+        // "buyer" via the schema. Becoming a seller happens only through the
+        // seller onboarding flow (createBasicSellerApplication), never at signup.
     })
 
     await mergeGuestCart(req, res, user._id)
 
     await sendTokenResponse(user, res, 201, "User registered successfully")
-} 
-
+}
 export const login = async (req, res)=>{
 
     const { identifier, password } = req.body

@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
         required: function () { return !this.googleId; },
         select: false
     },
-    role: { type: String, enum: ["seller", "buyer"], default: "buyer" },
+    role: { type: String, enum: ["seller", "buyer", "basic_seller"], default: "buyer" },
     googleId: { type: String },
 
     // Sirf sellers ke liye relevant

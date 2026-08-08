@@ -22,3 +22,28 @@ export const getSellerOrders = async ()=>{
     return response.data
 }
 
+export const createBasicSellerApplication = async ({ brandName, businessEmail, businessPhone })=>{
+    const response = await sellerApiInstance.post(`/seller/onboard`, {
+        brandName, businessEmail, businessPhone
+    })
+    return response.data
+}
+
+export const submitVerificationDetails = async ({ panNumber, panPhoto, pickupAddress, payout })=>{
+    const formData = new FormData()
+
+    formData.append("kyc", JSON.stringify({ panNumber }))
+    formData.append("pickupAddress", JSON.stringify(pickupAddress))
+    formData.append("payout", JSON.stringify(payout))
+    formData.append("panPhoto", panPhoto) 
+
+    const response = await sellerApiInstance.post(`/seller/verify`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+    })
+    return response.data
+}
+
+export const getMySellerApplication = async ()=>{
+    const response = await sellerApiInstance.get(`/seller/sellerApplication`)
+    return response.data
+}

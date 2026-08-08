@@ -9,6 +9,10 @@ import productRouter from './routes/product.route.js'
 import cartRouter from './routes/cart.route.js'
 import addressRouter from './routes/address.route.js'
 import orderRouter from './routes/order.route.js'
+import sellerRouter from './routes/seller.route.js'
+import adminRouter from './routes/admin.route.js'
+import testRouter from './routes/test.route.js'
+import deliveryRouter from './routes/delivery.route.js'
 
 const app = express()
 
@@ -39,6 +43,8 @@ passport.use(new GoogleStrategy({
     return done(null, profile)
 }))
 
+//test Router
+app.use("/api/test", testRouter)
 
 //Auth Router
 app.use("/api/auth", authRouter)
@@ -54,5 +60,15 @@ app.use("/api/order", orderRouter)
 
 //address Router
 app.use("/api/address", addressRouter)
+
+//seller Router
+app.use("/api/seller", sellerRouter)
+
+//admin Router
+app.use("/api/admin", adminRouter)
+
+//delivery Router
+app.use("/api/delivery", deliveryRouter )
+
 
 export default app

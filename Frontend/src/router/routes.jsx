@@ -57,7 +57,7 @@ const router = createBrowserRouter([
         // Adding a new seller page later = adding one line here + one
         // line in SIDEBAR_LINKS / MOBILE_NAV_LINKS inside SellerLayout.jsx.
         path : '/seller',
-        element : <Protected role='seller'> <SellerLayout /> </Protected>,
+        element : <Protected role={['basic_seller', 'seller']}> <SellerLayout /> </Protected>,
         children : [
             {
                 path : 'inventory',
