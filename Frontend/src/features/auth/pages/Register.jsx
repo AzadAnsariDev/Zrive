@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { ShoppingBag, Store, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { setError, setLoading } from "../state/authSlice";
 import { useAuth } from "../hook/useAuth";
@@ -26,7 +26,6 @@ const AppleIcon = () => (
 );
 
 const Register = () => {
-  const [accountType, setAccountType] = useState("buyer");
   const [showPassword, setShowPassword] = useState(false);
 
   const { handleRegister } = useAuth();
@@ -44,8 +43,10 @@ const Register = () => {
     dispatch(setLoading(true));
     const { email, phone, fullName, password } = data;
     try {
-      const user = await handleRegister(email, phone, fullName, password, accountType);
-      user.role == "seller" ? navigate("/seller") : navigate("/")
+      // Every new account is a buyer. Becoming a seller happens later,
+      // through the separate "Become a Seller" flow — not at signup.
+      await handleRegister(email, phone, fullName, password);
+      navigate("/");
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -81,42 +82,6 @@ const Register = () => {
 
         <div className="rounded-[3px] border border-border bg-surface p-6 shadow-sm">
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-            {/* Account type toggle */}
-            <div
-              role="radiogroup"
-              aria-label="Account type"
-              className="grid grid-cols-2 gap-1 rounded-[3px] bg-cream-dark p-1 border border-border"
-            >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={accountType === "buyer"}
-                onClick={() => setAccountType("buyer")}
-                className={`flex items-center justify-center gap-2 rounded-[3px] py-3 text-[12px] font-semibold tracking-[0.05em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal ${
-                  accountType === "buyer"
-                    ? "bg-charcoal text-cream shadow-sm"
-                    : "text-ink-soft hover:text-ink"
-                }`}
-              >
-                <ShoppingBag size={16} strokeWidth={accountType === "buyer" ? 2.25 : 1.5} />
-                Buyer
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={accountType === "seller"}
-                onClick={() => setAccountType("seller")}
-                className={`flex items-center justify-center gap-2 rounded-[3px] py-3 text-[12px] font-semibold tracking-[0.05em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal ${
-                  accountType === "seller"
-                    ? "bg-charcoal text-cream shadow-sm"
-                    : "text-ink-soft hover:text-ink"
-                }`}
-              >
-                <Store size={16} strokeWidth={accountType === "seller" ? 2.25 : 1.5} />
-                Seller
-              </button>
-            </div>
-
             {/* Full Name */}
             <div>
               <label htmlFor="fullName" className="mb-2 block text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft">

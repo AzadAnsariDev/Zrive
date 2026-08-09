@@ -1,5 +1,6 @@
 import sellerModel from "../models/seller.model.js"
 import { uploadFiles } from "../services/storage.service.js"
+import userModel from "../models/user.model.js"
 
 export const createBasicSellerApplication = async (req, res) => {
     const userId = req.user.id

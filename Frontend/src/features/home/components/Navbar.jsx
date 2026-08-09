@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   Package,
 } from 'lucide-react'
+import SellerNavIcon from '../../seller/components/SellerNavIcon'
 
 // Placeholder notifications — replace with a real useNotifications() hook
 // once the backend endpoint exists.
@@ -67,6 +68,7 @@ const Navbar = () => {
           <button type="button" aria-label="Search" onClick={() => { }} className="text-ink hover:text-gold transition-colors">
             <Search size={18} strokeWidth={1.5} />
           </button>
+          <SellerNavIcon />
           <NavLink to="/cart" aria-label="Cart" className="relative text-ink hover:text-gold transition-colors">
             <ShoppingBag size={18} strokeWidth={1.5} />
             <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-gold" />
@@ -119,6 +121,8 @@ const Navbar = () => {
 
           {/* Icon cluster */}
           <div className="flex items-center gap-5 flex-shrink-0">
+            <SellerNavIcon />
+
             <NavLink to="/wishlist" aria-label="Wishlist" className="text-ink hover:text-gold transition-colors">
               <Heart size={18} strokeWidth={1.5} />
             </NavLink>

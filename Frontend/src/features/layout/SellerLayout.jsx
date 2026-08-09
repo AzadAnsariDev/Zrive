@@ -24,7 +24,7 @@ import ZriveLogo from '../auth/components/ZriveLogo'
 // `to` must match the route path you register in your router.
 // ---------------------------------------------------------------------
 const SIDEBAR_LINKS = [
-  { to: '/seller/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/seller', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/seller/inventory', label: 'Inventory', icon: Archive },
   { to: '/seller/orders', label: 'Orders', icon: ShoppingBag },
   { to: '/seller/analytics', label: 'Analytics', icon: BarChart2 },
@@ -34,7 +34,7 @@ const SIDEBAR_LINKS = [
 
 // Mobile bottom nav is intentionally a shorter subset (only 4 slots fit).
 const MOBILE_NAV_LINKS = [
-  { to: '/seller/dashboard', label: 'Home', icon: Home },
+  { to: '/seller', label: 'Home', icon: Home },
   { to: '/seller/inventory', label: 'Inventory', icon: Archive },
   { to: '/seller/orders', label: 'Orders', icon: ShoppingCart },
   { to: '/seller/settings', label: 'Profile', icon: User },

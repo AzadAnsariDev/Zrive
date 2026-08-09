@@ -17,31 +17,36 @@ import AllOrders from '../features/order/pages/AllOrders'
 import OrderDetail from '../features/order/pages/OrderDetail'
 import OrderGroupItems from '../features/order/pages/OrderGroupItems'
 import SellerOrders from '../features/seller/pages/SellerOrders'
+import BecomeSeller from '../features/seller/pages/BecomeSeller'
+import SellerKYC from '../features/seller/pages/SellerKYC'
+import SellerDashboard from '../features/seller/pages/SellerDashboard'
 
 
 
 const router = createBrowserRouter([
-{
-    path: '/',
-    element: <UserLayout />,
-    children: [
-        { index: true, element: <Home /> },
-        { path: 'categories', element: <div>Categories page</div> },
-        { path: 'new-arrivals', element: <div>New Arrivals page</div> },  // ← add
-        { path: 'cart', element: <Cart /> },
-        { path: 'sale', element: <div>Sale page</div> },  // ← add
-        { path: 'profile', element: <div>Profile page</div> },
-        { path: 'wishlist', element: <div>Wishlist page</div> },
-        { path: 'all-products', element: <AllProducts /> },
-        { path: 'product/:productId', element: <SingleProduct /> },
-        { path: 'order-success', element: <Protected>  <OrderPlaced /> </Protected> },
-        { path: 'address', element:<Protected> <Address /> </Protected>  },
-        { path: 'orders', element:<Protected> <AllOrders /> </Protected>  },
-        { path: 'orders/:orderId', element:<Protected> <OrderDetail /> </Protected>  },
-        { path: '/orders/group/:paymentId', element:<Protected> <OrderGroupItems /> </Protected>  },
+    {
+        path: '/',
+        element: <UserLayout />,
+        children: [
+            { index: true, element: <Home /> },
+            { path: 'categories', element: <div>Categories page</div> },
+            { path: 'new-arrivals', element: <div>New Arrivals page</div> },  // ← add
+            { path: 'cart', element: <Cart /> },
+            { path: 'sale', element: <div>Sale page</div> },  // ← add
+            { path: 'profile', element: <div>Profile page</div> },
+            { path: 'wishlist', element: <div>Wishlist page</div> },
+            { path: 'all-products', element: <AllProducts /> },
+            { path: 'product/:productId', element: <SingleProduct /> },
+            { path: 'order-success', element: <Protected>  <OrderPlaced /> </Protected> },
+            { path: 'address', element: <Protected> <Address /> </Protected> },
+            { path: 'orders', element: <Protected> <AllOrders /> </Protected> },
+            { path: 'orders/:orderId', element: <Protected> <OrderDetail /> </Protected> },
+            { path: '/orders/group/:paymentId', element: <Protected> <OrderGroupItems /> </Protected> },
+            { path: '/become-seller', element: <Protected> <BecomeSeller /> </Protected> },
 
-    ],
-},
+
+        ],
+    },
     {
         path: '/register',
         element: <Register />
@@ -56,41 +61,44 @@ const router = createBrowserRouter([
         // child route below renders inside it via <Outlet />.
         // Adding a new seller page later = adding one line here + one
         // line in SIDEBAR_LINKS / MOBILE_NAV_LINKS inside SellerLayout.jsx.
-        path : '/seller',
-        element : <Protected role={['basic_seller', 'seller']}> <SellerLayout /> </Protected>,
-        children : [
+        path: '/seller',
+        element: <Protected role={['basic_seller', 'seller']}> <SellerLayout /> </Protected>,
+        children: [
             {
-                path : 'inventory',
-                element : <ProductList /> 
+                path: 'inventory',
+                element: <ProductList />
             },
             {
-                path : 'inventory/new',
-                element : <CreateProduct />
+                path: 'inventory/new',
+                element: <CreateProduct />
             },
             {
-                index:true,
-                path : 'dashboard',
-                element : <div>Dashboard page</div>
+                index: true,
+                element: <SellerDashboard />
             },
             {
-                path : 'orders',
-                element : <SellerOrders />
+                path: 'orders',
+                element: <SellerOrders />
             },
             {
-                path : 'analytics',
-                element : <div>Analytics page</div>
+                path: 'analytics',
+                element: <div>Analytics page</div>
             },
             {
-                path : 'payments',
-                element : <div>Payments page</div>
+                path: 'payments',
+                element: <div>Payments page</div>
             },
             {
-                path : 'settings',
-                element : <div>Settings page</div>
+                path: 'settings',
+                element: <div>Settings page</div>
             },
             {
-                path : 'inventory/:productId/addVariant',
-                element : <AddVariant />
+                path: 'inventory/:productId/addVariant',
+                element: <AddVariant />
+            },
+            {
+                path: 'become-seller/verify',
+                element:  <SellerKYC /> 
             },
         ]
     }
