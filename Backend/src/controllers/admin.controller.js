@@ -53,15 +53,14 @@ export const adminLogout = async (req, res) => {
     res.status(200).json({ message: "Admin logged out successfully", success: true })
 }
 
-
-export const getPendingSellerApplications = async (req, res) => {
+export const getAllSellerApplications = async (req, res) => {
     const applications = await sellerModel
-        .find({ applicationStatus: "pending_verification" })
-        .select("brandName businessEmail createdAt")  
-        .populate("userId", "username")  
+        .find({}) // koi status filter nahi, sab chahiye
+        .select("brandName businessEmail applicationStatus rejectionReason createdAt")
+        .populate("userId", "username")
 
     res.status(200).json({
-        message: "Pending seller applications fetched successfully",
+        message: "Seller applications fetched successfully",
         success: true,
         applications
     })
@@ -149,3 +148,17 @@ export const rejectSellerApplication = async (req, res) => {
         seller
     })
 }
+
+export const getAdminProfile = async (req, res) => {
+  try {
+    return res.status(200).json({
+      admin: {
+        id: req.admin._id,
+        email: req.admin.email,
+      },
+    })
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch admin profile' })
+  }
+}
+

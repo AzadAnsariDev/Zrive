@@ -28,7 +28,7 @@ const SellerNavIcon = () => {
 
   if (user.role === "seller") {
     tooltip = "Seller Dashboard";
-    onClick = () => navigate("/seller/dashboard");
+    onClick = () => navigate("/seller");
   } else if (sellerLoading) {
     // Avoid flashing the wrong tooltip while the status call is in flight
     tooltip = "Become a Seller";

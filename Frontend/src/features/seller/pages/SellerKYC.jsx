@@ -96,7 +96,7 @@ const SellerKYC = () => {
       },
     });
     setSubmitting(false);
-    if (ok) navigate("/seller/dashboard");
+    if (ok) navigate("/seller/");
   };
 
   const progressPct = ((step + 1) / STEPS.length) * 100;

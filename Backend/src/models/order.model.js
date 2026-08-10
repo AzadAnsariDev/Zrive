@@ -55,6 +55,7 @@ const orderSchema = new mongoose.Schema(
         "unable_to_fulfill",
         "other",
         "buyer_cancelled",
+        "seller_no_response"
       ],
     },
     rejectionNote: { type: String },   // seller ka optional free-text note

@@ -5,6 +5,7 @@ import cartReducer from "../features/cart/state/cartSlice"
 import addressReducer from "../features/address/state/addressSlice"
 import orderReducer from "../features/order/state/orderSlice"
 import sellerReducer from "../features/seller/state/sellerSlice"
+import adminReducer from "../features/admin/state/adminSlice"
 export const store = configureStore({
     reducer :{
         auth : authReducer,
@@ -12,7 +13,8 @@ export const store = configureStore({
         cart : cartReducer,
         address: addressReducer,
         order: orderReducer,
-        seller: sellerReducer
+        seller: sellerReducer,
+        admin: adminReducer
     }
 })
 

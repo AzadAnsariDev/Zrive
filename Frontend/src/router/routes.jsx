@@ -20,6 +20,11 @@ import SellerOrders from '../features/seller/pages/SellerOrders'
 import BecomeSeller from '../features/seller/pages/BecomeSeller'
 import SellerKYC from '../features/seller/pages/SellerKYC'
 import SellerDashboard from '../features/seller/pages/SellerDashboard'
+import AdminLayout from '../features/layout/AdminLayout'
+import AdminLogin from '../features/admin/pages/AdminLogin'
+import ProtectedAdmin from '../features/admin/components/ProtectedAdmin'
+import AdminSellers from '../features/admin/pages/AdminSellers'
+import AdminSellerDetail from '../features/admin/pages/AdminSellerDetail'
 
 
 
@@ -56,11 +61,26 @@ const router = createBrowserRouter([
         element: <Login />
     },
     {
-        // Every seller page lives under here. SellerLayout renders the
-        // sidebar (desktop/tablet) + bottom nav (mobile) once, and each
-        // child route below renders inside it via <Outlet />.
-        // Adding a new seller page later = adding one line here + one
-        // line in SIDEBAR_LINKS / MOBILE_NAV_LINKS inside SellerLayout.jsx.
+        path: '/admin/login',
+        element: <AdminLogin />
+    },
+    {
+        path: '/admin',
+        element: <ProtectedAdmin>
+            <AdminLayout />
+        </ProtectedAdmin>,
+        children: [
+            { index: true, element: <div>Overview page</div> },
+            { path: 'sellers', element: <AdminSellers /> },
+            { path: 'sellers/:sellerId', element: <AdminSellerDetail /> },
+            { path: 'commerce', element: <div>Commerce page</div> },
+            { path: 'marketplace', element: <div>Marketplace page</div> },
+            { path: 'finance', element: <div>Finance page</div> },
+            { path: 'marketing', element: <div>Marketing page</div> },
+            { path: 'system', element: <div>System page</div> },
+        ],
+    },
+    {
         path: '/seller',
         element: <Protected role={['basic_seller', 'seller']}> <SellerLayout /> </Protected>,
         children: [
@@ -98,7 +118,7 @@ const router = createBrowserRouter([
             },
             {
                 path: 'become-seller/verify',
-                element:  <SellerKYC /> 
+                element: <SellerKYC />
             },
         ]
     }

@@ -8,6 +8,8 @@ import {
   Trash2, ImageIcon, Layers, ArrowLeft,
 } from 'lucide-react'
 import { setError, setLoading } from '../../auth/state/authSlice'
+import KycRequiredModal from '../../seller/components/KycRequiredModal'
+import { useSelector } from 'react-redux'
 
 // ---- Config -----------------------------------------------------------
 const MAX_IMAGES = 6
@@ -46,6 +48,9 @@ const CreateProduct = () => {
   const [variantForm, setVariantForm] = useState(emptyVariantForm)
   const [variantFieldErrors, setVariantFieldErrors] = useState({})
   const variantFileInputRef = useRef(null)
+  const [showKycModal, setShowKycModal] = useState(false)
+  const user = useSelector((state) => state.auth.user)
+  const application = useSelector((state)=> state.seller.application)
 
   const { handleCreateProduct } = useProduct()
   const navigate = useNavigate()
@@ -195,6 +200,11 @@ const CreateProduct = () => {
 
   // ---------------- Submit ----------------
   const onSubmit = async (data) => {
+    if (user?.role !== 'seller') {          
+      setShowKycModal(true)
+      return
+    }
+
     if (variants.length === 0) {
       setVariantsError('Add at least one variant before publishing.')
       return
@@ -233,8 +243,7 @@ const CreateProduct = () => {
   }
 
   const dropzoneClasses = (base) =>
-    `${base} transition-colors ${
-      isDragging ? 'border-gold bg-cream-dark' : 'border-border hover:border-gold hover:bg-cream-dark'
+    `${base} transition-colors ${isDragging ? 'border-gold bg-cream-dark' : 'border-border hover:border-gold hover:bg-cream-dark'
     }`
 
   return (
@@ -621,6 +630,13 @@ const CreateProduct = () => {
         </div>
 
       </form>
+      {showKycModal && (
+        <KycRequiredModal
+          onClose={() => setShowKycModal(false)}
+          onGoToKyc={() => navigate('/seller/become-seller/verify')}
+          applicationStatus={application.applicationStatus}
+        />
+      )}
     </div>
   )
 }
