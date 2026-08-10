@@ -29,7 +29,7 @@ const BecomeSeller = () => {
       businessPhone: data.businessPhone,
     });
     setSubmitting(false);
-    if (ok) navigate("/seller/dashboard");
+    if (ok) navigate("/seller");
   };
 
   return (

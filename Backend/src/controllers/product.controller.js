@@ -5,6 +5,7 @@ import { uploadFiles } from "../services/storage.service.js"
 export const createProduct = async (req, res) => {
     try {
         const { title, description, priceAmount, priceCurrency, status, category, variants } = req.body
+        const shippingDefaults = req.parsedShippingDefaults   // ⬅️ CHANGE 1: validator ne already parse kar diya hai
 
         const seller = req.user
 
@@ -80,6 +81,7 @@ export const createProduct = async (req, res) => {
             status,
             category,
             images,
+            shippingDefaults,   // ⬅️ CHANGE 2: product level pe save
             variants: variantsWithImages
         })
 

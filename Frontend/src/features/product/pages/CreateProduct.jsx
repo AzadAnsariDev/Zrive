@@ -2,14 +2,13 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { useProduct } from '../hook/useProduct'
 import { useNavigate } from 'react-router'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import {
   X, Plus, UploadCloud, Info, Camera, Banknote,
-  Trash2, ImageIcon, Layers, ArrowLeft,
+  Trash2, ImageIcon, Layers, ArrowLeft, Package,
 } from 'lucide-react'
 import { setError, setLoading } from '../../auth/state/authSlice'
 import KycRequiredModal from '../../seller/components/KycRequiredModal'
-import { useSelector } from 'react-redux'
 
 // ---- Config -----------------------------------------------------------
 const MAX_IMAGES = 6
@@ -50,7 +49,7 @@ const CreateProduct = () => {
   const variantFileInputRef = useRef(null)
   const [showKycModal, setShowKycModal] = useState(false)
   const user = useSelector((state) => state.auth.user)
-  const application = useSelector((state)=> state.seller.application)
+  const application = useSelector((state) => state.seller.application)
 
   const { handleCreateProduct } = useProduct()
   const navigate = useNavigate()
@@ -64,6 +63,7 @@ const CreateProduct = () => {
     defaultValues: {
       name: '', description: '', priceAmount: '',
       priceCurrency: 'INR', category: '',
+      weight: '', length: '', width: '', height: '',
     },
   })
 
@@ -200,7 +200,7 @@ const CreateProduct = () => {
 
   // ---------------- Submit ----------------
   const onSubmit = async (data) => {
-    if (user?.role !== 'seller') {          
+    if (user?.role !== 'seller') {
       setShowKycModal(true)
       return
     }
@@ -216,6 +216,16 @@ const CreateProduct = () => {
     formData.append('priceAmount', data.priceAmount)
     formData.append('priceCurrency', data.priceCurrency)
     formData.append('category', data.category)
+
+    const shippingDefaults = {
+      weight: Number(data.weight),
+      dimensions: {
+        length: Number(data.length),
+        width: Number(data.width),
+        height: Number(data.height),
+      },
+    }
+    formData.append('shippingDefaults', JSON.stringify(shippingDefaults))
 
     const variantsPayload = variants.map(({ size, color, sku, stock, priceAmount }) => {
       const v = { size, color, sku, stock }
@@ -371,6 +381,68 @@ const CreateProduct = () => {
                         ))}
                       </select>
                       <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] text-ink-soft">▾</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Shipping */}
+              <div className={cardClasses}>
+                <div className={cardHeadClasses}>
+                  <h2 className={cardTitleClasses}>Shipping Details</h2>
+                  <Package size={16} className="text-ink-soft/50" />
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClasses}>Weight (kg)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      placeholder="0.5"
+                      className={inputClasses}
+                      {...register('weight', { required: 'Weight is required', min: { value: 0.01, message: 'Must be greater than 0' } })}
+                    />
+                    {errors.weight && <p className={errorClasses}>{errors.weight.message}</p>}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className={labelClasses}>Length (cm)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        placeholder="20"
+                        className={inputClasses}
+                        {...register('length', { required: 'Required', min: { value: 0.1, message: 'Invalid' } })}
+                      />
+                      {errors.length && <p className={errorClasses}>{errors.length.message}</p>}
+                    </div>
+                    <div>
+                      <label className={labelClasses}>Width (cm)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        placeholder="15"
+                        className={inputClasses}
+                        {...register('width', { required: 'Required', min: { value: 0.1, message: 'Invalid' } })}
+                      />
+                      {errors.width && <p className={errorClasses}>{errors.width.message}</p>}
+                    </div>
+                    <div>
+                      <label className={labelClasses}>Height (cm)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        placeholder="10"
+                        className={inputClasses}
+                        {...register('height', { required: 'Required', min: { value: 0.1, message: 'Invalid' } })}
+                      />
+                      {errors.height && <p className={errorClasses}>{errors.height.message}</p>}
                     </div>
                   </div>
                 </div>

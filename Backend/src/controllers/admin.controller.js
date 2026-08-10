@@ -3,6 +3,7 @@ import adminModel from "../models/admin.model.js"
 import jwt from 'jsonwebtoken'
 import sellerModel from "../models/seller.model.js"
 import userModel from "../models/user.model.js"
+import { addPickupLocation } from "../services/shiprocket.service.js"
 
 export const adminLogin = async (req, res) => {
     const { email, password } = req.body

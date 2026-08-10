@@ -50,5 +50,34 @@ export const validateProduct = [
         return true
     }),
 
+  body("shippingDefaults")
+    .notEmpty()
+    .withMessage("Shipping details are required")
+    .custom((value, { req }) => {
+        let parsed
+        try {
+            parsed = JSON.parse(value)
+        } catch {
+            throw new Error("Shipping details must be valid JSON")
+        }
+
+        if (typeof parsed.weight !== "number" || parsed.weight <= 0) {
+            throw new Error("Weight must be a positive number")
+        }
+
+        const { dimensions } = parsed
+        if (
+            !dimensions ||
+            typeof dimensions.length !== "number" || dimensions.length <= 0 ||
+            typeof dimensions.width !== "number" || dimensions.width <= 0 ||
+            typeof dimensions.height !== "number" || dimensions.height <= 0
+        ) {
+            throw new Error("Length, width and height must be positive numbers")
+        }
+
+        req.parsedShippingDefaults = parsed
+        return true
+    }),
+
     validationRequest
 ]
