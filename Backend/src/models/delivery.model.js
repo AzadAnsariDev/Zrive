@@ -36,16 +36,24 @@ const deliverySchema = new mongoose.Schema(
       default: "order_created",
     },
     pickupScheduledDate: Date,
+    edd: { type: Date, default: null },
     statusHistory: [
       {
         status: String,
         timestamp: { type: Date, default: Date.now },
+        location: { type: String },   
         note: String,
       },
     ],
 
     labelUrl: { type: String, default: null },
     invoiceUrl: { type: String, default: null },
+    weight: { type: Number },
+    dimensions: {
+      length: Number,
+      width: Number,
+      height: Number,
+    },
 
     syncError: { type: String, default: null },
   },

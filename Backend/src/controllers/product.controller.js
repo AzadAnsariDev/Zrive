@@ -55,6 +55,25 @@ export const createProduct = async (req, res) => {
             const variantAmount = variant.price?.amount ?? variant.priceAmount ?? priceAmount;
             const variantCurrency = variant.price?.currency || priceCurrency || "INR";
 
+
+            const isFilled = (v) => v !== undefined && v !== null && v !== ''
+
+            const variantWeight = isFilled(variant.weight)
+                ? Number(variant.weight)
+                : shippingDefaults.weight
+
+            const variantDimensions = {
+                length: isFilled(variant.dimensions?.length)
+                    ? Number(variant.dimensions.length)
+                    : shippingDefaults.dimensions.length,
+                width: isFilled(variant.dimensions?.width)
+                    ? Number(variant.dimensions.width)
+                    : shippingDefaults.dimensions.width,
+                height: isFilled(variant.dimensions?.height)
+                    ? Number(variant.dimensions.height)
+                    : shippingDefaults.dimensions.height,
+            }
+
             const built = {
                 size: variant.size,
                 color: variant.color,
@@ -64,7 +83,9 @@ export const createProduct = async (req, res) => {
                     amount: Number(variantAmount),
                     currency: variantCurrency
                 },
-                images: variantImages
+                images: variantImages,
+                weight: variantWeight,
+                dimensions: variantDimensions,
             }
 
             return built
@@ -81,7 +102,7 @@ export const createProduct = async (req, res) => {
             status,
             category,
             images,
-            shippingDefaults,   // ⬅️ CHANGE 2: product level pe save
+            shippingDefaults,  
             variants: variantsWithImages
         })
 

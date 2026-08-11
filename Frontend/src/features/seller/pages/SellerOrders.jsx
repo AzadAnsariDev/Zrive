@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router'
+
 import {
   Clock,
   Check,
@@ -234,6 +236,7 @@ const RejectModal = ({ order, onClose, onConfirm, submitting }) => {
 // Single order card
 // ---------------------------------------------------------------------
 const OrderCard = ({ order, index, onAccept, onReject, actioningId }) => {
+   const navigate = useNavigate()
   const item = order.orderItems?.[0]
   const extraCount = (order.orderItems?.length || 1) - 1
   const status = STATUS_META[order.orderStatus] || STATUS_META.placed
@@ -265,7 +268,9 @@ const OrderCard = ({ order, index, onAccept, onReject, actioningId }) => {
       ) : expired ? (
         <span className="text-[12px] italic text-ink-soft">Confirmation window closed</span>
       ) : (
-        <button className="flex items-center gap-1 text-[11.5px] font-semibold tracking-[0.04em] uppercase text-ink-soft hover:text-ink transition-colors">
+        <button className="flex items-center gap-1 text-[11.5px] font-semibold tracking-[0.04em] uppercase text-ink-soft hover:text-ink transition-colors"
+        onClick={() => navigate(`/seller/orders/${order._id}`)}
+        >
           Details
           <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" />
         </button>
@@ -300,7 +305,9 @@ const OrderCard = ({ order, index, onAccept, onReject, actioningId }) => {
       ) : expired ? (
         <span className="text-[11.5px] italic text-ink-soft text-right">Window closed</span>
       ) : (
-        <button className="flex items-center justify-end gap-1 text-[11px] font-semibold tracking-[0.04em] uppercase text-ink-soft hover:text-ink transition-colors ml-auto">
+        <button className="flex items-center justify-end gap-1 text-[11px] font-semibold tracking-[0.04em] uppercase text-ink-soft hover:text-ink transition-colors ml-auto"
+        onClick={() => navigate(`/seller/orders/${order._id}`)}
+        >
           Details
           <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
         </button>
@@ -447,6 +454,7 @@ const SkeletonCard = ({ index }) => (
 // Page
 // ---------------------------------------------------------------------
 const SellerOrders = () => {
+  const navigate = useNavigate()
   const { handleGetSellerOrders, handleAcceptOrder, handleRejectOrder } = useSeller()
   const orders = useSelector((state) => state.seller?.allOrders) || []
   const loading = useSelector((state) => state.seller?.loading)
@@ -455,6 +463,7 @@ const SellerOrders = () => {
   const [filter, setFilter] = useState('all')
   const [actioningId, setActioningId] = useState(null)
   const [rejectTarget, setRejectTarget] = useState(null)
+
 
   useEffect(() => {
     handleGetSellerOrders()
@@ -483,8 +492,9 @@ const SellerOrders = () => {
 
   const accept = async (orderId) => {
     setActioningId(orderId)
-    await handleAcceptOrder(orderId)
+    const success = await handleAcceptOrder(orderId)
     setActioningId(null)
+    if (success) navigate(`/seller/orders/${orderId}`)
   }
 
   const reject = async (orderId, reason, note) => {

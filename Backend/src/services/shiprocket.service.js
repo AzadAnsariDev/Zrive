@@ -109,12 +109,12 @@ export const buildShiprocketOrderPayload = ({ order, seller, buyerEmail, items, 
     }
 }
 
-export const assignAWB = async (shipmentId) => {
+export const assignAWB = async (shipmentId, courierCompanyId) => {
     const token = await getShiprocketToken()
 
     const response = await axios.post(
         `${SHIPROCKET_BASE_URL}/courier/assign/awb`,
-        { shipment_id: shipmentId },
+        { shipment_id: shipmentId, courier_id: courierCompanyId },
         { headers: { Authorization: `Bearer ${token}` } }
     )
 
@@ -124,13 +124,17 @@ export const assignAWB = async (shipmentId) => {
 export const requestPickup = async (shipmentId) => {
     const token = await getShiprocketToken()
 
-    const response = await axios.post(
-        `${SHIPROCKET_BASE_URL}/courier/generate/pickup`,
-        { shipment_id: [shipmentId] },   // multiple shipment can be given
-        { headers: { Authorization: `Bearer ${token}` } }
-    )
-
-    return response.data
+    try {
+        const response = await axios.post(
+            `${SHIPROCKET_BASE_URL}/courier/generate/pickup`,
+            { shipment_id: [shipmentId] },
+            { headers: { Authorization: `Bearer ${token}` } }
+        )
+        return response.data
+    } catch (error) {
+        console.log("Shiprocket pickup error:", JSON.stringify(error.response?.data))
+        throw error   // upar wapas throw karo, jaisa pehle tha
+    }
 }
 
 export const generateLabel = async (shipmentId) => {
@@ -166,5 +170,29 @@ export const trackShipmentByAWB = async (awbCode) => {
         { headers: { Authorization: `Bearer ${token}` } }
     )
 
+    return response.data
+}
+
+export const checkCourierServiceability = async ({ pickup_postcode, delivery_postcode, weight, cod }) => {
+    const token = await getShiprocketToken()
+
+    const response = await axios.get(
+        `${SHIPROCKET_BASE_URL}/courier/serviceability/`,
+        {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { pickup_postcode, delivery_postcode, weight, cod },
+        }
+    )
+
+    return response.data.data   // { available_courier_companies: [...] }
+}
+
+export const cancelShiprocketOrder = async (shiprocketOrderId) => {
+    const token = await getShiprocketToken()
+    const response = await axios.post(
+        `${SHIPROCKET_BASE_URL}/orders/cancel`,
+        { ids: [shiprocketOrderId] },
+        { headers: { Authorization: `Bearer ${token}` } }
+    )
     return response.data
 }

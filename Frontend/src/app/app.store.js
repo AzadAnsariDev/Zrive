@@ -6,6 +6,7 @@ import addressReducer from "../features/address/state/addressSlice"
 import orderReducer from "../features/order/state/orderSlice"
 import sellerReducer from "../features/seller/state/sellerSlice"
 import adminReducer from "../features/admin/state/adminSlice"
+import deliveryReducer from "../features/delivery/state/deliverySlice"
 export const store = configureStore({
     reducer :{
         auth : authReducer,
@@ -14,7 +15,8 @@ export const store = configureStore({
         address: addressReducer,
         order: orderReducer,
         seller: sellerReducer,
-        admin: adminReducer
+        admin: adminReducer,
+        delivery: deliveryReducer
     }
 })
 

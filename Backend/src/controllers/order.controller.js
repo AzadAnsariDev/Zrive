@@ -13,6 +13,7 @@ import cartModel from "../models/cart.model.js";
 import crypto from "crypto";
 import { prepareOrderRejection, processRefund } from "../services/orderRejection.service.js";
 import { deductStock, restoreStock } from "../services/inventory.service.js";
+import { createDeliveryForOrder, assignAWBForDelivery, generateLabelForDelivery } from "../services/delivery.service.js";
 
 export const createOrder = async (req, res) => {
   try {
@@ -525,8 +526,12 @@ export const acceptOrder = async (req, res) => {
   } finally {
     session.endSession();
   }
+
   try {
-    await createDeliveryForOrder(order._id)
+    const delivery = await createDeliveryForOrder(order._id)
+
+    await assignAWBForDelivery(delivery._id)
+
     return res.status(200).json({
       success: true,
       message: "Order accepted and delivery created successfully",

@@ -3,7 +3,15 @@ import productModel from "../models/product.model.js"
 import sellerModel from "../models/seller.model.js"
 import userModel from "../models/user.model.js"
 import deliveryModel from "../models/delivery.model.js"
-import { createShiprocketOrder, buildShiprocketOrderPayload } from "./shiprocket.service.js"
+import { createShiprocketOrder, buildShiprocketOrderPayload, cancelShiprocketOrder } from "./shiprocket.service.js"
+import {
+    assignAWB,
+    requestPickup,
+    generateLabel,
+    generateInvoice,
+    trackShipmentByAWB,
+    checkCourierServiceability
+} from "./shiprocket.service.js"
 
 const resolveItemShippingData = async (orderItem) => {
     const product = await productModel.findById(orderItem.productId)
@@ -93,44 +101,94 @@ export const createDeliveryForOrder = async (orderId) => {
         shipmentId: shiprocketResponse.shipment_id,
         status: "order_created",
         statusHistory: [{ status: "order_created", note: "Shiprocket order created successfully" }],
+        weight: totalWeight,
+        dimensions: maxDimensions
     })
 
     return delivery
 }
 
-import {
-    assignAWB,
-    requestPickup,
-    generateLabel,
-    generateInvoice,
-    trackShipmentByAWB,
-} from "./shiprocket.service.js"
 
+const MIN_RATING = 4
+const MAX_DELIVERY_COST = 100
+
+const getTopCandidates = (couriers = []) => {
+    return couriers
+        .filter((c) => Number(c.rating) >= MIN_RATING)
+        .sort((a, b) => a.rate - b.rate)
+        .slice(0, 3)
+}
 
 export const assignAWBForDelivery = async (deliveryId) => {
     const delivery = await deliveryModel.findById(deliveryId)
-
     if (!delivery) throw new Error("Delivery not found")
 
-    const result = await assignAWB(delivery.shipmentId)
+    const order = await orderModel.findById(delivery.order)
+    if (!order) throw new Error("Order not found for this delivery")
 
-    if (result.awb_assign_status === 0) {
-        delivery.syncError = result.response?.data?.awb_assign_error || "AWB assignment failed"
+    const seller = await sellerModel.findOne({ userId: delivery.seller })
+    if (!seller?.pickupAddress?.pincode) {
+        throw new Error("Seller pickup pincode missing — cannot check serviceability")
+    }
+
+    const serviceability = await checkCourierServiceability({
+        pickup_postcode: seller.pickupAddress.pincode,
+        delivery_postcode: order.shippingAddress.pincode,
+        weight: delivery.weight,
+        cod: order.paymentMethod === "cod" ? 1 : 0,
+    })
+
+    const candidates = getTopCandidates(serviceability?.available_courier_companies)
+
+    if (!candidates.length) {
+        delivery.status = "failed"
+        delivery.syncError = "No courier found with rating >= 4"
         await delivery.save()
         throw new Error(delivery.syncError)
     }
 
-    delivery.awbCode = result.response.data.awb_code
-    delivery.courierName = result.response.data.courier_name
-    delivery.courierCompanyId = result.response.data.courier_company_id
-    delivery.status = "awb_assigned"
-    delivery.statusHistory.push({ status: "awb_assigned", note: `Courier: ${delivery.courierName}` })
-    delivery.syncError = null
+    let lastError = null
 
+    for (const courier of candidates) {
+        if (courier.rate > MAX_DELIVERY_COST) {
+            // TODO: notify seller ("Contact admin — higher delivery cost than expected")
+            // TODO: notify admin ("Delivery cost higher than expected in this order")
+            lastError = `Courier ${courier.courier_name} cost ₹${courier.rate} exceeds ₹${MAX_DELIVERY_COST} limit`
+            break
+        }
+
+        try {
+            const result = await assignAWB(delivery.shipmentId, courier.courier_company_id)
+
+            if (result.awb_assign_status === 0) {
+                lastError = result.response?.data?.awb_assign_error || `${courier.courier_name} assign failed`
+                continue
+            }
+
+            delivery.awbCode = result.response.data.awb_code
+            delivery.courierName = result.response.data.courier_name
+            delivery.courierCompanyId = result.response.data.courier_company_id
+            delivery.status = "awb_assigned"
+            delivery.statusHistory.push({
+                status: "awb_assigned",
+                note: `Courier: ${delivery.courierName} — ₹${courier.rate}, rating ${courier.rating}`,
+            })
+            delivery.syncError = null
+
+            await delivery.save()
+            return delivery
+        } catch (error) {
+            lastError = error.response?.data?.message || error.message
+            continue
+        }
+    }
+
+    delivery.status = "failed"
+    delivery.syncError = lastError || "All courier attempts failed"
     await delivery.save()
-    return delivery
-}
 
+    throw new Error(delivery.syncError)
+}
 
 export const schedulePickupForDelivery = async (deliveryId) => {
     const delivery = await deliveryModel.findById(deliveryId)
@@ -153,7 +211,6 @@ export const schedulePickupForDelivery = async (deliveryId) => {
     return delivery
 }
 
-
 export const generateLabelForDelivery = async (deliveryId) => {
     const delivery = await deliveryModel.findById(deliveryId)
 
@@ -169,6 +226,15 @@ export const generateLabelForDelivery = async (deliveryId) => {
     return delivery
 }
 
+const STATUS_MAP = {
+    "Pickup Generated": "pickup_scheduled",
+    "Picked Up": "picked_up",
+    "In Transit": "in_transit",
+    "Out For Delivery": "out_for_delivery",
+    "Delivered": "delivered",
+    "RTO Initiated": "rto",
+    "Cancelled": "cancelled",
+}
 
 export const trackDelivery = async (deliveryId) => {
     const delivery = await deliveryModel.findById(deliveryId)
@@ -178,5 +244,71 @@ export const trackDelivery = async (deliveryId) => {
     }
 
     const trackingData = await trackShipmentByAWB(delivery.awbCode)
-    return trackingData
+    console.log(trackingData)
+
+    const activities = trackingData?.tracking_data?.shipment_track_activities || []
+    const chronological = [...activities].reverse()
+
+    let historyChanged = false
+
+    for (const activity of chronological) {
+        const alreadyExists = delivery.statusHistory.some(
+            (h) => h.note === activity.activity && h.timestamp?.toISOString() === new Date(activity.date).toISOString()
+        )
+        if (alreadyExists) continue
+
+        delivery.statusHistory.push({
+            status: STATUS_MAP[activity.status] || delivery.status, // internal enum
+            note: activity.activity,        // real Shiprocket text — "Shipment In Transit"
+            location: activity.location,    // real location
+            timestamp: new Date(activity.date),
+        })
+        historyChanged = true
+    }
+
+    // delivery.status ko sirf latest/current status pe update karo
+    const latestStatus = trackingData?.tracking_data?.shipment_track?.[0]?.current_status
+    const mappedCurrent = latestStatus && STATUS_MAP[latestStatus]
+    if (mappedCurrent && delivery.status !== mappedCurrent) {
+        delivery.status = mappedCurrent
+        historyChanged = true
+    }
+
+    const rawEdd = trackingData?.tracking_data?.etd
+    if (rawEdd) {
+        const eddDate = new Date(rawEdd.replace(" ", "T"))
+        if (!isNaN(eddDate.getTime()) && (!delivery.edd || delivery.edd.getTime() !== eddDate.getTime())) {
+            delivery.edd = eddDate
+            historyChanged = true
+        }
+    }
+
+
+    if (historyChanged) {
+        await delivery.save()
+    }
+
+    return delivery
+}
+
+const NON_CANCELLABLE_STATUSES = ["picked_up", "in_transit", "delivered", "cancelled"]
+
+export const cancelDeliveryForDelivery = async (deliveryId) => {
+    const delivery = await deliveryModel.findById(deliveryId)
+    if (!delivery) throw new Error("Delivery not found")
+
+    if (NON_CANCELLABLE_STATUSES.includes(delivery.status)) {
+        throw new Error(`Cannot cancel — shipment is already '${delivery.status.replace(/_/g, " ")}'`)
+    }
+    if (!delivery.shiprocketOrderId) {
+        throw new Error("No Shiprocket order to cancel")
+    }
+
+    await cancelShiprocketOrder(delivery.shiprocketOrderId)
+
+    delivery.status = "cancelled"
+    delivery.statusHistory.push({ status: "cancelled", note: "Cancelled by seller before pickup" })
+    await delivery.save()
+
+    return delivery
 }
