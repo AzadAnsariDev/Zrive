@@ -1,3 +1,4 @@
+// ============================= OrderDetail.jsx (BUYER) =============================
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
@@ -22,9 +23,6 @@ import { setCurrentDelivery } from "../../delivery/state/deliverySlice.js";
 import CancelOrderModal from "../components/CancelOrderModal";
 
 // ── Status → hero badge + note ─────────────────────────────
-// NOTE: "confirmed" and "packed" are seller-side/internal stages.
-// The buyer only ever sees "Placed" until the order actually ships —
-// showing "Confirmed" was leaking internal seller workflow state.
 const STATUS_CONFIG = {
   pending_payment: { label: "Awaiting payment", note: "We're waiting for your payment to confirm.", icon: Clock, tone: "pending" },
   placed: { label: "Placed", note: "Your order is being prepared.", icon: Check, tone: "success" },
@@ -36,12 +34,8 @@ const STATUS_CONFIG = {
   failed: { label: "Payment failed", note: "The payment for this order didn't go through.", icon: XCircle, tone: "error" },
 };
 
-// Cancel is allowed for the buyer up until the order actually ships —
-// once shipped, the courier already has it, so cancelling stops making sense.
 const CANCELLABLE_STATUSES = ["placed", "confirmed", "packed"];
 
-// cancelReason values that mean the SELLER rejected the order
-// (as opposed to "buyer_cancelled", which the buyer initiated themselves).
 const SELLER_REJECTION_REASONS = ["out_of_stock", "unable_to_fulfill", "other"];
 
 const SELLER_REJECTION_LABEL = {
@@ -50,10 +44,6 @@ const SELLER_REJECTION_LABEL = {
   other: "the seller was unable to fulfill this order",
 };
 
-// Delivery record can already exist (AWB assigned) before order.orderStatus
-// flips to "shipped" — the buyer should watch that happen live, not just
-// see the last two stages. So we start pulling delivery data as soon as
-// the order is confirmed, not only once it ships.
 const DELIVERY_TRACKABLE_STATUSES = ["placed", "confirmed", "packed", "shipped", "delivered"];
 
 const formatDate = (iso) =>
@@ -67,8 +57,6 @@ const formatDate = (iso) =>
     })
     : "—";
 
-// EDD is an estimate, not a moment that happened — shown as a plain
-// weekday + date, no time, so it doesn't read like a logged event.
 const formatEddDate = (edd) => {
   if (!edd) return null;
   const d = new Date(edd);
@@ -77,9 +65,6 @@ const formatEddDate = (edd) => {
 };
 
 // ── Buyer-facing milestone sequence ─────────────────────────
-// Raw Shiprocket scan statuses are granular (pickup_scheduled, picked_up,
-// in_transit...) — the buyer only needs the handful of moments that
-// actually mean something to them.
 const MILESTONE_SEQUENCE = ["order_created", "awb_assigned", "in_transit", "out_for_delivery", "delivered"];
 
 const MILESTONE_META = {
@@ -90,36 +75,45 @@ const MILESTONE_META = {
   delivered: { label: "Delivered", note: "Your order has been delivered.", icon: PackageCheck },
 };
 
-// Several raw statuses collapse into the same buyer-facing milestone.
-const RAW_STATUS_TO_MILESTONE = {
-  order_created: "order_created",
-  awb_assigned: "awb_assigned",
-  pickup_scheduled: "awb_assigned",
-  picked_up: "in_transit",
-  in_transit: "in_transit",
-  out_for_delivery: "out_for_delivery",
-  delivered: "delivered",
-};
+// ---------------------------------------------------------------------
+// Real Shiprocket data is messy in practice: the `status` field on a
+// statusHistory entry is often coarse/reused (e.g. several entries still
+// tagged "pickup_scheduled" long after actual pickup), while the real
+// signal lives in the free-text `note` ("In Transit - Shipment picked up",
+// "In Transit - Bag Added To Trip", etc). Trusting `status` alone is why
+// the buyer timeline used to stay stuck on "Placed" — this classifier
+// reads note text first (falling back to status) so real courier scans
+// actually move the tracker.
+// ---------------------------------------------------------------------
+function classifyMilestone(entry) {
+  const text = `${entry?.note || ""} ${entry?.status || ""}`.toLowerCase().replace(/_/g, " ");
+  if (/\brto\b|return to origin/.test(text)) return "rto";
+  if (/cancel/.test(text)) return "cancelled";
+  if (/\bdelivered\b/.test(text)) return "delivered";
+  if (/out\s*for\s*delivery/.test(text)) return "out_for_delivery";
+  if (/picked\s*up|in\s*transit|manifest|bag\s*added|trip\s*arrived|origin\s*center|dispatch/.test(text)) return "in_transit";
+  if (/awb|pickup\s*scheduled|out\s*for\s*pickup|courier\s*assign/.test(text)) return "awb_assigned";
+  if (/order\s*(placed|created)/.test(text)) return "order_created";
+  return null;
+}
 
 function buildMilestoneTimeline(order, delivery) {
   const history = delivery?.statusHistory || [];
   const reachedAt = {};
 
   history.forEach((entry) => {
-    const milestone = RAW_STATUS_TO_MILESTONE[entry.status];
-    if (!milestone) return;
+    const milestone = classifyMilestone(entry);
+    if (!milestone || milestone === "cancelled" || milestone === "rto") return;
     if (!reachedAt[milestone] || new Date(entry.timestamp) < new Date(reachedAt[milestone])) {
       reachedAt[milestone] = entry.timestamp;
     }
   });
 
-  // Order Placed is always reached — fall back to the order's own
-  // createdAt if the delivery record hasn't logged it separately.
   if (!reachedAt.order_created) {
     reachedAt.order_created = order.createdAt;
   }
 
-  const terminalEntry = [...history].reverse().find((e) => ["cancelled", "rto"].includes(e.status));
+  const terminalEntry = [...history].reverse().find((e) => ["cancelled", "rto"].includes(classifyMilestone(e)));
 
   const milestones = MILESTONE_SEQUENCE.map((key) => ({
     key,
@@ -133,12 +127,28 @@ function buildMilestoneTimeline(order, delivery) {
   return { milestones, lastReachedIndex, terminalEntry };
 }
 
+// Delivery doc can reach "in_transit"/"delivered" before order.orderStatus
+// is synced on the order itself — read the milestone data too so the hero
+// badge never sits stuck on "Placed" while the parcel has actually moved.
+function getEffectiveOrderStatus(order, delivery) {
+  if (["cancelled", "failed", "pending_payment"].includes(order.orderStatus)) {
+    return order.orderStatus;
+  }
+  const history = delivery?.statusHistory || [];
+  const reached = new Set(history.map(classifyMilestone).filter(Boolean));
+  if (reached.has("delivered")) return "delivered";
+  if (reached.has("out_for_delivery") || reached.has("in_transit")) return "shipped";
+  return order.orderStatus;
+}
+
+// Entries that belong to the courier journey itself — used to filter the
+// detailed "Track Shipment" log so it only starts once the parcel is
+// actually picked up, instead of repeating the order_created/awb_assigned
+// stuff already shown in the milestone bar above it.
+const POST_PICKUP_MILESTONES = ["in_transit", "out_for_delivery", "delivered", "cancelled", "rto"];
+
 // ---------------------------------------------------------------------
 // DeliveryProgressTimeline — the buyer's main "where's my order" view.
-// Mounted fresh (via a `key` on the parent that changes whenever new
-// tracking data arrives) so the whole sequence — nodes popping in,
-// each connecting segment filling in turn — replays from the top every
-// time, the way a good native tracking screen does.
 // ---------------------------------------------------------------------
 const DeliveryProgressTimeline = ({ order, delivery }) => {
   const { milestones, lastReachedIndex, terminalEntry } = buildMilestoneTimeline(order, delivery);
@@ -258,7 +268,7 @@ const DeliveryProgressTimeline = ({ order, delivery }) => {
           </span>
           <div className="pt-1.5">
             <p className="text-xs font-semibold tracking-[0.1em] uppercase text-error">
-              {terminalEntry.status === "rto" ? "Returned to Origin" : "Shipment Cancelled"}
+              {classifyMilestone(terminalEntry) === "rto" ? "Returned to Origin" : "Shipment Cancelled"}
             </p>
             <p className="text-xs text-ink-soft mt-1">{formatDate(terminalEntry.timestamp)}</p>
           </div>
@@ -269,25 +279,16 @@ const DeliveryProgressTimeline = ({ order, delivery }) => {
 };
 
 // ---------------------------------------------------------------------
-// Detailed scan-by-scan activity log (Meesho/Myntra "full tracking"
-// style) — optional, tucked behind a toggle under the main milestone
-// timeline for buyers who want the raw courier activity.
+// Detailed scan-by-scan activity log — only the entries from actual
+// pickup onward (order_created/awb_assigned are already shown in the
+// milestone bar above, so repeating them here is just noise).
 // ---------------------------------------------------------------------
 const MILESTONE_LABELS = {
-  order_created: "Order Placed",
-  awb_assigned: "Shipment Assigned",
-  pickup_scheduled: "Pickup Scheduled",
-  picked_up: "Picked Up",
   in_transit: "Shipped",
   out_for_delivery: "Out for Delivery",
   delivered: "Delivered",
   rto: "Return Initiated",
   cancelled: "Cancelled",
-};
-
-const FALLBACK_LOCATION = {
-  order_created: "Warehouse",
-  awb_assigned: "Warehouse",
 };
 
 const TrackingTimeline = ({ history }) => {
@@ -297,28 +298,36 @@ const TrackingTimeline = ({ history }) => {
 
   const rows = [];
   let lastDayKey = null;
-  let lastMilestoneStatus = null;
+  let lastMilestone = null;
   sorted.forEach((entry, i) => {
     const dayKey = new Date(entry.timestamp).toDateString();
     if (dayKey !== lastDayKey) {
       rows.push({ type: "date", key: `date-${dayKey}`, dayKey });
       lastDayKey = dayKey;
     }
-    const isMilestone = entry.status !== lastMilestoneStatus;
-    lastMilestoneStatus = entry.status;
+    const milestone = classifyMilestone(entry);
+    const isMilestone = milestone !== lastMilestone;
+    lastMilestone = milestone;
     rows.push({
       type: "entry",
       key: entry._id || `entry-${i}`,
       entry,
+      milestone,
       isMilestone,
       isLatestOverall: i === 0,
     });
   });
 
-  const isDelivered = sorted[0]?.status === "delivered";
+  const isDelivered = classifyMilestone(sorted[0]) === "delivered";
 
   return (
     <div className="rounded-lg bg-surface border border-border p-5">
+      <style>{`
+        @keyframes tl-row-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .tl-row { animation: tl-row-in 0.4s ease-out both; }
+        @media (prefers-reduced-motion: reduce) { .tl-row { animation: none !important; } }
+      `}</style>
+
       {isDelivered && (
         <div className="flex items-center gap-2 mb-5">
           <CheckCircle2 size={18} className="text-success" strokeWidth={2} />
@@ -339,7 +348,7 @@ const TrackingTimeline = ({ history }) => {
 
           if (row.type === "date") {
             return (
-              <div key={row.key} className="flex gap-3">
+              <div key={row.key} className="tl-row flex gap-3" style={{ animationDelay: `${idx * 0.03}s` }}>
                 <div className="flex flex-col items-center w-[10px] shrink-0">
                   <span className="w-px flex-1 bg-border" />
                 </div>
@@ -354,13 +363,13 @@ const TrackingTimeline = ({ history }) => {
             );
           }
 
-          const { entry, isMilestone, isLatestOverall } = row;
-          const isNegative = ["cancelled", "rto"].includes(entry.status);
-          const headline = MILESTONE_LABELS[entry.status] || entry.status.replace(/_/g, " ");
-          const location = entry.location || FALLBACK_LOCATION[entry.status];
+          const { entry, milestone, isMilestone, isLatestOverall } = row;
+          const isNegative = ["cancelled", "rto"].includes(milestone);
+          const headline = MILESTONE_LABELS[milestone] || (entry.status || "").replace(/_/g, " ") || "Update";
+          const location = entry.location;
 
           return (
-            <div key={row.key} className="flex gap-3">
+            <div key={row.key} className="tl-row flex gap-3" style={{ animationDelay: `${idx * 0.03}s` }}>
               <div className="flex flex-col items-center w-[10px] shrink-0">
                 {isMilestone ? (
                   isNegative ? (
@@ -391,23 +400,15 @@ const TrackingTimeline = ({ history }) => {
                     </span>
                   </p>
                 ) : (
-                  <>
-                    <p className="text-[13px] leading-snug text-ink-soft">{entry.note || headline}</p>
-                    <p className="text-[11px] text-ink-soft/70 mt-0.5">
-                      {new Date(entry.timestamp).toLocaleTimeString("en-IN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                      {location ? ` · ${location}` : ""}
-                    </p>
-                  </>
+                  <p className="text-[13px] leading-snug text-ink-soft">{entry.note || headline}</p>
                 )}
-                {isMilestone && entry.note && entry.note !== headline && (
-                  <p className="text-[11px] text-ink-soft/70 mt-0.5">
-                    {entry.note}
-                    {location ? ` · ${location}` : ""}
-                  </p>
-                )}
+                <p className="text-[11px] text-ink-soft/70 mt-0.5">
+                  {new Date(entry.timestamp).toLocaleTimeString("en-IN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  {location ? ` · ${location}` : ""}
+                </p>
               </div>
             </div>
           );
@@ -438,10 +439,6 @@ const OrderDetail = () => {
     handleGetOrderById(orderId);
   }, [orderId]);
 
-  // Fetch the delivery record as soon as the order is confirmed — not
-  // just once it ships — so "Shipment Assigned" can show up live the
-  // moment the seller assigns a courier. Cleanup clears stale state so
-  // a different order never shows a previous one's timeline.
   useEffect(() => {
     if (order && DELIVERY_TRACKABLE_STATUSES.includes(order.orderStatus)) {
       handleGetDeliveryByOrderBuyer(order._id);
@@ -454,9 +451,6 @@ const OrderDetail = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order?.orderStatus, order?._id]);
 
-  // Once the delivery has an AWB, pull the real Shiprocket scan history
-  // automatically — no button, the buyer just sees it happen. Guarded by
-  // a ref so it fires once per delivery record rather than looping.
   useEffect(() => {
     if (
       currentDelivery?._id &&
@@ -492,10 +486,11 @@ const OrderDetail = () => {
 
   const isCancelled = order.orderStatus === "cancelled";
   const isSellerRejected = isCancelled && SELLER_REJECTION_REASONS.includes(order.cancelReason);
+  const effectiveStatus = getEffectiveOrderStatus(order, currentDelivery);
 
   const config = isSellerRejected
     ? { label: "Cancelled by seller", note: "This order was cancelled by the seller.", icon: ShieldAlert, tone: "error" }
-    : STATUS_CONFIG[order.orderStatus] || STATUS_CONFIG.placed;
+    : STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.placed;
 
   const items = order.orderItems || [];
   const heroItem = items[0];
@@ -503,8 +498,10 @@ const OrderDetail = () => {
   const isTerminal = order.orderStatus === "cancelled" || order.orderStatus === "failed";
   const canCancel = CANCELLABLE_STATUSES.includes(order.orderStatus);
 
-  // Forces the timeline to remount — and every entrance/line animation to
-  // replay from the top — whenever fresh tracking data comes in.
+  const postPickupHistory = (currentDelivery?.statusHistory || []).filter((e) =>
+    POST_PICKUP_MILESTONES.includes(classifyMilestone(e))
+  );
+
   const timelineKey = `${currentDelivery?._id || "none"}-${currentDelivery?.statusHistory?.length || 0}-${order.orderStatus}`;
 
   return (
@@ -530,7 +527,6 @@ const OrderDetail = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-charcoal/85 via-charcoal/10 to-charcoal/30" />
 
-          {/* top bar */}
           <div className="absolute top-0 inset-x-0 flex items-center justify-between px-5 pt-5">
             <button
               onClick={() => navigate("/orders")}
@@ -548,7 +544,6 @@ const OrderDetail = () => {
             </Link>
           </div>
 
-          {/* bottom overlay content */}
           <div className="absolute bottom-0 inset-x-0 px-6 pb-6">
             <div className="inline-block bg-cream/95 backdrop-blur rounded-md px-3.5 py-2 mb-3">
               <p className="text-[10px] tracking-[0.15em] text-ink-soft uppercase mb-0.5">
@@ -633,7 +628,6 @@ const OrderDetail = () => {
 
           {isTerminal ? (
             isSellerRejected ? (
-              // ── Seller-rejected apology block ──────────────────
               <div className="relative rounded-xl bg-error/5 border border-error/20 p-6 overflow-hidden">
                 <div className="flex items-start gap-3.5">
                   <div className="shrink-0 w-9 h-9 rounded-full bg-error/10 flex items-center justify-center">
@@ -681,7 +675,6 @@ const OrderDetail = () => {
                 </div>
               </div>
             ) : (
-              // ── Generic cancelled / failed block ──────────────
               <div className="flex items-start gap-3 rounded-lg bg-error/5 border border-error/20 p-4">
                 <XCircle size={18} className="text-error shrink-0 mt-0.5" strokeWidth={2} />
                 <div className="flex-1">
@@ -718,23 +711,18 @@ const OrderDetail = () => {
             <>
               <DeliveryProgressTimeline key={timelineKey} order={order} delivery={currentDelivery} />
 
-              {/* Track Shipment only makes sense once the order has actually
-                  shipped — before that, statusHistory only has our own
-                  order_created/awb_assigned events, not real Shiprocket
-                  scan data, so there's nothing genuine to "track" yet. */}
-              {["shipped", "delivered"].includes(order.orderStatus) &&
-                currentDelivery?.statusHistory?.length > 0 && (
-                  <button
-                    onClick={() => setShowDetailedActivity((v) => !v)}
-                    className="mt-1 flex items-center gap-1.5 text-[11px] tracking-[0.05em] uppercase text-ink-soft hover:text-ink transition-colors underline underline-offset-2"
-                  >
-                    <MapPin size={12} />
-                    {showDetailedActivity ? "Hide Tracking" : "Track Shipment"}
-                  </button>
-                )}
+              {postPickupHistory.length > 0 && (
+                <button
+                  onClick={() => setShowDetailedActivity((v) => !v)}
+                  className="mt-1 flex items-center gap-1.5 text-[11px] tracking-[0.05em] uppercase text-ink-soft hover:text-ink transition-colors underline underline-offset-2"
+                >
+                  <MapPin size={12} />
+                  {showDetailedActivity ? "Hide Tracking" : "Track Shipment"}
+                </button>
+              )}
               {showDetailedActivity && (
                 <div className="mt-4">
-                  <TrackingTimeline history={currentDelivery?.statusHistory} />
+                  <TrackingTimeline history={postPickupHistory} />
                 </div>
               )}
             </>
