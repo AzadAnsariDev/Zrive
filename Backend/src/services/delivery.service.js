@@ -236,6 +236,50 @@ const STATUS_MAP = {
     "Cancelled": "cancelled",
 }
 
+// ── Delivery status → Order status sync ────────────────────────────
+// Delivery hi actual tracking source of truth hai — jab delivery ka status
+// aage badhta hai (shipped/delivered/etc.), order.orderStatus ko bhi wahi
+// reflect karna chahiye, taaki AllOrders.jsx ko frontend-side merge/map
+// karne ki zaroorat na pade — order khud sahi status carry kare.
+const DELIVERY_TO_ORDER_STATUS = {
+    picked_up: "shipped",
+    in_transit: "shipped",
+    out_for_delivery: "shipped",
+    delivered: "delivered",
+    rto: "cancelled",
+    cancelled: "cancelled",
+    // pickup_scheduled / awb_assigned / order_created → order abhi "placed" hi rahega
+}
+
+const ORDER_STATUS_PRIORITY = {
+    pending_payment: 0,
+    failed: 0,
+    cancelled: 0,
+    placed: 1,
+    confirmed: 1,
+    packed: 1,
+    partially_cancelled: 1,
+    shipped: 2,
+    delivered: 3,
+}
+
+const syncOrderStatusFromDelivery = async (delivery) => {
+    const targetStatus = DELIVERY_TO_ORDER_STATUS[delivery.status]
+    if (!targetStatus) return
+
+    const order = await orderModel.findById(delivery.order)
+    if (!order) return
+
+    const currentPriority = ORDER_STATUS_PRIORITY[order.orderStatus] ?? 0
+    const targetPriority = ORDER_STATUS_PRIORITY[targetStatus]
+
+    // forward-only guard — late/out-of-order tracking event se order kabhi peeche na jaaye
+    if (targetPriority <= currentPriority) return
+
+    order.orderStatus = targetStatus
+    await order.save()
+}
+
 export const trackDelivery = async (deliveryId) => {
     const delivery = await deliveryModel.findById(deliveryId)
 
@@ -283,10 +327,13 @@ export const trackDelivery = async (deliveryId) => {
         }
     }
 
-
     if (historyChanged) {
         await delivery.save()
     }
+
+    // order ko bhi sync karo — is call ke baad order.orderStatus khud sahi ho jayega,
+    // frontend ko koi alag mapping/merge logic maintain nahi karni padegi
+    await syncOrderStatusFromDelivery(delivery)
 
     return delivery
 }

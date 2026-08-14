@@ -8,16 +8,16 @@ import HeroZrive from "../../../assets/images/Hero_Zrive.png";
 // ---- Static content -------------------------------------------------------
 // Using real category enum values from the product schema
 const MENS_CATEGORIES = [
-  { id: 'tshirts',    label: 'T-Shirts',   image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=400&auto=format&fit=crop' },
-  { id: 'shirts',     label: 'Shirts',     image: 'https://cdn.shopify.com/s/files/1/0420/7073/7058/files/9ea27ebcb36303e484283811c6009db2.jpg?v=1729520338&quality=80' },
-  { id: 'jeans',      label: 'Jeans',      image: 'https://cdn.shopify.com/s/files/1/0420/7073/7058/files/1_fefadd55-615f-4920-a0f4-831d3b1db049.jpg?v=1783668691&quality=80' },
-  { id: 'trousers',   label: 'Trousers',   image: 'https://cdn.shopify.com/s/files/1/0420/7073/7058/files/469ca18650a7ed95611dbe22151c28e8.jpg?v=1730896522&quality=80' },
-  { id: 'jackets',    label: 'Jackets',    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=400&auto=format&fit=crop' },
-  { id: 'blazers',    label: 'Blazers',    image: 'https://cdn.shopify.com/s/files/1/0420/7073/7058/files/4mbz0015-01_1.jpg?v=1759081595&quality=80' },
-  { id: 'hoodies',    label: 'Hoodies',    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=400&auto=format&fit=crop' },
-  { id: 'shoes',      label: 'Shoes',      image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=400&auto=format&fit=crop' },
-  { id: 'sunglasses', label: 'Sunglasses', image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=400&auto=format&fit=crop' },
-  { id: 'perfumes',   label: 'Perfumes',   image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=400&auto=format&fit=crop' },
+  { id: 'tshirts',    label: 'T-Shirts',   image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=580&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: 'shirts',     label: 'Shirts',     image: 'https://images.unsplash.com/photo-1618786177957-29d9b6b26d8a?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8Q2FzdWFsJTIwc2hpcnQlMjBmYXNoaW9ufGVufDB8fDB8fHww' },
+  { id: 'jeans',      label: 'Jeans',      image: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGplYW5zfGVufDB8fDB8fHww' },
+  { id: 'trousers',   label: 'Trousers',   image: 'https://images.unsplash.com/photo-1580906853305-5702e648164e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mzl8fHRyb3VzZXJzfGVufDB8fDB8fHww' },
+  { id: 'jackets',    label: 'Jackets',    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=435&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: 'hoodies',    label: 'Hoodies',    image: 'https://images.unsplash.com/photo-1680292783974-a9a336c10366?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aG9vZGllc3xlbnwwfHwwfHx8MA%3D%3D' },
+  { id: 'blazers',    label: 'Blazers',    image: 'https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8YmxhemVyc3xlbnwwfHwwfHx8MA%3D%3D' },
+  { id: 'shoes',      label: 'Shoes',      image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8c2hvZXN8ZW58MHx8MHx8fDA%3D' },
+  { id: 'sunglasses', label: 'Sunglasses', image: 'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8c3VuZ2xhc3Nlc3xlbnwwfHwwfHx8MA%3D%3D' },
+  { id: 'perfumes',   label: 'Perfumes',   image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8cGVyZnVtZXN8ZW58MHx8MHx8fDA%3D' },
 ]
 
 const ProductCardSkeleton = ({ className = "" }) => (
@@ -67,6 +67,28 @@ const Home = () => {
 
   const products = useSelector((state) => state.product.products);
 
+  // ---- Basic scroll reveal --------------------------------------------
+  useEffect(() => {
+    const elements = document.querySelectorAll(".zrive-reveal");
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+
+    elements.forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, []);
+
   // ---- Data slices ----------------------------------------------------
   const trendingHero = products?.[0];
   const trendingGridMobile = products?.slice(1, 3) ?? [];
@@ -76,8 +98,108 @@ const Home = () => {
 
   return (
     <div className="bg-cream text-ink">
+      <style>{`
+        .zrive-marquee {
+          overflow: hidden;
+          white-space: nowrap;
+          border-top: 1px solid rgba(24, 22, 15, 0.08);
+          border-bottom: 1px solid rgba(24, 22, 15, 0.08);
+          background: #ffffff;
+        }
+
+        .zrive-marquee-track {
+          display: inline-flex;
+          min-width: max-content;
+          animation: zrive-marquee 28s linear infinite;
+        }
+
+        .zrive-marquee-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 2.75rem;
+          padding: 1.05rem 1.8rem;
+          font-size: 0.68rem;
+          line-height: 1;
+          font-weight: 700;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: #6f6b64;
+        }
+
+        .zrive-marquee-star {
+          color: #b08a4a;
+          font-size: 1rem;
+          letter-spacing: 0;
+        }
+
+        @keyframes zrive-marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+
+        .zrive-reveal {
+          opacity: 0;
+          transform: translateY(24px);
+          transition:
+            opacity 700ms ease,
+            transform 700ms cubic-bezier(.22, 1, .36, 1);
+          will-change: opacity, transform;
+        }
+
+        .zrive-reveal.is-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .zrive-marquee-track {
+            animation: none;
+          }
+
+          .zrive-reveal {
+            opacity: 1;
+            transform: none;
+            transition: none;
+          }
+        }
+      `}</style>
+
+      {/* ================= RUNNING BRAND LINE ================= */}
+      <div className="zrive-marquee" aria-label="ZRIVE brand highlights">
+        <div className="zrive-marquee-track">
+          {[
+            "Menswear",
+            "Curated Fit",
+            "Quality Without Noise",
+            "ZRIVE",
+            "New Season",
+            "Made For The Modern Man",
+            "Shop The Edit",
+          ].map((item) => (
+            <span className="zrive-marquee-item" key={`a-${item}`}>
+              <span>{item}</span>
+              <span className="zrive-marquee-star">✦</span>
+            </span>
+          ))}
+          {[
+            "Menswear",
+            "Curated Fit",
+            "Quality Without Noise",
+            "ZRIVE",
+            "New Season",
+            "Made For The Modern Man",
+            "Shop The Edit",
+          ].map((item) => (
+            <span className="zrive-marquee-item" key={`b-${item}`}>
+              <span>{item}</span>
+              <span className="zrive-marquee-star">✦</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* ================= HERO — mobile ================= */}
-      <section className="md:hidden relative">
+      <section className="md:hidden relative zrive-reveal">
         <img
           src="https://images.unsplash.com/photo-1617137968427-85924c800a22?q=80&w=1200&auto=format&fit=crop"
           alt="Essentials for the modern man"
@@ -103,11 +225,11 @@ const Home = () => {
       </section>
 
       {/* ================= HERO — desktop/tablet ================= */}
-      <section className="hidden md:block w-full h-[220px] lg:h-[280px] relative overflow-hidden group">
+      <section className="hidden md:block w-full h-[340px] lg:h-[420px] relative overflow-hidden group zrive-reveal">
         <img
           src={HeroZrive}
           alt="Big Sale and Discounts"
-          className="w-full h-full object-cover object-center block transition-transform duration-500 ease-out group-hover:scale-[1.008]"
+          className="w-full h-full object-fill object-center block transition-transform duration-500 ease-out group-hover:scale-[1.008]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute bottom-6 left-8 lg:bottom-24 lg:left-8 z-10 max-w-xl">
@@ -123,7 +245,7 @@ const Home = () => {
       </section>
 
       {/* ================= Shop By Category — mobile ================= */}
-      <section className="md:hidden px-5 py-14 border-t border-border">
+      <section className="md:hidden px-5 py-14 border-t border-border zrive-reveal">
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-1">
@@ -165,7 +287,7 @@ const Home = () => {
       </section>
 
       {/* ================= Shop By Category — desktop/tablet ================= */}
-      <section className="hidden md:block px-8 lg:px-14 py-14 border-t border-border">
+      <section className="hidden md:block px-8 lg:px-14 py-14 border-t border-border zrive-reveal">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between mb-8">
             <div>
@@ -209,7 +331,7 @@ const Home = () => {
       </section>
 
       {/* ================= Trending Now — desktop/tablet ================= */}
-      <section className="hidden md:block px-8 lg:px-14 py-12">
+      <section className="hidden md:block px-8 lg:px-14 py-12 zrive-reveal">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between mb-6">
             <div>
@@ -273,7 +395,7 @@ const Home = () => {
       </section>
 
       {/* ================= Trending Now — mobile ================= */}
-      <section className="md:hidden px-5 py-10">
+      <section className="md:hidden px-5 py-10 zrive-reveal">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-[22px] font-medium text-ink">
             Trending Now
@@ -333,7 +455,7 @@ const Home = () => {
       </section>
 
       {/* ================= For You — mobile only ================= */}
-      <section className="md:hidden px-5 py-8 border-t border-border">
+      <section className="md:hidden px-5 py-8 border-t border-border zrive-reveal">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-[20px] font-medium text-ink">
             For You
@@ -372,11 +494,11 @@ const Home = () => {
       </section>
 
       {/* ================= Editorial Banner Placeholder — desktop/tablet ================= */}
-      <section className="hidden md:block px-8 lg:px-14 py-10">
+      <section className="hidden md:block px-8 lg:px-14 py-10 zrive-reveal">
         <div className="max-w-[1440px] mx-auto relative h-[280px] overflow-hidden group bg-charcoal">
           {/* Placeholder image — swap with backend URL later */}
           <img
-            src="https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?q=80&w=1200&auto=format&fit=crop"
+            src="https://img.magnific.com/free-psd/black-friday-facebook-cover-banner-template_120329-6569.jpg?semt=ais_test_b&w=740&q=80"
             alt="Mid-Season Sale"
             className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
           />
@@ -399,7 +521,7 @@ const Home = () => {
       </section>
 
       {/* ================= Newsletter — desktop/tablet ================= */}
-      <section className="hidden md:flex justify-center px-8 lg:px-14 py-14 bg-cream-dark border-y border-border">
+      <section className="hidden md:flex justify-center px-8 lg:px-14 py-14 bg-cream-dark border-y border-border zrive-reveal">
         <div className="max-w-md text-center">
           <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-3">
             The Inner Circle

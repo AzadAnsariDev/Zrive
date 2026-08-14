@@ -26,6 +26,8 @@ import ProtectedAdmin from "../features/admin/components/ProtectedAdmin";
 import AdminSellers from "../features/admin/pages/AdminSellers";
 import AdminSellerDetail from "../features/admin/pages/AdminSellerDetail";
 import SellerOrderDetail from "../features/seller/pages/SellerOrderDetail";
+import NewArrivals from "../features/home/pages/NewArrivals";
+import Collections from "../features/home/pages/Collections";
 
 const router = createBrowserRouter([
   {
@@ -34,9 +36,9 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: "categories", element: <div>Categories page</div> },
-      { path: "new-arrivals", element: <div>New Arrivals page</div> }, // ← add
+      { path: "new-arrivals", element: <NewArrivals /> }, // ← add
       { path: "cart", element: <Cart /> },
-      { path: "sale", element: <div>Sale page</div> }, // ← add
+      { path: "collections", element: <Collections /> }, // ← add
       { path: "profile", element: <div>Profile page</div> },
       { path: "wishlist", element: <div>Wishlist page</div> },
       { path: "all-products", element: <AllProducts /> },

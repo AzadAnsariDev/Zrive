@@ -18,6 +18,7 @@ import {
   setDeliveries,
   updateDeliveryInList,
 } from "../state/deliverySlice.js";
+
 const useDelivery = () => {
   const dispatch = useDispatch();
 
@@ -119,7 +120,7 @@ const useDelivery = () => {
     }
   };
 
-const handleTrackDelivery = async (deliveryId) => {
+  const handleTrackDelivery = async (deliveryId) => {
     dispatch(setDeliveryLoading(true));
     dispatch(setDeliveryError(null));
     try {
@@ -195,7 +196,7 @@ const handleTrackDelivery = async (deliveryId) => {
     }
   };
 
-const handleTrackDeliveryBuyer = async (deliveryId) => {
+  const handleTrackDeliveryBuyer = async (deliveryId) => {
     dispatch(setDeliveryLoading(true));
     dispatch(setDeliveryError(null));
     try {
@@ -213,6 +214,49 @@ const handleTrackDeliveryBuyer = async (deliveryId) => {
       dispatch(setDeliveryLoading(false));
     }
   };
+
+  // ── Buyer list-page ke liye ──────────────────────────────────────
+  // AllOrders jaise list-view mein har active order ke liye delivery
+  // fetch + live-track karta hai, phir store ki `deliveries` list set
+  // kar deta hai (jise AllOrders.jsx pehle se orderId → delivery map
+  // banane ke liye use kar raha hai). Koi naya backend route ya slice
+  // change nahi kiya — sirf existing buyer endpoints ko loop mein
+  // reuse kiya hai. Loading/error state background-refresh hone ki
+  // wajah se dispatch nahi karte, taaki page pe flicker na ho.
+  const handleSyncOrderDeliveries = async (orderIds = []) => {
+    if (!orderIds.length) return [];
+
+    const results = await Promise.allSettled(
+      orderIds.map(async (orderId) => {
+        const res = await getDeliveryByOrderBuyer(orderId);
+        const delivery = res?.delivery;
+        if (!delivery) return null;
+
+        // shipment already terminal state mein hai to dobara track mat karo (cost bachao)
+        if (["delivered", "cancelled"].includes(delivery.status)) {
+          return delivery;
+        }
+
+        try {
+          const trackRes = await trackDeliveryBuyer(delivery._id);
+          return trackRes?.delivery || delivery;
+        } catch {
+          // tracking call fail ho to bhi jo delivery mil chuki thi wahi use karo
+          return delivery;
+        }
+      }),
+    );
+
+    const deliveries = results
+      .filter((r) => r.status === "fulfilled" && r.value)
+      .map((r) => r.value);
+
+    if (deliveries.length) {
+      dispatch(setDeliveries(deliveries));
+    }
+    return deliveries;
+  };
+
   return {
     handleGetDeliveryByOrder,
     handleSchedulePickup,
@@ -223,7 +267,8 @@ const handleTrackDeliveryBuyer = async (deliveryId) => {
     handleRetryDelivery,
     handleCancelDelivery,
     handleTrackDeliveryBuyer,
-    handleGetDeliveryByOrderBuyer
+    handleGetDeliveryByOrderBuyer,
+    handleSyncOrderDeliveries,
   };
 };
 

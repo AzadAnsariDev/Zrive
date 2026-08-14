@@ -6,6 +6,7 @@ import { setError, setLoading } from "../state/authSlice";
 import { useAuth } from "../hook/useAuth";
 import { useNavigate, Link } from "react-router";
 import ZriveLogo from "../components/ZriveLogo";
+import loginHero from "../../../assets/images/register-hero.png";
 
 const EmailOrPhoneRegex = /^([^\s@]+@[^\s@]+\.[^\s@]+|[6-9]\d{9})$/;
 
@@ -15,12 +16,6 @@ const GoogleIcon = () => (
     <path fill="#FF3D00" d="M6.3 14.6l5.9 4.3C13.9 15.3 18.6 12.5 24 12.5c3.2 0 6.1 1.2 8.3 3.2l5.1-5.1C34.5 7.7 29.5 5.7 24 5.7c-7.7 0-14.4 4.3-17.7 10.6z" />
     <path fill="#4CAF50" d="M24 43.9c5.4 0 10.3-1.9 14.1-5.1l-6.5-5.5c-2.1 1.5-4.7 2.4-7.6 2.4-5.3 0-9.7-3.3-11.3-7.9l-6.2 4.8C9.7 39.6 16.3 43.9 24 43.9z" />
     <path fill="#1976D2" d="M43.6 20.5H42V20.4H24v7.2h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.5 5.5C41.4 35.6 44.1 30.1 44.1 23.8c0-1.1-.2-2.2-.5-3.3z" />
-  </svg>
-);
-
-const AppleIcon = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M16.5 1c.1 1.2-.4 2.4-1.1 3.3-.7.9-1.9 1.6-3 1.5-.1-1.2.4-2.4 1.1-3.2C14.2 1.6 15.4 1 16.5 1zM20.7 17.3c-.5 1.2-.8 1.7-1.5 2.7-1 1.4-2.3 3.2-4 3.2-1.5 0-1.9-1-3.9-1s-2.5 1-4 1c-1.7.1-3-1.9-4-3.3-2.2-3.1-3.8-8.7-1.6-12.6 1.1-1.9 3-3.1 5.1-3.1 1.5 0 2.9 1 3.9 1s2.7-1.2 4.5-1c.8.1 3 .3 4.4 2.3-.1.1-2.6 1.6-2.6 4.6.1 3.5 3.1 4.7 3.1 4.7-.1.1-.5 1.5-1.4 3.5z" />
   </svg>
 );
 
@@ -41,8 +36,8 @@ const Login = () => {
     dispatch(setLoading(true));
     const { identifier, password } = data;
     try {
-     const user = await handleLogin(identifier, password);
-     user.role == "seller" ? navigate("/seller") : navigate("/")
+      const user = await handleLogin(identifier, password);
+      user.role == "seller" ? navigate("/seller") : navigate("/");
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -51,37 +46,64 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full justify-center bg-cream px-6 py-12 md:py-20">
-      <div className="w-full max-w-[420px]">
-        {/* Logo */}
-        <div className="flex justify-center mb-10">
-          <div className="flex flex-col items-center">
-            <div className="text-ink">
-              <ZriveLogo />
-            </div>
-            <p className="mt-4 font-display tracking-[0.35em] text-[20px] text-ink font-medium">
-              ZRIVE
-            </p>
-            <p className="mt-1 text-[10px] font-semibold tracking-[0.25em] text-gold uppercase">
-              Men&apos;s Fashion
-            </p>
-          </div>
+    <div className="min-h-screen w-full bg-cream md:grid md:grid-cols-2">
+      {/* Local styles for the entrance animation only — keeps it self-contained */}
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.5s ease-out both;
+        }
+      `}</style>
+
+      {/* Left: brand / image panel — hidden on mobile, visible from tablet up */}
+      <div className="relative hidden md:block">
+        <img
+          src={loginHero}
+          alt="ZRIVE — modern men's fashion"
+          className="h-full w-full object-cover object-left"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/0 to-black/10" />
+        <div className="absolute left-8 top-8 flex items-center gap-2 lg:left-12 lg:top-12">
+          <span className="text-white"><ZriveLogo /></span>
+          <span className="font-display text-[15px] font-medium tracking-[0.3em] text-white">
+            ZRIVE
+          </span>
         </div>
+      </div>
 
-        {/* Heading */}
-        <h1 className="text-center font-display text-[32px] font-medium leading-[1.1] tracking-tight text-ink mb-2">
-          Welcome Back
-        </h1>
-        <p className="text-center text-[13px] leading-relaxed text-ink-soft mb-8">
-          Please enter your details to continue your luxury shopping journey.
-        </p>
+      {/* Right: form panel */}
+      <div className="flex items-center justify-center px-6 py-12 md:px-10 md:py-16 lg:px-16">
+        <div className="w-full max-w-[420px] animate-fade-in-up">
+          {/* Logo — shown only when the image panel is hidden (mobile) */}
+          <div className="mb-10 flex justify-center md:hidden">
+            <div className="flex flex-col items-center">
+              <div className="text-ink">
+                <ZriveLogo />
+              </div>
+              <p className="mt-4 font-display text-[20px] font-medium tracking-[0.35em] text-ink">
+                ZRIVE
+              </p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-gold">
+                Men&apos;s Fashion
+              </p>
+            </div>
+          </div>
 
-        {/* Card */}
-        <div className="rounded-[3px] border border-border bg-surface p-6 shadow-sm">
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+          {/* Heading */}
+          <h1 className="mb-2 text-center font-display text-[32px] font-medium leading-[1.1] tracking-tight text-ink md:text-left">
+            Welcome Back
+          </h1>
+          <p className="mb-10 text-center text-[13px] leading-relaxed text-ink-soft md:text-left">
+            Please enter your details to continue your luxury shopping journey.
+          </p>
+
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
             {/* Email or Phone */}
             <div>
-              <label htmlFor="identifier" className="mb-2 block text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft">
+              <label htmlFor="identifier" className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
                 Email or Phone Number
               </label>
               <input
@@ -105,10 +127,13 @@ const Login = () => {
             {/* Password */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <label htmlFor="password" className="text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft">
+                <label htmlFor="password" className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
                   Password
                 </label>
-                <Link to="/forgot-password" className="text-[11px] font-semibold tracking-[0.05em] text-gold hover:text-gold-deep transition-colors">
+                <Link
+                  to="/forgot-password"
+                  className="text-[11px] font-semibold tracking-[0.05em] text-gold transition-colors hover:text-gold-deep"
+                >
                   Forgot Password?
                 </Link>
               </div>
@@ -131,7 +156,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="px-4 text-ink-soft hover:text-ink transition-colors"
+                  className="px-4 text-ink-soft transition-colors hover:text-ink"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
@@ -145,49 +170,40 @@ const Login = () => {
             {/* Submit */}
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-[3px] bg-charcoal py-4 mt-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-cream transition-colors hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
+              className="group mt-2 flex w-full items-center justify-center gap-2 rounded-[3px] bg-charcoal py-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-cream transition-all duration-200 hover:-translate-y-0.5 hover:bg-ink hover:shadow-lg hover:shadow-black/15 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Sign In
-              <ArrowRight size={16} />
+              <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
             </button>
           </form>
 
           {/* Divider */}
-          <div className="mt-8 mb-6 flex items-center gap-3">
+          <div className="mb-6 mt-8 flex items-center gap-3">
             <span className="h-px flex-1 bg-border" />
             <span className="text-[10px] font-semibold tracking-[0.2em] text-ink-soft">OR</span>
             <span className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Social buttons */}
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => {
-                window.location.href = "/api/auth/google";
-              }}
-              className="flex w-full items-center justify-center gap-3 rounded-[3px] border border-border bg-cream py-3.5 text-[13px] font-semibold text-ink transition-colors hover:bg-cream-dark"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-3 rounded-[3px] border border-border bg-cream py-3.5 text-[13px] font-semibold text-ink transition-colors hover:bg-cream-dark"
-            >
-              <span className="text-ink"><AppleIcon /></span>
-              Continue with Apple
-            </button>
-          </div>
-        </div>
+          {/* Social login — Google only */}
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = "/api/auth/google";
+            }}
+            className="flex w-full items-center justify-center gap-3 rounded-[3px] border border-border bg-cream py-3.5 text-[13px] font-semibold text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-ink-soft hover:bg-cream-dark hover:shadow-sm active:translate-y-0"
+          >
+            <GoogleIcon />
+            Continue with Google
+          </button>
 
-        {/* Footer */}
-        <p className="mt-8 text-center text-[13px] text-ink-soft">
-          Don&apos;t have an account?{" "}
-          <Link to="/register" className="font-semibold text-ink hover:text-gold transition-colors">
-            Sign Up
-          </Link>
-        </p>
+          {/* Footer */}
+          <p className="mt-8 text-center text-[13px] text-ink-soft">
+            Don&apos;t have an account?{" "}
+            <Link to="/register" className="font-semibold text-ink transition-colors hover:text-gold">
+              Sign Up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
