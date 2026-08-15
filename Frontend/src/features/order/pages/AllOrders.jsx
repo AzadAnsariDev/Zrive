@@ -9,6 +9,8 @@ import {
   Inbox,
   Package,
   Copy,
+  Search,
+  ChevronDown,
 } from "lucide-react";
 import useOrder from "../hook/useOrder";
 import useDelivery from "../../delivery/hook/useDelivery";
@@ -99,6 +101,26 @@ const FILTERS = [
   },
 ];
 
+// ── Help Center FAQ content ─────────────────────────────────
+const FAQ_ITEMS = [
+  {
+    q: "Where's my order?",
+    a: "Once your order ships, open it and hit \"Track Order\" for live courier updates, or check the delivery timeline on the Order Detail page for a full status history.",
+  },
+  {
+    q: "Can I cancel an order?",
+    a: "Yes — any order that hasn't shipped yet can be cancelled from its Order Detail page. Once a seller ships an item, cancellation is no longer available for that order.",
+  },
+  {
+    q: "How do refunds work?",
+    a: "Refunds go back to your original payment method automatically once a cancellation is processed, and usually reflect within 5–7 business days.",
+  },
+  {
+    q: "Why did my order split into multiple deliveries?",
+    a: "ZRIVE is a marketplace — if your cart has items from more than one seller, each seller ships separately, so you may see more than one parcel and tracking ID for a single order.",
+  },
+];
+
 const formatDate = (iso, opts) => {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(
@@ -154,12 +176,21 @@ const groupOrdersByPayment = (orders) => {
           : "initiated"
       : null;
 
+    // Readable "Shirt, Chinos +1 more" caption shown under the thumbnails,
+    // so it's clear at a glance what a search-by-item-name match is for.
+    const itemNames = allItems.map((it) => it.title).filter(Boolean);
+    const itemNamesLabel =
+      itemNames.length > 2
+        ? `${itemNames.slice(0, 2).join(", ")} +${itemNames.length - 2} more`
+        : itemNames.join(", ");
+
     return {
       paymentId: getPaymentId(group[0]) || group[0]._id,
       orders: group,
       isMultiSeller: group.length > 1,
       allItems,
       itemCount: allItems.length,
+      itemNamesLabel,
       total: originalTotal,
       activeTotal,
       refundStatus,
@@ -167,6 +198,9 @@ const groupOrdersByPayment = (orders) => {
       status: getGroupStatus(group),
       statusUpdatedAt: group[0].updatedAt,
       createdAt: group[0].createdAt,
+      // Track Order button ke liye — group ke kisi bhi order ka AWB mil jaye kaafi hai,
+      // Shiprocket ke public tracking page pe seedha deep-link karne ke liye.
+      trackingAwb: group.find((o) => o.awbCode)?.awbCode || null,
     };
   });
 };
@@ -228,6 +262,37 @@ const FilterTabs = ({ activeFilter, setActiveFilter }) => (
   </div>
 );
 
+// ── FAQ accordion row ────────────────────────────────────────
+const FaqRow = ({ item, isOpen, onToggle }) => (
+  <div className="py-4">
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full flex items-center justify-between gap-4 text-left"
+      aria-expanded={isOpen}
+    >
+      <span className="text-[13.5px] font-medium text-ink">{item.q}</span>
+      <ChevronDown
+        size={16}
+        strokeWidth={1.75}
+        className={`text-ink-soft shrink-0 transition-transform duration-300 ${
+          isOpen ? "rotate-180" : ""
+        }`}
+      />
+    </button>
+    <div
+      className={`grid transition-all duration-300 ease-out ${
+        isOpen ? "grid-rows-[1fr] opacity-100 mt-2.5" : "grid-rows-[0fr] opacity-0"
+      }`}
+      style={{ overflow: "hidden" }}
+    >
+      <div className="min-h-0">
+        <p className="text-[13px] text-ink-soft leading-relaxed pr-6">{item.a}</p>
+      </div>
+    </div>
+  </div>
+);
+
 const AllOrders = () => {
   const navigate = useNavigate();
   const { handleGetOrders } = useOrder();
@@ -237,6 +302,8 @@ const AllOrders = () => {
   const deliveries = useSelector((state) => state.delivery.deliveries);
   const [activeFilter, setActiveFilter] = useState("all");
   const [copiedId, setCopiedId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openFaq, setOpenFaq] = useState(null);
   const hasTrackedRef = useRef(false);
 
   useEffect(() => {
@@ -274,7 +341,9 @@ const AllOrders = () => {
 
   // orders ke saath live/authoritative status merge karo — agar delivery
   // record ban chuka hai (shipment create ho chuki hai) to uska status
-  // order.orderStatus se zyada trust karo, kyunki wahi actual tracking truth hai
+  // order.orderStatus se zyada trust karo, kyunki wahi actual tracking truth hai.
+  // AWB bhi yahin se carry hota hai taaki "Track Order" button ke paas
+  // Shiprocket ke tracking page pe jaane ke liye AWB ready mile.
   const ordersWithLiveStatus = useMemo(() => {
     return orders.map((o) => {
       const delivery = deliveryByOrderId.get(o._id);
@@ -286,6 +355,7 @@ const AllOrders = () => {
         ...o,
         orderStatus: mapped,
         updatedAt: delivery.updatedAt || o.updatedAt,
+        awbCode: delivery.awbCode || null,
       };
     });
   }, [orders, deliveryByOrderId]);
@@ -295,17 +365,39 @@ const AllOrders = () => {
     [ordersWithLiveStatus],
   );
 
+  // Search by order ID (last 6 chars, same as what's shown on-screen) or by
+  // any item title inside the group.
+  const searchedGroups = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase().replace(/^#/, "");
+    if (!q) return groupedOrders;
+    return groupedOrders.filter((g) => {
+      const fullId = g.paymentId.toLowerCase();
+      const shortId = g.paymentId.slice(-6).toLowerCase();
+      const idMatch =
+        fullId.includes(q) || shortId.includes(q) || `zr-${shortId}`.includes(q);
+      const itemMatch = g.allItems.some((it) =>
+        (it.title || "").toLowerCase().includes(q),
+      );
+      return idMatch || itemMatch;
+    });
+  }, [groupedOrders, searchQuery]);
+
   const filteredGroups = useMemo(() => {
     const filter = FILTERS.find((f) => f.key === activeFilter);
-    return groupedOrders.filter((g) => filter.match(g.status));
-  }, [groupedOrders, activeFilter]);
+    return searchedGroups.filter((g) => filter.match(g.status));
+  }, [searchedGroups, activeFilter]);
 
   const handleCopyId = (e, id) => {
     e.stopPropagation();
-    navigator.clipboard?.writeText(id);
+    const shortId = `ZR-${id.slice(-6).toUpperCase()}`;
+    navigator.clipboard?.writeText(shortId);
     setCopiedId(id);
     setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1500);
   };
+
+  const noOrdersAtAll = !loading && orders.length === 0;
+  const noSearchMatch = !loading && !noOrdersAtAll && filteredGroups.length === 0 && searchQuery.trim();
+  const noFilterMatch = !loading && !noOrdersAtAll && filteredGroups.length === 0 && !searchQuery.trim();
 
   return (
     <div className="bg-cream text-ink min-h-screen">
@@ -322,14 +414,33 @@ const AllOrders = () => {
 
       <section className={`${SECTION_X} ${SECTION_Y}`}>
         <div className={CONTAINER}>
-          {/* ================= Header ================= */}
-          <div className="mb-6 md:mb-8">
-            <h1 className="font-display text-[26px] md:text-[32px] font-medium text-ink mb-1">
-              All Orders
-            </h1>
-            <p className="text-[13px] text-ink-soft">
-              Review your recent purchases and track shipments.
-            </p>
+          {/* ================= Header + search ================= */}
+          <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+              <h1 className="font-display text-[26px] md:text-[32px] font-medium text-ink mb-1">
+                All Orders
+              </h1>
+              <p className="text-[13px] text-ink-soft">
+                Review your recent purchases and track shipments.
+              </p>
+            </div>
+
+            {orders.length > 0 && (
+              <div className="relative w-full md:w-[280px] shrink-0">
+                <Search
+                  size={14}
+                  strokeWidth={1.75}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none"
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by order ID or item"
+                  className="w-full pl-9 pr-3 py-2.5 text-[13px] bg-surface border border-border rounded-[3px] text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink transition-colors"
+                />
+              </div>
+            )}
           </div>
 
           {/* ================= Filter tabs ================= */}
@@ -347,8 +458,8 @@ const AllOrders = () => {
             </div>
           )}
 
-          {/* ================= Empty state ================= */}
-          {!loading && filteredGroups.length === 0 && (
+          {/* ================= Empty states ================= */}
+          {(noOrdersAtAll || noSearchMatch || noFilterMatch) && (
             <div className="py-20 text-center">
               <Inbox
                 className="mx-auto mb-4 text-ink-soft"
@@ -356,19 +467,27 @@ const AllOrders = () => {
                 strokeWidth={1.2}
               />
               <p className="font-display text-[16px] text-ink mb-1">
-                {orders.length === 0 ? "No orders yet" : "Nothing here"}
+                {noOrdersAtAll
+                  ? "No orders yet"
+                  : noSearchMatch
+                    ? "No matches found"
+                    : "Nothing here"}
               </p>
               <p className="text-[13px] text-ink-soft mb-5">
-                {orders.length === 0
+                {noOrdersAtAll
                   ? "Once you place an order, it'll show up here."
-                  : "Try a different filter to see your other orders."}
+                  : noSearchMatch
+                    ? `We couldn't find an order matching "${searchQuery}".`
+                    : "Try a different filter to see your other orders."}
               </p>
               <button
                 type="button"
-                onClick={() => navigate("/")}
+                onClick={() =>
+                  noOrdersAtAll ? navigate("/") : setSearchQuery("")
+                }
                 className="inline-flex items-center gap-2 bg-charcoal text-cream text-[11px] font-semibold tracking-[0.1em] uppercase px-6 py-3 rounded-[3px] hover:bg-ink transition-colors"
               >
-                Start Shopping
+                {noOrdersAtAll ? "Start Shopping" : noSearchMatch ? "Clear Search" : "View All"}
               </button>
             </div>
           )}
@@ -377,11 +496,10 @@ const AllOrders = () => {
           {!loading && filteredGroups.length > 0 && (
             <div className="divide-y divide-border">
               {filteredGroups.map((g, i) => {
-                const showTrackOrder = ![
-                  "delivered",
-                  "cancelled",
-                  "failed",
-                ].includes(g.status);
+                // Track Order sirf tab dikhao jab shipment actually "shipped"
+                // ho chuka hai (placed/awaiting-payment mein track karne layak
+                // kuch hota hi nahi) aur humare paas AWB ready ho.
+                const showTrackOrder = g.status === "shipped" && g.trackingAwb;
 
                 return (
                   <div
@@ -425,32 +543,37 @@ const AllOrders = () => {
                       </div>
                     </div>
 
-                    {/* Bottom row: thumbnails  ⟷  actions */}
+                    {/* Bottom row: thumbnails + names  ⟷  actions */}
                     <div className="flex items-end justify-between gap-4 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        {g.allItems.slice(0, 4).map((item, idx) => (
-                          <div
-                            key={idx}
-                            className="w-16 h-16 overflow-hidden bg-cream-dark rounded-[3px]"
-                          >
-                            <img
-                              src={item.images?.[0]?.url}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ))}
-                        {g.itemCount > 4 && (
-                          <div className="w-16 h-16 flex items-center justify-center bg-cream-dark rounded-[3px] text-[11px] font-semibold text-ink-soft">
-                            +{g.itemCount - 4}
-                          </div>
-                        )}
-                        {g.isMultiSeller && (
-                          <span className="flex items-center gap-1 text-[9.5px] font-medium text-ink-soft ml-1">
-                            <Package size={10} strokeWidth={1.5} />
-                            Multi-seller
-                          </span>
-                        )}
+                      <div className="flex flex-col gap-2 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {g.allItems.slice(0, 4).map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="w-16 h-16 overflow-hidden bg-cream-dark rounded-[3px]"
+                            >
+                              <img
+                                src={item.images?.[0]?.url}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                          {g.itemCount > 4 && (
+                            <div className="w-16 h-16 flex items-center justify-center bg-cream-dark rounded-[3px] text-[11px] font-semibold text-ink-soft">
+                              +{g.itemCount - 4}
+                            </div>
+                          )}
+                          {g.isMultiSeller && (
+                            <span className="flex items-center gap-1 text-[9.5px] font-medium text-ink-soft ml-1">
+                              <Package size={10} strokeWidth={1.5} />
+                              Multi-seller
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] text-ink-soft truncate max-w-[420px]">
+                          {g.itemNamesLabel}
+                        </p>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -458,10 +581,10 @@ const AllOrders = () => {
                           <button
                             type="button"
                             onClick={() =>
-                              navigate(
-                                g.isMultiSeller
-                                  ? `/orders/group/${g.paymentId}`
-                                  : `/orders/${g.orders[0]._id}`,
+                              window.open(
+                                `https://shiprocket.co/tracking/${g.trackingAwb}`,
+                                "_blank",
+                                "noopener,noreferrer",
                               )
                             }
                             className="bg-charcoal text-cream text-[11px] font-semibold tracking-[0.1em] uppercase px-5 py-2.5 rounded-[3px] hover:bg-ink transition-colors"
@@ -505,6 +628,51 @@ const AllOrders = () => {
               })}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ================= Help Center (FAQ) ================= */}
+      <section className={`${SECTION_X} py-12 md:py-16 border-t border-border bg-cream-dark`}>
+        <div className={CONTAINER}>
+          <div className="mb-8 md:mb-10 text-center">
+            <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.16em] uppercase text-gold mb-1">
+              Help Center
+            </p>
+            <h2 className="font-display text-[20px] md:text-[26px] font-medium text-ink">
+              Common questions
+            </h2>
+          </div>
+          <div className="max-w-[640px] mx-auto divide-y divide-border">
+            {FAQ_ITEMS.map((item, idx) => (
+              <FaqRow
+                key={item.q}
+                item={item}
+                isOpen={openFaq === idx}
+                onToggle={() => setOpenFaq((cur) => (cur === idx ? null : idx))}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================= Need help CTA ================= */}
+      <section className={`${SECTION_X} py-12 md:py-16 border-t border-border`}>
+        <div className={`${CONTAINER} bg-charcoal rounded-[3px] px-6 py-10 md:py-12 text-center`}>
+          <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-2">
+            We're Here to Help
+          </p>
+          <h2 className="font-display text-[22px] md:text-[28px] font-medium text-cream mb-3">
+            Questions about your orders?
+          </h2>
+          <p className="text-[13px] text-cream/65 mb-6 max-w-md mx-auto">
+            Our support team typically responds within a few hours.
+          </p>
+          <a
+            href="mailto:azadansaridev@gmail.com"
+            className="inline-flex items-center gap-2 bg-cream text-ink text-[11px] font-semibold tracking-[0.1em] uppercase px-6 py-3.5 rounded-[3px] hover:bg-surface transition-colors"
+          >
+            Contact Support
+          </a>
         </div>
       </section>
     </div>

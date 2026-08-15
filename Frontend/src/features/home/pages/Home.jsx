@@ -67,28 +67,6 @@ const Home = () => {
 
   const products = useSelector((state) => state.product.products);
 
-  // ---- Basic scroll reveal --------------------------------------------
-  useEffect(() => {
-    const elements = document.querySelectorAll(".zrive-reveal");
-    if (!elements.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12 }
-    );
-
-    elements.forEach((element) => observer.observe(element));
-
-    return () => observer.disconnect();
-  }, []);
-
   // ---- Data slices ----------------------------------------------------
   const trendingHero = products?.[0];
   const trendingGridMobile = products?.slice(1, 3) ?? [];
@@ -98,108 +76,8 @@ const Home = () => {
 
   return (
     <div className="bg-cream text-ink">
-      <style>{`
-        .zrive-marquee {
-          overflow: hidden;
-          white-space: nowrap;
-          border-top: 1px solid rgba(24, 22, 15, 0.08);
-          border-bottom: 1px solid rgba(24, 22, 15, 0.08);
-          background: #ffffff;
-        }
-
-        .zrive-marquee-track {
-          display: inline-flex;
-          min-width: max-content;
-          animation: zrive-marquee 28s linear infinite;
-        }
-
-        .zrive-marquee-item {
-          display: inline-flex;
-          align-items: center;
-          gap: 2.75rem;
-          padding: 1.05rem 1.8rem;
-          font-size: 0.68rem;
-          line-height: 1;
-          font-weight: 700;
-          letter-spacing: 0.24em;
-          text-transform: uppercase;
-          color: #6f6b64;
-        }
-
-        .zrive-marquee-star {
-          color: #b08a4a;
-          font-size: 1rem;
-          letter-spacing: 0;
-        }
-
-        @keyframes zrive-marquee {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
-
-        .zrive-reveal {
-          opacity: 0;
-          transform: translateY(24px);
-          transition:
-            opacity 700ms ease,
-            transform 700ms cubic-bezier(.22, 1, .36, 1);
-          will-change: opacity, transform;
-        }
-
-        .zrive-reveal.is-visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .zrive-marquee-track {
-            animation: none;
-          }
-
-          .zrive-reveal {
-            opacity: 1;
-            transform: none;
-            transition: none;
-          }
-        }
-      `}</style>
-
-      {/* ================= RUNNING BRAND LINE ================= */}
-      <div className="zrive-marquee" aria-label="ZRIVE brand highlights">
-        <div className="zrive-marquee-track">
-          {[
-            "Menswear",
-            "Curated Fit",
-            "Quality Without Noise",
-            "ZRIVE",
-            "New Season",
-            "Made For The Modern Man",
-            "Shop The Edit",
-          ].map((item) => (
-            <span className="zrive-marquee-item" key={`a-${item}`}>
-              <span>{item}</span>
-              <span className="zrive-marquee-star">✦</span>
-            </span>
-          ))}
-          {[
-            "Menswear",
-            "Curated Fit",
-            "Quality Without Noise",
-            "ZRIVE",
-            "New Season",
-            "Made For The Modern Man",
-            "Shop The Edit",
-          ].map((item) => (
-            <span className="zrive-marquee-item" key={`b-${item}`}>
-              <span>{item}</span>
-              <span className="zrive-marquee-star">✦</span>
-            </span>
-          ))}
-        </div>
-      </div>
-
       {/* ================= HERO — mobile ================= */}
-      <section className="md:hidden relative zrive-reveal">
+      <section className="md:hidden relative">
         <img
           src="https://images.unsplash.com/photo-1617137968427-85924c800a22?q=80&w=1200&auto=format&fit=crop"
           alt="Essentials for the modern man"
@@ -225,11 +103,11 @@ const Home = () => {
       </section>
 
       {/* ================= HERO — desktop/tablet ================= */}
-      <section className="hidden md:block w-full h-[340px] lg:h-[420px] relative overflow-hidden group zrive-reveal">
+      <section className="hidden md:block w-full h-[220px] lg:h-[280px] relative overflow-hidden group">
         <img
           src={HeroZrive}
           alt="Big Sale and Discounts"
-          className="w-full h-full object-fill object-center block transition-transform duration-500 ease-out group-hover:scale-[1.008]"
+          className="w-full h-full object-cover object-center block transition-transform duration-500 ease-out group-hover:scale-[1.008]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute bottom-6 left-8 lg:bottom-24 lg:left-8 z-10 max-w-xl">
@@ -245,7 +123,7 @@ const Home = () => {
       </section>
 
       {/* ================= Shop By Category — mobile ================= */}
-      <section className="md:hidden px-5 py-14 border-t border-border zrive-reveal">
+      <section className="md:hidden px-5 py-14 border-t border-border">
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-1">
@@ -287,7 +165,7 @@ const Home = () => {
       </section>
 
       {/* ================= Shop By Category — desktop/tablet ================= */}
-      <section className="hidden md:block px-8 lg:px-14 py-14 border-t border-border zrive-reveal">
+      <section className="hidden md:block px-8 lg:px-14 py-14 border-t border-border">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between mb-8">
             <div>
@@ -331,7 +209,7 @@ const Home = () => {
       </section>
 
       {/* ================= Trending Now — desktop/tablet ================= */}
-      <section className="hidden md:block px-8 lg:px-14 py-12 zrive-reveal">
+      <section className="hidden md:block px-8 lg:px-14 py-12">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between mb-6">
             <div>
@@ -395,7 +273,7 @@ const Home = () => {
       </section>
 
       {/* ================= Trending Now — mobile ================= */}
-      <section className="md:hidden px-5 py-10 zrive-reveal">
+      <section className="md:hidden px-5 py-10">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-[22px] font-medium text-ink">
             Trending Now
@@ -455,7 +333,7 @@ const Home = () => {
       </section>
 
       {/* ================= For You — mobile only ================= */}
-      <section className="md:hidden px-5 py-8 border-t border-border zrive-reveal">
+      <section className="md:hidden px-5 py-8 border-t border-border">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-[20px] font-medium text-ink">
             For You
@@ -494,7 +372,7 @@ const Home = () => {
       </section>
 
       {/* ================= Editorial Banner Placeholder — desktop/tablet ================= */}
-      <section className="hidden md:block px-8 lg:px-14 py-10 zrive-reveal">
+      <section className="hidden md:block px-8 lg:px-14 py-10">
         <div className="max-w-[1440px] mx-auto relative h-[280px] overflow-hidden group bg-charcoal">
           {/* Placeholder image — swap with backend URL later */}
           <img
@@ -521,7 +399,7 @@ const Home = () => {
       </section>
 
       {/* ================= Newsletter — desktop/tablet ================= */}
-      <section className="hidden md:flex justify-center px-8 lg:px-14 py-14 bg-cream-dark border-y border-border zrive-reveal">
+      <section className="hidden md:flex justify-center px-8 lg:px-14 py-14 bg-cream-dark border-y border-border">
         <div className="max-w-md text-center">
           <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-3">
             The Inner Circle
