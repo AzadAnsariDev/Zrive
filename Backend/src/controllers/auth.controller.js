@@ -174,3 +174,88 @@ export const mergeGuestCart = async (req, res, userId)=>{
     }
     res.clearCookie("guestId")
 }
+
+export const updateProfile = async (req, res) => {
+    const userId = req.user.id
+    const { fullName, phone, gender, dob, preferences } = req.body
+
+    const updates = {}
+    if (fullName !== undefined) updates.username = fullName
+    if (phone !== undefined) updates.contact = phone
+    if (gender !== undefined) updates.gender = gender
+    if (dob !== undefined) updates.dob = dob
+    if (preferences !== undefined) updates.preferences = preferences
+
+    const user = await userModel.findByIdAndUpdate(
+        userId,
+        { $set: updates },
+        { new: true, runValidators: true }
+    )
+
+    if (!user) {
+        return res.status(404).json({
+            message: "User not found",
+            success: false
+        })
+    }
+
+    res.status(200).json({
+        message: "Profile updated successfully",
+        success: true,
+        user
+    })
+}
+
+export const changePassword = async (req, res) => {
+    const userId = req.user.id
+    const { currentPassword, newPassword } = req.body
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+            message: "Current and new password are required",
+            success: false
+        })
+    }
+
+    if (newPassword.length < 8) {
+        return res.status(400).json({
+            message: "New password should be at least 8 characters",
+            success: false
+        })
+    }
+
+    const user = await userModel.findById(userId).select("+password")
+
+    if (!user) {
+        return res.status(404).json({
+            message: "User not found",
+            success: false
+        })
+    }
+
+    const isMatch = await user.comparePassword(currentPassword)
+
+    if (!isMatch) {
+        return res.status(401).json({
+            message: "Current password is incorrect",
+            success: false
+        })
+    }
+
+    user.password = newPassword
+    await user.save()
+
+    res.status(200).json({
+        message: "Password updated successfully",
+        success: true
+    })
+}
+
+export const logout = async (req, res) => {
+    res.clearCookie("token")
+
+    res.status(200).json({
+        message: "Logged out successfully",
+        success: true
+    })
+}

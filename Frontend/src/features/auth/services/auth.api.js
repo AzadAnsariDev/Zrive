@@ -1,14 +1,13 @@
 import axios from 'axios'
 
 const authApiInstance = axios.create({
-    baseURL : "/api/auth",
+    baseURL: "/api/auth",
     withCredentials: true
 })
 
-
-export const register = async (email, contact, username, password)=>{
+export const register = async (email, contact, username, password) => {
     const response = await authApiInstance.post("/register", {
-        email, 
+        email,
         contact,
         username,
         password
@@ -17,7 +16,7 @@ export const register = async (email, contact, username, password)=>{
     return response.data
 }
 
-export const login = async (identifier, password)=>{
+export const login = async (identifier, password) => {
     const response = await authApiInstance.post("/login", {
         identifier,
         password
@@ -25,13 +24,30 @@ export const login = async (identifier, password)=>{
     return response.data
 }
 
-
 export const getMe = async () => {
-  try {
-    const response = await authApiInstance.get("/get-me");
-    return response.data;
-  } catch (err) {
-    console.log("GET ME ERROR", err);
-    throw err;
-  }
-};
+    try {
+        const response = await authApiInstance.get("/get-me")
+        return response.data
+    } catch (err) {
+        console.log("GET ME ERROR", err)
+        throw err
+    }
+}
+
+export const updateProfile = async (payload) => {
+    const response = await authApiInstance.put("/profile", payload)
+    return response.data
+}
+
+export const changePassword = async (currentPassword, newPassword) => {
+    const response = await authApiInstance.put("/password", {
+        currentPassword,
+        newPassword
+    })
+    return response.data
+}
+
+export const logout = async () => {
+    const response = await authApiInstance.post("/logout")
+    return response.data
+}

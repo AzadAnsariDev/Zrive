@@ -12,8 +12,14 @@ const userSchema = new mongoose.Schema({
     },
     role: { type: String, enum: ["seller", "buyer", "basic_seller"], default: "buyer" },
     googleId: { type: String },
+    gender: { type: String, enum: ["Male", "Female", "Prefer not to say"] },
+    dob: { type: Date },
+    preferences: {
+        newsletter: { type: Boolean, default: true },
+        orderUpdatesSms: { type: Boolean, default: true },
+        size: { type: String, default: "M" }
+    },
 
-    // Sirf sellers ke liye relevant
     strikeCount: { type: Number, default: 0 },       // reject=+1, timeout=+1.5
     isBanned: { type: Boolean, default: false },
     banExpiresAt: { type: Date },                     // Auto unban after 7 days

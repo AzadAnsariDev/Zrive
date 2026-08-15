@@ -20,57 +20,85 @@ const useAddress = () => {
 
   // Create
   const handleCreateAddress = async (addressData) => {
-    const result = await createAddress(addressData);
+    try {
+      const result = await createAddress(addressData);
 
-    if (result.success) {
-      dispatch(addAddress(result.address));
+      if (result.success) {
+        dispatch(addAddress(result.address));
+        return result.address;
+      }
+
+      return null;
+    } catch (err) {
+      console.log(err);
+      return null;
     }
-
-    return result;
   };
 
   // Get All
   const handleGetAllAddresses = async () => {
-    const result = await getAllAddresses();
+    try {
+      const result = await getAllAddresses();
 
-    if (result.success) {
-      dispatch(setAddresses(result.addresses));
+      if (result.success) {
+        dispatch(setAddresses(result.addresses));
+      }
+
+      return result;
+    } catch (err) {
+      console.log(err);
+      return null;
     }
-
-    return result;
   };
 
   // Get One
   const handleGetAddressById = async (addressId) => {
-    const result = await getAddressById(addressId);
+    try {
+      const result = await getAddressById(addressId);
 
-    if (result.success) {
-      dispatch(setSelectedAddress(result.address));
+      if (result.success) {
+        dispatch(setSelectedAddress(result.address));
+      }
+
+      return result;
+    } catch (err) {
+      console.log(err);
+      return null;
     }
-
-    return result;
   };
 
   // Update
   const handleUpdateAddress = async (addressId, addressData) => {
-    const result = await updateAddress(addressId ,addressData);
+    try {
+      const result = await updateAddress(addressId, addressData);
 
-    if (result.success) {
-      dispatch(updateAddressInStore(result.address));
+      if (result.success) {
+        dispatch(updateAddressInStore(result.address));
+        return result.address;
+      }
+
+      return null;
+    } catch (err) {
+      console.log(err);
+      return null;
     }
-
-    return result;
   };
 
   // Delete
   const handleDeleteAddress = async (addressId) => {
-    const result = await deleteAddress(addressId);
+    try {
+      const result = await deleteAddress(addressId);
 
-    if (result.success) {
-      dispatch(deleteAddressInStore(addressId));
+      if (result.success) {
+        dispatch(deleteAddressInStore(addressId));
+        return true;
+      }
+
+      return null;
+    } catch (err) {
+      console.log(err);
+      return null;
     }
-
-    return result;
   };
 
   return {

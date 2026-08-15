@@ -39,3 +39,55 @@ export const validateLogin = [
 
     validationRequest
 ];
+
+export const validateUpdateProfile = [
+    body("fullName")
+        .optional()
+        .notEmpty().withMessage("Full name cannot be empty")
+        .isLength({ min: 3 }).withMessage("Full name must be atleast 3 character long"),
+
+    body("phone")
+        .optional()
+        .isMobilePhone().withMessage("Please provide a valid contact number")
+        .isLength({ min: 10, max: 10 }).withMessage("Please provide a valid contact number"),
+
+    body("gender")
+        .optional()
+        .isIn(["Male", "Female", "Prefer not to say"]).withMessage("Please provide a valid gender"),
+
+    body("dob")
+        .optional()
+        .isISO8601().withMessage("Please provide a valid date of birth")
+        .toDate(),
+
+    body("preferences")
+        .optional()
+        .isObject().withMessage("Preferences must be an object"),
+
+    body("preferences.newsletter")
+        .optional()
+        .isBoolean().withMessage("Newsletter preference must be true or false"),
+
+    body("preferences.orderUpdatesSms")
+        .optional()
+        .isBoolean().withMessage("Order updates SMS preference must be true or false"),
+
+    body("preferences.size")
+        .optional()
+        .isIn(["XS", "S", "M", "L", "XL", "XXL"]).withMessage("Please provide a valid size"),
+
+    validationRequest
+]
+
+export const validateChangePassword = [
+    body("currentPassword")
+        .notEmpty().withMessage("Current password is required"),
+
+    body("newPassword")
+        .notEmpty().withMessage("New password is required")
+        .isLength({ min: 8 }).withMessage("New password must be atleast 8 character long")
+        .custom((value, { req }) => value !== req.body.currentPassword)
+        .withMessage("New password must be different from current password"),
+
+    validationRequest
+]
