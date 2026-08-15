@@ -28,6 +28,8 @@ import AdminSellerDetail from "../features/admin/pages/AdminSellerDetail";
 import SellerOrderDetail from "../features/seller/pages/SellerOrderDetail";
 import NewArrivals from "../features/home/pages/NewArrivals";
 import Collections from "../features/home/pages/Collections";
+import Wishlist from "../features/wishlist/pages/Wishlist";
+import Profile from "../features/home/pages/Profile";
 
 const router = createBrowserRouter([
   {
@@ -39,8 +41,8 @@ const router = createBrowserRouter([
       { path: "new-arrivals", element: <NewArrivals /> }, // ← add
       { path: "cart", element: <Cart /> },
       { path: "collections", element: <Collections /> }, // ← add
-      { path: "profile", element: <div>Profile page</div> },
-      { path: "wishlist", element: <div>Wishlist page</div> },
+      { path: "profile", element: <Profile /> },
+      { path: "wishlist", element: <Wishlist /> },
       { path: "all-products", element: <AllProducts /> },
       { path: "product/:productId", element: <SingleProduct /> },
       {

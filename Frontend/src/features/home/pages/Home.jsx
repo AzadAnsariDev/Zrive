@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
-import { Heart, Plus, ArrowRight, Shirt, User as UserIcon } from "lucide-react";
+import { Plus, ArrowRight, Shirt, User as UserIcon } from "lucide-react";
 import { useProduct } from "../../product/hook/useProduct";
 import HeroZrive from "../../../assets/images/Hero_Zrive.png";
+import WishlistButton from "../../wishlist/components/WishlistButton";
 
 // ---- Static content -------------------------------------------------------
 // Using real category enum values from the product schema
@@ -243,16 +244,11 @@ const Home = () => {
                         alt={getProductName(product)}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
-                      <button
-                        type="button"
-                        aria-label="Add to wishlist"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                        className="absolute top-3 right-3 text-ink-soft hover:text-ink transition-colors"
-                      >
-                        <Heart size={18} strokeWidth={1} />
-                      </button>
+                      <WishlistButton
+                        productId={product._id}
+                        variantSku={product.variants?.[0]?.sku}
+                        className="absolute top-3 right-3 z-10"
+                      />
                     </div>
                     <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">
                       {product.brand || "Generic"}
@@ -303,16 +299,11 @@ const Home = () => {
                   alt={getProductName(product)}
                   className="w-full h-full object-cover"
                 />
-                <button
-                  type="button"
-                  aria-label="Add to wishlist"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  className="absolute top-2 right-2 text-ink hover:text-gold transition-colors"
-                >
-                  <Heart size={16} strokeWidth={1} />
-                </button>
+                <WishlistButton
+                  productId={product._id}
+                  variantSku={product.variants?.[0]?.sku}
+                  className="absolute top-2 right-2 z-10"
+                />
               </div>
               <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">
                 {product.brand || "Generic"}

@@ -11,6 +11,7 @@ import {
 import { useProduct } from "../../product/hook/useProduct";
 import { formatPrice } from "./Home";
 import { CATEGORIES } from "../../../constant/Categories";
+import WishlistButton from "../../wishlist/components/WishlistButton";
 
 // TODO(refactor): pull from shared constants/categories.js once created
 
@@ -104,15 +105,11 @@ const ProductCard = ({ product, onClick }) => {
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         {isNew && <NewBadge />}
-        <button
-          type="button"
-          aria-label="Add to wishlist"
-          onClick={(e) => e.stopPropagation()}
-          className="absolute top-2.5 right-2.5 md:top-3 md:right-3 text-ink-soft hover:text-ink transition-colors"
-        >
-          <Heart size={16} className="md:hidden" strokeWidth={1} />
-          <Heart size={18} className="hidden md:block" strokeWidth={1} />
-        </button>
+        <WishlistButton 
+          productId={product._id}
+          variantSku={product.variants?.[0]?.sku}
+          className="absolute top-3 right-3 z-10"
+        />
       </div>
       <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">
         {product.brand || "Generic"}

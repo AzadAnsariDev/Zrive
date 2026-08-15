@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react'
 import { useSelector } from 'react-redux'
-import { Heart, Image as ImageIcon } from 'lucide-react'
+import { Image as ImageIcon } from 'lucide-react'
 import { useProduct } from '../hook/useProduct'
 import { formatPrice } from '../../home/pages/Home'
 import { useNavigate } from 'react-router'
+import WishlistButton from '../../wishlist/components/WishlistButton'
 
 // Filter chips — UI only for now (onClick placeholders), wire these up to
 // real sort/price/color logic once that's ready on the backend.
@@ -54,14 +55,11 @@ const ProductCard = ({ product }) => {
           </div>
         )}
 
-        <button
-          type="button"
-          aria-label="Add to wishlist"
-          onClick={(e) => e.stopPropagation()}
-          className="absolute top-3 right-3 text-ink-soft hover:text-ink transition-colors"
-        >
-          <Heart size={18} strokeWidth={1} />
-        </button>
+        <WishlistButton
+          productId={product._id}
+          variantSku={product.variants?.[0]?.sku}
+          className="absolute top-3 right-3 z-10"
+        />
       </div>
 
       <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">

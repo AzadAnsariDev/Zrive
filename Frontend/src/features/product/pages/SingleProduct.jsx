@@ -13,6 +13,7 @@ import {
 import { useProduct } from '../hook/useProduct'
 import { formatPrice } from '../../home/pages/Home'
 import useCart from '../../cart/hook/useCart'
+import WishlistButton from '../../wishlist/components/WishlistButton'
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
@@ -87,6 +88,11 @@ const RelatedProductCard = ({ product }) => {
             <ImageIcon size={20} strokeWidth={1} className="text-ink-soft" />
           </div>
         )}
+        <WishlistButton
+          productId={product._id}
+          variantSku={product.variants?.[0]?.sku}
+          className="absolute top-3 right-3 z-10"
+        />
       </div>
       <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">{product.brand || 'Generic'}</p>
       <h3 className="font-display text-[14px] text-ink mb-1 truncate">{product.name || product.title}</h3>
@@ -186,7 +192,6 @@ const SingleProduct = () => {
 
   const [product, setProduct] = useState(null)
   const [activeImage, setActiveImage] = useState(0)
-  const [wishlisted, setWishlisted] = useState(false)
   const [toastVisible, setToastVisible] = useState(false)
   const toastTimeoutRef = useRef(null)
 
@@ -307,14 +312,11 @@ const SingleProduct = () => {
                 <ImageIcon size={24} strokeWidth={1} className="text-ink-soft" />
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => setWishlisted((w) => !w)}
-              aria-label="Add to wishlist"
-              className="absolute top-4 right-4 text-ink hover:text-gold transition-colors"
-            >
-              <Heart size={20} strokeWidth={1} className={wishlisted ? 'fill-gold text-gold' : ''} />
-            </button>
+            <WishlistButton
+              productId={product._id}
+              variantSku={selectedVariant?.sku || product.variants?.[0]?.sku}
+              className="absolute top-4 right-4 z-10"
+            />
           </div>
 
           {images.length > 1 && (
@@ -426,6 +428,11 @@ const SingleProduct = () => {
                 <ImageIcon size={32} strokeWidth={1} className="text-ink-soft" />
               </div>
             )}
+            <WishlistButton
+              productId={product._id}
+              variantSku={selectedVariant?.sku || product.variants?.[0]?.sku}
+              className="absolute top-4 right-4 z-10"
+            />
 
             {images.length > 1 && (
               <>
@@ -494,14 +501,15 @@ const SingleProduct = () => {
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setWishlisted((w) => !w)}
-              className="flex items-center gap-2 mt-5 text-[11px] font-semibold tracking-[0.08em] uppercase text-ink-soft hover:text-ink transition-colors"
-            >
-              <Heart size={14} strokeWidth={1.5} className={wishlisted ? 'fill-gold text-gold' : ''} />
-              {wishlisted ? 'Saved to Wishlist' : 'Add to Wishlist'}
-            </button>
+            <div className="mt-5 flex items-center gap-2.5">
+              <WishlistButton
+                productId={product._id}
+                variantSku={selectedVariant?.sku || product.variants?.[0]?.sku}
+              />
+              <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-ink-soft">
+                Add to Wishlist
+              </span>
+            </div>
 
             <div className="mt-12">
               <AccordionRow title="The Details" defaultOpen>
