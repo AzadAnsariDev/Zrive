@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams, useLocation } from "react-router";
 import {
   ChevronDown,
   SlidersHorizontal,
@@ -339,6 +339,8 @@ const FilterPanelContent = ({
 ───────────────────────────────────────────── */
 const AllProducts = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { handleGetProducts } = useProduct();
 
   /* ── filter state (unchanged logic) ── */
@@ -353,6 +355,14 @@ const AllProducts = () => {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => { handleGetProducts(); }, []);
+
+  // Sync category filter from URL parameter ?category=... or location state
+  useEffect(() => {
+    const catParam = searchParams.get("category") || location.state?.category;
+    if (catParam) {
+      setSelectedCategories([catParam.toLowerCase().trim()]);
+    }
+  }, [searchParams, location.state]);
 
   const products = useSelector((s) => s.product.products);
   const loading = useSelector((s) => s.product.loading.fetch);

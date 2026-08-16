@@ -1,29 +1,31 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
-import { Plus, ArrowRight, Shirt, User as UserIcon } from "lucide-react";
+import {
+  ArrowRight,
+  Sparkle,
+  Truck,
+  RotateCcw,
+  ShieldCheck,
+  BadgeCheck,
+  ShoppingBag,
+  Flame,
+  Tag,
+  Check,
+  Copy,
+  Zap,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
+} from "lucide-react";
 import { useProduct } from "../../product/hook/useProduct";
-import HeroZrive from "../../../assets/images/Hero_Zrive.png";
+import useCart from "../../cart/hook/useCart";
 import WishlistButton from "../../wishlist/components/WishlistButton";
-
-// ---- Static content -------------------------------------------------------
-// Using real category enum values from the product schema
-const MENS_CATEGORIES = [
-  { id: 'tshirts',    label: 'T-Shirts',   image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=580&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
-  { id: 'shirts',     label: 'Shirts',     image: 'https://images.unsplash.com/photo-1618786177957-29d9b6b26d8a?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8Q2FzdWFsJTIwc2hpcnQlMjBmYXNoaW9ufGVufDB8fDB8fHww' },
-  { id: 'jeans',      label: 'Jeans',      image: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGplYW5zfGVufDB8fDB8fHww' },
-  { id: 'trousers',   label: 'Trousers',   image: 'https://images.unsplash.com/photo-1580906853305-5702e648164e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mzl8fHRyb3VzZXJzfGVufDB8fDB8fHww' },
-  { id: 'jackets',    label: 'Jackets',    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=435&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
-  { id: 'hoodies',    label: 'Hoodies',    image: 'https://images.unsplash.com/photo-1680292783974-a9a336c10366?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aG9vZGllc3xlbnwwfHwwfHx8MA%3D%3D' },
-  { id: 'blazers',    label: 'Blazers',    image: 'https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8YmxhemVyc3xlbnwwfHwwfHx8MA%3D%3D' },
-  { id: 'shoes',      label: 'Shoes',      image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8c2hvZXN8ZW58MHx8MHx8fDA%3D' },
-  { id: 'sunglasses', label: 'Sunglasses', image: 'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8c3VuZ2xhc3Nlc3xlbnwwfHwwfHx8MA%3D%3D' },
-  { id: 'perfumes',   label: 'Perfumes',   image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8cGVyZnVtZXN8ZW58MHx8MHx8fDA%3D' },
-]
-
-const ProductCardSkeleton = ({ className = "" }) => (
-  <div className={`animate-pulse bg-cream-dark ${className}`} />
-);
+import { CATEGORIES as MENS_CATEGORIES } from "../../../constant/Categories";
+import ZriveHeroBannerGen from "../../../assets/images/zrive_hero_banner_gen.png";
+import HeroZrive from "../../../assets/images/Hero_Zrive.png";
+import MobileHeroZrive from "../../../assets/images/New_Zrive_Mobile_Hero.png";
 
 // ---- Backend data format safety helpers -----------------------------------
 export const formatPrice = (priceObj) => {
@@ -51,6 +53,7 @@ const getProductImage = (product) => {
     return typeof img === "string" ? img : img?.url || "";
   }
   return (
+    product?.variants?.[0]?.images?.[0]?.url ||
     product?.image ||
     "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=500&auto=format&fit=crop"
   );
@@ -58,149 +61,323 @@ const getProductImage = (product) => {
 
 const getProductKey = (product, idx) => product?._id || product?.id || idx;
 
+const getProductPrice = (p) => {
+  const v = p?.price;
+  if (typeof v === "number") return v;
+  if (typeof v === "object" && v !== null) return v.amount ?? v.value ?? 0;
+  return Number(v) || 0;
+};
+
+const ProductCardSkeleton = () => (
+  <div className="animate-pulse">
+    <div className="aspect-[3/4] bg-[#F0EEEA] mb-2 rounded-sm" />
+    <div className="h-2.5 bg-[#F0EEEA] w-1/3 mb-1.5 rounded" />
+    <div className="h-3 bg-[#F0EEEA] w-3/4 mb-1.5 rounded" />
+    <div className="h-3 bg-[#F0EEEA] w-1/4 rounded" />
+  </div>
+);
+
+/* ─────────────────────────────────────────────
+   COMPACT PRODUCT CARD WITH "ADD TO CART" HOVER
+───────────────────────────────────────────── */
+const ProductCard = ({ product, onClick, salePercent = null, className = "" }) => {
+  const { handleAddToCart } = useCart();
+  const [added, setAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
+
+  const originalPrice = salePercent
+    ? Math.round(getProductPrice(product) / (1 - salePercent / 100))
+    : null;
+
+  const onAddToCartClick = async (e) => {
+    e.stopPropagation();
+    if (adding || added) return;
+    setAdding(true);
+    try {
+      const variantSku = product.variants?.[0]?.sku || product.variants?.[0]?._id;
+      await handleAddToCart(product._id, variantSku);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    } catch (err) {
+      console.error("Failed to add product to cart:", err);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <div className={`group cursor-pointer ${className}`} onClick={onClick}>
+      <div className="relative aspect-[3/4] overflow-hidden bg-[#F7F7F5] mb-2.5 rounded-sm border border-[#E5E5E5] group-hover:border-[#111111] transition-all duration-300">
+        <img
+          src={getProductImage(product)}
+          alt={getProductName(product)}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+        />
+
+        {/* Discount Badge */}
+        {salePercent && (
+          <span className="absolute top-2 left-2 bg-[#C43D3D] text-white text-[9px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 shadow-sm">
+            -{salePercent}%
+          </span>
+        )}
+
+        {/* Wishlist */}
+        <WishlistButton
+          productId={product._id}
+          variantSku={product.variants?.[0]?.sku}
+          className="absolute top-2 right-2 z-10"
+        />
+
+        {/* ADD TO CART HOVER BUTTON (Slide-Up) */}
+        <button
+          type="button"
+          onClick={onAddToCartClick}
+          className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-250 bg-[#111111] hover:bg-[#B08D57] py-2.5 text-center flex items-center justify-center gap-1.5 transition-colors duration-200 z-10"
+        >
+          {adding ? (
+            <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-white animate-pulse">
+              Adding...
+            </span>
+          ) : added ? (
+            <>
+              <Check size={12} className="text-emerald-400" />
+              <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-emerald-400">
+                Added ✓
+              </span>
+            </>
+          ) : (
+            <>
+              <ShoppingBag size={12} className="text-white" />
+              <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-white">
+                Add to Cart
+              </span>
+            </>
+          )}
+        </button>
+      </div>
+
+      <p className="text-[9px] font-semibold tracking-[0.14em] uppercase text-[#B08D57] mb-0.5 truncate">
+        {product.brand || "ZRIVE"}
+      </p>
+      <h3
+        style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+        className="text-[13px] text-[#111111] mb-1 truncate leading-snug font-medium"
+      >
+        {getProductName(product)}
+      </h3>
+      <div className="flex items-center gap-2">
+        <span className="text-[13px] font-semibold text-[#111111]">
+          {formatPrice(product.price)}
+        </span>
+        {originalPrice && (
+          <span className="text-[11px] text-[#999] line-through">
+            {formatPrice(originalPrice)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────
+   MAIN HOME PAGE
+───────────────────────────────────────────── */
 const Home = () => {
   const navigate = useNavigate();
   const { handleGetProducts } = useProduct();
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     handleGetProducts();
   }, []);
 
   const products = useSelector((state) => state.product.products);
+  const loading = useSelector((state) => state.product.loading?.fetch);
 
-  // ---- Data slices ----------------------------------------------------
-  const trendingHero = products?.[0];
-  const trendingGridMobile = products?.slice(1, 3) ?? [];
-  const trendingGridDesktop = products?.slice(0, 4) ?? [];
-  const forYou = products?.slice(3, 6) ?? [];
-  const recentlyViewed = products?.slice(0, 4) ?? [];
+  // Filtered slices
+  const trendingGrid = useMemo(() => products?.slice(0, 12) ?? [], [products]);
+  const dealsProducts = useMemo(() => products?.slice(2, 10) ?? [], [products]);
+  const newArrivals = useMemo(() => products?.slice(4, 10) ?? [], [products]);
+
+  const copyCouponCode = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText("ZRIVEFIRST");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const navigateToCategory = (catId) => {
+    navigate(`/all-products?category=${catId}`, { state: { category: catId } });
+  };
 
   return (
-    <div className="bg-cream text-ink">
-      {/* ================= HERO — mobile ================= */}
-      <section className="md:hidden relative">
-        <img
-          src="https://images.unsplash.com/photo-1617137968427-85924c800a22?q=80&w=1200&auto=format&fit=crop"
-          alt="Essentials for the modern man"
-          className="w-full h-[480px] object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-        <div className="absolute bottom-7 left-5 right-5">
-          <h1 className="font-display text-white text-[32px] font-medium leading-[1.1] tracking-tight mb-5">
-            Essentials
-            <br />
-            For The Modern
-            <br />
-            Man
-          </h1>
-          <button
-            type="button"
-            onClick={() => navigate("/all-products")}
-            className="bg-charcoal text-cream text-[11px] font-semibold tracking-[0.1em] uppercase px-6 py-4 rounded-[3px] hover:bg-ink transition-colors"
-          >
-            Shop the Collection
-          </button>
-        </div>
-      </section>
+    <div className="bg-white text-[#111111] min-h-screen" style={{ fontFamily: "'Inter', sans-serif" }}>
 
-      {/* ================= HERO — desktop/tablet ================= */}
-      <section className="hidden md:block w-full h-[220px] lg:h-[280px] relative overflow-hidden group">
-        <img
-          src={HeroZrive}
-          alt="Big Sale and Discounts"
-          className="w-full h-full object-cover object-center block transition-transform duration-500 ease-out group-hover:scale-[1.008]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <div className="absolute bottom-6 left-8 lg:bottom-24 lg:left-8 z-10 max-w-xl">
-          <button
-            type="button"
-            onClick={() => navigate("/all-products")}
-            className="inline-flex items-center gap-3 bg-charcoal text-cream text-[10px] font-semibold tracking-[0.1em] uppercase px-6 py-3 rounded-[3px] hover:bg-ink transition-colors"
-          >
-            <span>Explore Collection</span>
-            <ArrowRight size={14} />
-          </button>
-        </div>
-      </section>
+      {/* Scoped CSS for Marquee Ticker */}
+      <style>{`
+        @keyframes zriveMarquee {
+          0% { transform: translateX(0%); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-zrive-marquee {
+          display: flex;
+          width: max-content;
+          animation: zriveMarquee 22s linear infinite;
+        }
+        .animate-zrive-marquee:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
 
-      {/* ================= Shop By Category — mobile ================= */}
-      <section className="md:hidden px-5 py-14 border-t border-border">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-1">
-              Menswear
-            </p>
-            <h2 className="font-display text-[20px] font-medium text-ink">
-              Shop By Category
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate("/all-products")}
-            className="text-[12px] font-medium text-ink-soft hover:text-ink transition-colors"
-          >
-            View All
-          </button>
-        </div>
-        <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-5 px-5 pb-1">
-          {MENS_CATEGORIES.map((cat) => (
+      {/* ══════════════════════════════════════════
+          1 · HERO BANNER (Generated Image 2 - 100% Width & Full Head Alignment)
+      ══════════════════════════════════════════ */}
+      <section className="relative w-full overflow-hidden bg-[#111111] text-white">
+        <div
+          className="relative w-full h-[260px] sm:h-[340px] md:h-[400px] lg:h-[460px] cursor-pointer group overflow-hidden"
+          onClick={() => navigate("/all-products")}
+        >
+          {/* Custom Generated Image 2 spanning 100% width with object-[center_12%] */}
+          <img
+            src={ZriveHeroBannerGen}
+            alt="ZRIVE Luxury Menswear - Flat 20% Off 1st Order"
+            className="w-full h-full object-cover object-[center_12%] transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+          />
+
+          {/* Clean Eye-Catching Shop Collection CTA Overlay */}
+          <div className="absolute bottom-5 left-5 sm:bottom-8 sm:left-10 md:bottom-10 md:left-14 z-10 flex items-center gap-3">
             <button
-              key={cat.id}
               type="button"
-              onClick={() => navigate(`/all-products?category=${cat.id}`)}
-              className="group flex-shrink-0 w-[128px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/all-products");
+              }}
+              className="inline-flex items-center gap-2.5 bg-[#111111] text-white text-[11px] md:text-[12px] font-bold tracking-[0.14em] uppercase px-6 py-3 md:px-7 md:py-3.5 border-2 border-[#B08D57] hover:bg-[#B08D57] transition-all duration-300 shadow-2xl rounded-xs group/btn"
             >
-              <div className="relative aspect-[3/4] overflow-hidden rounded-[3px] border border-border bg-cream-dark mb-2.5">
-                <img
-                  src={cat.image}
-                  alt={cat.label}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <span className="font-display text-[13px] text-ink">
-                {cat.label}
-              </span>
+              <span>Shop Collection</span>
+              <ArrowRight size={14} className="text-[#E9CD7A] group-hover/btn:text-white group-hover/btn:translate-x-1 transition-all" />
             </button>
-          ))}
+
+            <button
+              type="button"
+              onClick={copyCouponCode}
+              className="hidden sm:inline-flex items-center gap-1.5 bg-black/80 border border-white/20 text-white text-[11px] font-semibold px-4 py-3.5 rounded-xs hover:border-[#B08D57] transition-colors"
+            >
+              {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={12} className="text-[#B08D57]" />}
+              <span>{copied ? "Copied!" : "Code: ZRIVEFIRST"}</span>
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* ================= Shop By Category — desktop/tablet ================= */}
-      <section className="hidden md:block px-8 lg:px-14 py-14 border-t border-border">
+      {/* ══════════════════════════════════════════
+          2 · RUNNING ZRIVE FEATURES STRIP (Infinite Marquee Ticker)
+      ══════════════════════════════════════════ */}
+      <section className="bg-[#111111] text-white py-3 overflow-hidden border-b border-[#222]">
+        <div className="animate-zrive-marquee flex items-center gap-8 text-[11px] font-medium tracking-[0.12em] uppercase">
+
+          {/* Set 1 */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Tag size={13} className="text-[#B08D57]" />
+            <span>FLAT 20% OFF 1ST ORDER — CODE: <strong className="text-[#B08D57]">ZRIVEFIRST</strong></span>
+          </div>
+          <span className="text-[#444] shrink-0">•</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <Truck size={13} className="text-[#B08D57]" />
+            <span>FREE EXPRESS SHIPPING OVER ₹999</span>
+          </div>
+          <span className="text-[#444] shrink-0">•</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <ShieldCheck size={13} className="text-[#B08D57]" />
+            <span>100% VERIFIED SELLERS & AUTHENTIC PRODUCTS</span>
+          </div>
+          <span className="text-[#444] shrink-0">•</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <RotateCcw size={13} className="text-[#B08D57]" />
+            <span>7-DAY HASSLE-FREE RETURNS</span>
+          </div>
+          <span className="text-[#444] shrink-0">•</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <Lock size={13} className="text-[#B08D57]" />
+            <span>SECURE ESCROW PAYMENTS</span>
+          </div>
+          <span className="text-[#444] shrink-0">•</span>
+
+          {/* Duplicate Set for Seamless Loop */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Tag size={13} className="text-[#B08D57]" />
+            <span>FLAT 20% OFF 1ST ORDER — CODE: <strong className="text-[#B08D57]">ZRIVEFIRST</strong></span>
+          </div>
+          <span className="text-[#444] shrink-0">•</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <Truck size={13} className="text-[#B08D57]" />
+            <span>FREE EXPRESS SHIPPING OVER ₹999</span>
+          </div>
+          <span className="text-[#444] shrink-0">•</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <ShieldCheck size={13} className="text-[#B08D57]" />
+            <span>100% VERIFIED SELLERS & AUTHENTIC PRODUCTS</span>
+          </div>
+          <span className="text-[#444] shrink-0">•</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <RotateCcw size={13} className="text-[#B08D57]" />
+            <span>7-DAY HASSLE-FREE RETURNS</span>
+          </div>
+          <span className="text-[#444] shrink-0">•</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <Lock size={13} className="text-[#B08D57]" />
+            <span>SECURE ESCROW PAYMENTS</span>
+          </div>
+          <span className="text-[#444] shrink-0">•</span>
+
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          3 · PROMINENT CATEGORY CIRCLES
+      ══════════════════════════════════════════ */}
+      <section className="px-5 md:px-14 py-10 md:py-14 border-b border-[#E5E5E5]">
         <div className="max-w-[1440px] mx-auto">
-          <div className="flex items-end justify-between mb-8">
+          <div className="flex items-center justify-between mb-7">
             <div>
-              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-gold mb-1">
-                Menswear
+              <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#B08D57] mb-1">
+                Explore Menswear
               </p>
-              <h2 className="font-display text-[26px] font-medium text-ink">
+              <h2
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                className="text-[22px] md:text-[28px] font-bold text-[#111111]"
+              >
                 Shop By Category
               </h2>
             </div>
             <button
               type="button"
               onClick={() => navigate("/all-products")}
-              className="text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft hover:text-ink transition-colors"
+              className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[#B08D57] hover:text-[#111111] transition-colors border-b border-[#B08D57] pb-0.5"
             >
-              View All
+              View All Catalog
             </button>
           </div>
-          <div className="grid grid-cols-5 gap-5 lg:gap-6">
+
+          {/* Large Prominent Horizontal Category Circles */}
+          <div className="flex gap-5 md:gap-8 overflow-x-auto no-scrollbar pb-3">
             {MENS_CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => navigate(`/all-products?category=${cat.id}`)}
-                className="group"
+                onClick={() => navigateToCategory(cat.id)}
+                className="group flex-shrink-0 flex flex-col items-center w-[95px] md:w-[120px] lg:w-[130px] text-center"
               >
-                <div className="relative aspect-[3/4] overflow-hidden rounded-[3px] border border-border bg-cream-dark mb-3">
+                <div className="w-[88px] h-[88px] md:w-[110px] md:h-[110px] lg:w-[120px] lg:h-[120px] rounded-full overflow-hidden border-2 border-[#E5E5E5] group-hover:border-[#B08D57] bg-[#F7F7F5] mb-3 p-1 transition-all duration-300 group-hover:scale-105 shadow-sm group-hover:shadow-md">
                   <img
                     src={cat.image}
                     alt={cat.label}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-cover object-top rounded-full transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
                   />
                 </div>
-                <span className="font-display text-[14px] text-ink">
+                <span className="text-[13px] md:text-[14px] font-semibold text-[#111111] group-hover:text-[#B08D57] transition-colors truncate w-full">
                   {cat.label}
                 </span>
               </button>
@@ -209,346 +386,244 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= Trending Now — desktop/tablet ================= */}
-      <section className="hidden md:block px-8 lg:px-14 py-12">
+      {/* ══════════════════════════════════════════
+          4 · TODAY'S BEST DEALS (Compact Row with Discount Badges)
+      ══════════════════════════════════════════ */}
+      {dealsProducts.length > 0 && (
+        <section className="px-5 md:px-14 py-8 md:py-10 border-b border-[#E5E5E5]">
+          <div className="max-w-[1440px] mx-auto">
+            <div className="flex items-end justify-between mb-5">
+              <div>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#C43D3D] mb-1 flex items-center gap-1">
+                  <Flame size={12} />
+                  Limited Time Offers
+                </p>
+                <h2
+                  style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                  className="text-[20px] md:text-[24px] font-bold text-[#111111]"
+                >
+                  Today's Best Deals
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/all-products")}
+                className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[#B08D57] hover:text-[#111111] transition-colors"
+              >
+                View All Deals
+              </button>
+            </div>
+
+            <div className="flex gap-3.5 md:gap-4 overflow-x-auto no-scrollbar pb-2">
+              {dealsProducts.map((product, idx) => (
+                <div key={getProductKey(product, idx)} className="flex-shrink-0 w-[150px] md:w-[185px]">
+                  <ProductCard
+                    product={product}
+                    onClick={() => navigate(`/product/${product._id}`)}
+                    salePercent={[25, 30, 40, 20, 35, 50, 15, 30][idx % 8]}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════════════
+          5 · TRENDING CATALOG (Compact 6-Column Grid)
+      ══════════════════════════════════════════ */}
+      <section className="px-5 md:px-14 py-8 md:py-12 border-b border-[#E5E5E5] bg-[#FAFAFA]">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between mb-6">
             <div>
-              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-1">
-                Curated For You
+              <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#B08D57] mb-1 flex items-center gap-1">
+                <Sparkle size={12} />
+                Curated Selection
               </p>
-              <h2 className="font-display text-[26px] font-medium text-ink">
-                Trending Now
+              <h2
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                className="text-[20px] md:text-[26px] font-bold text-[#111111]"
+              >
+                Trending Collection
               </h2>
             </div>
             <button
               type="button"
               onClick={() => navigate("/all-products")}
-              className="text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft hover:text-ink transition-colors"
+              className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[#B08D57] hover:text-[#111111] transition-colors flex items-center gap-1"
             >
-              View All
+              <span>Explore All ({products?.length || 0})</span>
+              <ArrowRight size={12} />
             </button>
           </div>
 
-          <div className="grid grid-cols-5 xl:grid-cols-6 gap-4 lg:gap-5">
-            {trendingGridDesktop.length > 0
-              ? trendingGridDesktop.map((product, idx) => (
-                  <div
-                    key={getProductKey(product, idx)}
-                    className="group cursor-pointer"
-                    onClick={() => navigate(`/product/${product._id}`)}
-                  >
-                    <div className="relative aspect-[3/4] overflow-hidden bg-cream-dark mb-3">
-                      <img
-                        src={getProductImage(product)}
-                        alt={getProductName(product)}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      <WishlistButton
-                        productId={product._id}
-                        variantSku={product.variants?.[0]?.sku}
-                        className="absolute top-3 right-3 z-10"
-                      />
-                    </div>
-                    <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">
-                      {product.brand || "Generic"}
-                    </p>
-                    <h3 className="font-display text-[14px] text-ink mb-1 truncate">
-                      {getProductName(product)}
-                    </h3>
-                    <span className="font-sans text-[13px] font-semibold text-ink">
-                      {formatPrice(product.price)}
-                    </span>
-                  </div>
-                ))
-              : [0, 1, 2, 3].map((i) => (
-                  <ProductCardSkeleton key={i} className="aspect-[3/4]" />
-                ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================= Trending Now — mobile ================= */}
-      <section className="md:hidden px-5 py-10">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="font-display text-[22px] font-medium text-ink">
-            Trending Now
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate("/all-products")}
-            className="text-[12px] font-medium text-ink-soft"
-          >
-            View All
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {(trendingGridMobile.length > 0
-            ? [trendingHero, ...trendingGridMobile].filter(Boolean)
-            : []
-          ).map((product, idx) => (
-            <div
-              key={getProductKey(product, idx)}
-              onClick={() => navigate(`/product/${product._id}`)}
-              className="cursor-pointer"
-            >
-              <div className="relative aspect-[3/4] overflow-hidden bg-cream-dark mb-2">
-                <img
-                  src={getProductImage(product)}
-                  alt={getProductName(product)}
-                  className="w-full h-full object-cover"
-                />
-                <WishlistButton
-                  productId={product._id}
-                  variantSku={product.variants?.[0]?.sku}
-                  className="absolute top-2 right-2 z-10"
-                />
-              </div>
-              <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">
-                {product.brand || "Generic"}
-              </p>
-              <h3 className="font-display text-[13px] text-ink mb-0.5 truncate">
-                {getProductName(product)}
-              </h3>
-              <p className="font-sans text-[12px] font-semibold text-ink">
-                {formatPrice(product.price)}
-              </p>
+          {loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-3.5 md:gap-4">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
             </div>
-          ))}
-          {trendingGridMobile.length === 0 &&
-            [0, 1, 2, 3].map((i) => (
-              <ProductCardSkeleton key={i} className="aspect-[3/4]" />
-            ))}
-        </div>
-      </section>
-
-      {/* ================= For You — mobile only ================= */}
-      <section className="md:hidden px-5 py-8 border-t border-border">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-[20px] font-medium text-ink">
-            For You
-          </h2>
-        </div>
-        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1">
-          {forYou.length > 0
-            ? forYou.map((product, idx) => (
-                <div
+          ) : trendingGrid.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-3.5 md:gap-4">
+              {trendingGrid.map((product, idx) => (
+                <ProductCard
                   key={getProductKey(product, idx)}
-                  className="flex-shrink-0 w-[130px]"
+                  product={product}
                   onClick={() => navigate(`/product/${product._id}`)}
-                >
-                  <div className="aspect-[3/4] overflow-hidden bg-cream-dark mb-2">
-                    <img
-                      src={getProductImage(product)}
-                      alt={getProductName(product)}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="font-display text-[13px] text-ink truncate mb-0.5">
-                    {getProductName(product)}
-                  </h3>
-                  <p className="font-sans text-[12px] font-semibold text-ink">
-                    {formatPrice(product.price)}
-                  </p>
-                </div>
-              ))
-            : [0, 1].map((i) => (
-                <ProductCardSkeleton
-                  key={i}
-                  className="flex-shrink-0 w-[130px] aspect-[3/4]"
                 />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-10 text-[#666]">
+              No products available right now.
+            </div>
+          )}
         </div>
       </section>
 
-      {/* ================= Editorial Banner Placeholder — desktop/tablet ================= */}
-      <section className="hidden md:block px-8 lg:px-14 py-10">
-        <div className="max-w-[1440px] mx-auto relative h-[280px] overflow-hidden group bg-charcoal">
-          {/* Placeholder image — swap with backend URL later */}
-          <img
-            src="https://img.magnific.com/free-psd/black-friday-facebook-cover-banner-template_120329-6569.jpg?semt=ais_test_b&w=740&q=80"
-            alt="Mid-Season Sale"
-            className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-            <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-gold mb-4">
-              Mid-Season Event
-            </p>
-            <h2 className="font-display text-white text-[42px] font-medium tracking-tight mb-6">
-              The Archive Sale
-            </h2>
+      {/* ══════════════════════════════════════════
+          6 · COMPACT OFFER BANNER (Code Copy Strip)
+      ══════════════════════════════════════════ */}
+      <section className="px-5 md:px-14 py-8 border-b border-[#E5E5E5]">
+        <div className="max-w-[1440px] mx-auto bg-[#F7F7F5] border border-[#E5E5E5] px-6 py-6 md:px-10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-center md:text-left">
+            <div className="w-10 h-10 rounded-full bg-[#B08D57]/15 flex items-center justify-center shrink-0">
+              <Tag size={18} className="text-[#B08D57]" />
+            </div>
+            <div>
+              <p className="text-[14px] font-bold text-[#111111]">
+                First Time Shopping on ZRIVE?
+              </p>
+              <p className="text-[12px] text-[#666] mt-0.5">
+                Use code <strong className="text-[#111111]">ZRIVEFIRST</strong> for Flat 20% discount on your first order.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={copyCouponCode}
+              className="flex items-center gap-1.5 bg-white border border-[#111111] px-4 py-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-[#111111] hover:bg-[#111111] hover:text-white transition-colors"
+            >
+              {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={12} />}
+              <span>{copied ? "Copied!" : "Copy ZRIVEFIRST"}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => navigate("/all-products")}
-              className="bg-cream text-ink text-[11px] font-semibold tracking-[0.1em] uppercase px-8 py-4 rounded-[3px] hover:bg-surface transition-colors"
+              className="flex items-center gap-1.5 bg-[#111111] text-white px-5 py-2 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-[#B08D57] transition-colors"
             >
-              Shop the Event
+              <span>Shop Catalog</span>
+              <ArrowRight size={12} />
             </button>
           </div>
         </div>
       </section>
 
-      {/* ================= Newsletter — desktop/tablet ================= */}
-      <section className="hidden md:flex justify-center px-8 lg:px-14 py-14 bg-cream-dark border-y border-border">
-        <div className="max-w-md text-center">
-          <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-3">
-            The Inner Circle
-          </p>
-          <h2 className="font-display text-[32px] font-medium text-ink mb-3">
-            Join the Elite
-          </h2>
-          <p className="text-[13px] text-ink-soft leading-relaxed mb-8">
-            Subscribe to receive first access to new collections, private sales,
-            and curated style guides.
-          </p>
-          <div className="flex gap-2">
+      {/* ══════════════════════════════════════════
+          7 · NEW ARRIVALS COMPACT ROW
+      ══════════════════════════════════════════ */}
+      {newArrivals.length > 0 && (
+        <section className="px-5 md:px-14 py-8 md:py-10 border-b border-[#E5E5E5]">
+          <div className="max-w-[1440px] mx-auto">
+            <div className="flex items-end justify-between mb-5">
+              <div>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#B08D57] mb-1 flex items-center gap-1">
+                  <Star size={12} />
+                  Just Dropped
+                </p>
+                <h2
+                  style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                  className="text-[20px] md:text-[24px] font-bold text-[#111111]"
+                >
+                  New Arrivals
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/new-arrivals")}
+                className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[#B08D57] hover:text-[#111111] transition-colors"
+              >
+                View All New
+              </button>
+            </div>
+
+            <div className="flex gap-3.5 md:gap-4 overflow-x-auto no-scrollbar pb-2">
+              {newArrivals.map((product, idx) => (
+                <div key={getProductKey(product, idx)} className="flex-shrink-0 w-[150px] md:w-[185px]">
+                  <ProductCard
+                    product={product}
+                    onClick={() => navigate(`/product/${product._id}`)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════════════
+          8 · COMPACT TRUST STRIP
+      ══════════════════════════════════════════ */}
+      <section className="bg-[#FAFAFA] border-b border-[#E5E5E5] py-8 px-5 md:px-14">
+        <div className="max-w-[1440px] mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+          {[
+            { icon: Truck, title: "Free Express Shipping", desc: "On orders over ₹999" },
+            { icon: RotateCcw, title: "7-Day Easy Returns", desc: "Hassle-free refunds" },
+            { icon: ShieldCheck, title: "100% Verified Sellers", desc: "Vetted authentic brands" },
+            { icon: BadgeCheck, title: "Secure Escrow", desc: "Encrypted checkout" },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white border border-[#E5E5E5] flex items-center justify-center shrink-0 shadow-2xs">
+                <Icon size={15} strokeWidth={1.5} className="text-[#B08D57]" />
+              </div>
+              <div>
+                <p className="text-[12px] font-semibold text-[#111111]">{title}</p>
+                <p className="text-[11px] text-[#999]">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          9 · STREAMLINED NEWSLETTER FOOTER STRIP
+      ══════════════════════════════════════════ */}
+      <section className="bg-[#111111] text-white py-10 px-5 md:px-14">
+        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="text-center md:text-left">
+            <p className="text-[9px] font-semibold tracking-[0.2em] uppercase text-[#B08D57] mb-1">
+              Join ZRIVE Circle
+            </p>
+            <h3
+              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              className="text-[20px] md:text-[24px] font-bold text-white"
+            >
+              Get Early Access To Private Drops & Offers
+            </h3>
+          </div>
+
+          <form
+            onSubmit={(e) => e.preventDefault()}
+            className="flex items-center gap-2 w-full md:w-auto max-w-md"
+          >
             <input
               type="email"
               placeholder="Enter your email"
-              onChange={() => {}}
-              className="flex-1 border border-border bg-cream px-5 py-3.5 text-[13px] text-ink outline-none focus:border-ink transition-colors rounded-[3px]"
+              className="flex-1 bg-[#1a1a1a] border border-[#333] px-4 py-2.5 text-[12px] text-white outline-none focus:border-[#B08D57] transition-colors rounded-xs"
             />
             <button
-              type="button"
-              onClick={() => {}}
-              className="bg-charcoal text-cream text-[11px] font-semibold tracking-[0.1em] uppercase px-8 py-3.5 rounded-[3px] hover:bg-ink transition-colors"
+              type="submit"
+              className="bg-[#B08D57] text-white text-[11px] font-semibold tracking-[0.1em] uppercase px-6 py-2.5 hover:bg-white hover:text-[#111111] transition-colors shrink-0 rounded-xs"
             >
-              Join
+              Subscribe
             </button>
-          </div>
+          </form>
         </div>
       </section>
 
-      {/* ================= Footer — mobile ================= */}
-      <footer className="md:hidden bg-charcoal text-cream px-5 pt-16 pb-12">
-        <span className="font-display text-[22px] font-medium tracking-[0.06em]">
-          ZRIVE
-        </span>
-        <p className="text-[13px] leading-relaxed text-cream/70 mt-4 mb-10 max-w-[280px]">
-          Curating the finest minimalist menswear for the global citizen.
-        </p>
-        <div className="grid grid-cols-2 gap-8 mb-12">
-          <div>
-            <h4 className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-4">
-              Company
-            </h4>
-            <ul className="space-y-3">
-              {["About", "Journal", "Stores"].map((label) => (
-                <li key={label}>
-                  <button
-                    type="button"
-                    onClick={() => {}}
-                    className="text-[13px] text-cream/70 hover:text-cream transition-colors"
-                  >
-                    {label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-4">
-              Support
-            </h4>
-            <ul className="space-y-3">
-              {["Shipping", "Returns", "Contact"].map((label) => (
-                <li key={label}>
-                  <button
-                    type="button"
-                    onClick={() => {}}
-                    className="text-[13px] text-cream/70 hover:text-cream transition-colors"
-                  >
-                    {label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-cream/10 pt-6 flex items-center justify-between">
-          <p className="text-[11px] text-cream/50">
-            © 2026 ZRIVE. All rights reserved.
-          </p>
-        </div>
-      </footer>
-
-      {/* ================= Footer — desktop/tablet ================= */}
-      <footer className="hidden md:block bg-charcoal text-cream px-8 lg:px-14 pt-24 pb-12">
-        <div className="max-w-[1440px] mx-auto">
-          <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr] gap-12 mb-16">
-            <div>
-              <span className="font-display text-[24px] font-medium tracking-[0.06em]">
-                ZRIVE
-              </span>
-              <p className="text-[13px] leading-relaxed text-cream/70 mt-4 max-w-xs">
-                Elevated apparel for the modern professional. Defined by
-                quality, driven by ambition.
-              </p>
-            </div>
-            {[
-              {
-                title: "Shop",
-                links: [
-                  "Men's Collection",
-                  "New Arrivals",
-                  "Accessories",
-                  "Sale",
-                ],
-              },
-              {
-                title: "Company",
-                links: ["About ZRIVE", "Sustainability", "Stores", "Careers"],
-              },
-              {
-                title: "Support",
-                links: [
-                  "Shipping & Returns",
-                  "Privacy Policy",
-                  "Contact Us",
-                  "Size Guide",
-                ],
-              },
-            ].map(({ title, links }) => (
-              <div key={title}>
-                <h4 className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-5">
-                  {title}
-                </h4>
-                <ul className="space-y-3">
-                  {links.map((label) => (
-                    <li key={label}>
-                      <button
-                        type="button"
-                        onClick={() => {}}
-                        className="text-[13px] text-cream/70 hover:text-cream transition-colors"
-                      >
-                        {label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="border-t border-cream/10 pt-8 flex items-center justify-between">
-            <p className="text-[11px] text-cream/50">
-              © 2026 ZRIVE. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              {["Instagram", "Twitter", "Facebook"].map((label) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => {}}
-                  className="text-[11px] font-medium uppercase tracking-[0.1em] text-cream/50 hover:text-cream transition-colors"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
