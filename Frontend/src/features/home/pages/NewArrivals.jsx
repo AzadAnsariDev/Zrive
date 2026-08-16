@@ -183,7 +183,7 @@ const NewArrivals = () => {
                 <div
                   key={p._id || p.id}
                   onClick={() => navigate(`/product/${p._id || p.id}`)}
-                  className="group cursor-pointer bg-white rounded-[8px] border border-[#E5E5E5] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
+                  className="group cursor-pointer bg-white rounded-[3px] border border-[#E5E5E5] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
                 >
                   <div className="relative aspect-[3/4] overflow-hidden bg-[#FAFAFA]">
                     {coverImg ? (

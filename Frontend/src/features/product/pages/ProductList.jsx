@@ -164,12 +164,12 @@ const ProductList = () => {
             {filteredProducts.map((p) => (
               <div
                 key={p._id || p.id}
-                className="bg-white border border-[#E5E5E5] rounded-[10px] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
+                className="bg-white border border-[#EAEAEA] rounded-[3px] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
               >
                 <div>
                   <ImageSlider images={p.images} alt={p.title || p.name} className="aspect-[3/4] w-full" />
 
-                  <div className="p-4">
+                  <div className="p-3.5">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#B08D57]">
                         {p.category || 'Menswear'}
@@ -183,31 +183,34 @@ const ProductList = () => {
                       </span>
                     </div>
 
-                    <h3 className="font-display text-[15px] font-bold text-[#111111] truncate">
+                    <h3
+                      onClick={() => navigate(`/seller/inventory/${p._id}/addVariant`)}
+                      className="font-display text-[14.5px] font-bold text-[#111111] truncate cursor-pointer hover:text-[#B08D57]"
+                    >
                       {p.title || p.name}
                     </h3>
-                    <p className="text-[14px] font-bold text-[#111111] mt-1">{formatPrice(p.price)}</p>
+                    <p className="text-[13.5px] font-bold text-[#111111] mt-1">{formatPrice(p.price)}</p>
 
-                    <div className="mt-3 pt-3 border-t border-[#E5E5E5] text-[11px] text-[#666666] flex items-center justify-between">
+                    <div className="mt-3 pt-2.5 border-t border-[#EAEAEA] text-[11px] text-[#666666] flex items-center justify-between">
                       <span>Variants: <strong className="text-[#111111]">{p.variants?.length || 0}</strong></span>
                       <span>Brand: <strong className="text-[#111111]">{p.brand || 'ZRIVE'}</strong></span>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 pt-0 grid grid-cols-2 gap-2">
+                <div className="p-3.5 pt-0 grid grid-cols-2 gap-2">
                   <button
                     onClick={() => navigate(`/seller/inventory/${p._id}/addVariant`)}
-                    className="py-2 px-3 rounded-[6px] border border-[#E5E5E5] text-[#111111] text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-[#FAFAFA] hover:border-[#111111] transition-all flex items-center justify-center gap-1"
+                    className="py-2 px-2.5 rounded-[3px] border border-[#EAEAEA] text-[#111111] text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-[#FAFAFA] hover:border-[#111111] transition-all flex items-center justify-center gap-1"
                   >
                     <Layers size={13} />
                     Add Variant
                   </button>
                   <button
-                    onClick={() => navigate(`/product/${p._id}`)}
-                    className="py-2 px-3 rounded-[6px] bg-[#111111] text-white text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-[#B08D57] transition-all flex items-center justify-center gap-1"
+                    onClick={() => navigate(`/seller/inventory/${p._id}/addVariant`)}
+                    className="py-2 px-2.5 rounded-[3px] bg-[#111111] text-white text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-[#B08D57] transition-all flex items-center justify-center gap-1"
                   >
-                    View Product
+                    Manage Details
                   </button>
                 </div>
               </div>

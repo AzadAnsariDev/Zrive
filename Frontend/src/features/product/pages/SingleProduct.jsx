@@ -107,7 +107,93 @@ const RelatedProductCard = ({ product }) => {
   )
 }
 
-const VariantSelector = ({ colors, sizesForColor, selectedColor, selectedSize, onSelectColor, onSelectSize, shakeSize, sizeError }) => (
+const SizeChartModal = ({ onClose }) => {
+  const [unit, setUnit] = useState('in')
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-[8px] border border-[#EAEAEA] max-w-lg w-full p-6 shadow-2xl space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-[#EAEAEA]">
+          <div>
+            <h3 className="font-display text-[18px] font-bold text-[#111111]">Men's Size Guide</h3>
+            <p className="text-[11.5px] text-[#666666]">Standard garment measurement chart</p>
+          </div>
+          <button onClick={onClose} className="p-1 text-[#666] hover:text-[#111]">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#B08D57]">Tops & Outerwear</span>
+          <div className="flex items-center gap-1 border border-[#EAEAEA] rounded bg-[#FAFAFA] p-0.5 text-[11px] font-bold">
+            <button
+              onClick={() => setUnit('in')}
+              className={`px-3 py-1 rounded transition-colors ${unit === 'in' ? 'bg-[#111] text-white' : 'text-[#666]'}`}
+            >
+              Inches (in)
+            </button>
+            <button
+              onClick={() => setUnit('cm')}
+              className={`px-3 py-1 rounded transition-colors ${unit === 'cm' ? 'bg-[#111] text-white' : 'text-[#666]'}`}
+            >
+              CM (cm)
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto border border-[#EAEAEA] rounded">
+          <table className="w-full text-left text-[12px] border-collapse">
+            <thead>
+              <tr className="bg-[#FAFAFA] border-b border-[#EAEAEA] text-[10px] font-bold uppercase tracking-[0.08em] text-[#666]">
+                <th className="py-2.5 px-3">Size</th>
+                <th className="py-2.5 px-3">Chest</th>
+                <th className="py-2.5 px-3">Front Length</th>
+                <th className="py-2.5 px-3">Shoulder</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#EAEAEA] text-[#111]">
+              <tr>
+                <td className="py-2.5 px-3 font-bold">S</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '38 in' : '96.5 cm'}</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '27.5 in' : '70 cm'}</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '17 in' : '43 cm'}</td>
+              </tr>
+              <tr>
+                <td className="py-2.5 px-3 font-bold">M</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '40 in' : '101.5 cm'}</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '28 in' : '71 cm'}</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '17.5 in' : '44.5 cm'}</td>
+              </tr>
+              <tr>
+                <td className="py-2.5 px-3 font-bold">L</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '42 in' : '106.5 cm'}</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '28.5 in' : '72.5 cm'}</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '18 in' : '45.5 cm'}</td>
+              </tr>
+              <tr>
+                <td className="py-2.5 px-3 font-bold">XL</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '44 in' : '111.5 cm'}</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '29 in' : '73.5 cm'}</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '18.5 in' : '47 cm'}</td>
+              </tr>
+              <tr>
+                <td className="py-2.5 px-3 font-bold">XXL</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '46 in' : '117 cm'}</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '29.5 in' : '75 cm'}</td>
+                <td className="py-2.5 px-3">{unit === 'in' ? '19 in' : '48.5 cm'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-3 bg-[#FAFAFA] rounded border border-[#EAEAEA] text-[11px] text-[#666] leading-relaxed">
+          <strong className="text-[#111]">How to measure:</strong> Measure under arms around the fullest part of the chest. Keep tape level across back.
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const VariantSelector = ({ colors, sizesForColor, selectedColor, selectedSize, onSelectColor, onSelectSize, shakeSize, sizeError, onOpenSizeChart }) => (
   <div className="mt-5 space-y-4">
     {colors.length > 0 && (
       <div>
@@ -138,7 +224,9 @@ const VariantSelector = ({ colors, sizesForColor, selectedColor, selectedSize, o
         <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase text-[#B08D57]">
           Select Size{selectedSize ? ` · ${selectedSize}` : ''}
         </p>
-        <button type="button" className="text-[11px] underline text-[#666]">Size Chart</button>
+        <button type="button" onClick={onOpenSizeChart} className="text-[11px] font-bold text-[#111111] underline hover:text-[#B08D57]">
+          Size Chart
+        </button>
       </div>
       <div className={`flex flex-wrap gap-2 ${shakeSize ? 'shake-once' : ''}`}>
         {sizesForColor.map(({ size, stock }) => (
@@ -176,6 +264,7 @@ const SingleProduct = () => {
   const [product, setProduct] = useState(null)
   const [activeImage, setActiveImage] = useState(0)
   const [toastVisible, setToastVisible] = useState(false)
+  const [sizeChartOpen, setSizeChartOpen] = useState(false)
   const toastTimeoutRef = useRef(null)
   const [selectedColor, setSelectedColor] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
@@ -252,17 +341,23 @@ const SingleProduct = () => {
     <div className="bg-white text-[#111111] min-h-screen pb-20 md:pb-12">
       <ShakeKeyframes />
       <AddedToCartToast productName={product.name || product.title} visible={toastVisible} />
+      {sizeChartOpen && <SizeChartModal onClose={() => setSizeChartOpen(false)} />}
 
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-4 md:py-8">
-        {/* Breadcrumb */}
+        {/* Responsive Breadcrumb */}
         <div className="flex items-center gap-2 mb-6 text-[12px] text-[#666]">
-          <button type="button" onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-[#111]">
-            <ArrowLeft size={14} /> Back
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1 font-semibold text-[#111111] hover:text-[#B08D57] transition-colors"
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
           </button>
-          <span>/</span>
-          <Link to="/all-products" className="hover:text-[#111]">All Products</Link>
-          <span>/</span>
-          <span className="text-[#111] font-semibold truncate max-w-[200px]">{product.name || product.title}</span>
+          <span className="hidden sm:inline">/</span>
+          <Link to="/all-products" className="hidden sm:inline hover:text-[#111]">All Products</Link>
+          <span className="hidden sm:inline">/</span>
+          <span className="hidden sm:inline text-[#111] font-semibold truncate max-w-[240px]">{product.name || product.title}</span>
         </div>
 
         {/* Product Page Main Layout */}

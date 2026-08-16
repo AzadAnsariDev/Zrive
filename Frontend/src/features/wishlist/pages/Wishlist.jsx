@@ -138,7 +138,7 @@ const Wishlist = () => {
               return (
                 <div
                   key={item.variantSku}
-                  className="bg-white border border-[#EAEAEA] rounded-[8px] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between group relative"
+                  className="bg-white border border-[#EAEAEA] rounded-[3px] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between group relative"
                 >
                   <button
                     type="button"

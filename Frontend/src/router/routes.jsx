@@ -13,6 +13,7 @@ import AddVariant from "../features/product/pages/SellerProductDetail";
 import Cart from "../features/cart/pages/Cart";
 import OrderPlaced from "../features/order/pages/OrderPlaced";
 import Address from "../features/address/pages/Address";
+import Payment from "../features/order/pages/Payment";
 import AllOrders from "../features/order/pages/AllOrders";
 import OrderDetail from "../features/order/pages/OrderDetail";
 import OrderGroupItems from "../features/order/pages/OrderGroupItems";
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
       { path: "cart", element: <Cart /> },
       { path: "collections", element: <Collections /> }, // ← add
       { path: "profile", element: <Protected>  <Profile /> </Protected> },
+      { path: "payment", element: <Protected>  <Payment /> </Protected> },
       { path: "wishlist", element: <Wishlist /> },
       { path: "all-products", element: <AllProducts /> },
       { path: "product/:productId", element: <SingleProduct /> },

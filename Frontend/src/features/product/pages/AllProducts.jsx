@@ -97,7 +97,7 @@ const ProductCard = ({ product, onClick, salePercent = null }) => {
 
   return (
     <div
-      className="group cursor-pointer bg-white border border-[#EAEAEA] rounded-[8px] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
+      className="group cursor-pointer bg-white border border-[#EAEAEA] rounded-[3px] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
       onClick={onClick}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#FAFAFA]">

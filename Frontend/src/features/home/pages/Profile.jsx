@@ -306,8 +306,32 @@ const Profile = () => {
             {activeTab === "security" && (
               <div className="bg-white border border-[#EAEAEA] rounded-[8px] p-6 shadow-sm space-y-4">
                 <h2 className="text-[12px] font-bold tracking-[0.1em] uppercase text-[#B08D57] pb-3 border-b border-[#EAEAEA]">
-                  Account Security
+                  Account Settings & Preferences
                 </h2>
+                <div className="flex items-center justify-between p-4 bg-[#FAFAFA] rounded border border-[#EAEAEA]">
+                  <div>
+                    <p className="text-[13px] font-bold text-[#111]">Dark Mode Theme</p>
+                    <p className="text-[11px] text-[#666]">Enable dark theme styling across all store pages</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const isDarkNow = document.documentElement.classList.contains('dark')
+                      if (isDarkNow) {
+                        document.documentElement.classList.remove('dark')
+                        localStorage.setItem('zrive_theme', 'light')
+                        toast.success("Switched to Light Theme")
+                      } else {
+                        document.documentElement.classList.add('dark')
+                        localStorage.setItem('zrive_theme', 'dark')
+                        toast.success("Switched to Dark Theme")
+                      }
+                    }}
+                    className="px-4 py-1.5 rounded bg-[#111] text-white text-[11px] font-bold uppercase hover:bg-[#B08D57] transition-all"
+                  >
+                    Toggle Theme
+                  </button>
+                </div>
                 <div className="flex items-center justify-between p-4 bg-[#FAFAFA] rounded border border-[#EAEAEA]">
                   <div>
                     <p className="text-[13px] font-bold text-[#111]">Two-Factor Escrow Protection</p>

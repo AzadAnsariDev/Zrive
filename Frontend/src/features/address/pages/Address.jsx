@@ -139,73 +139,32 @@ const Address = () => {
     }
   };
 
-  const handleProceedToPayment = async () => {
+  const handleProceedToPayment = () => {
     if (!selectedAddress) {
-      toast.error("Please select a delivery address");
+      toast.error("Please select a delivery address to proceed");
       return;
     }
-    setCheckingOut(true);
-    try {
-      const response = await handleCreateOrder(selectedAddress._id);
-      if (response && response.order) {
-        const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-          amount: response.order.amount,
-          currency: response.order.currency,
-          name: "ZRIVE Marketplace",
-          description: "Escrow Order Payment",
-          order_id: response.order.id,
-          handler: async function (razorpayRes) {
-            const result = await handleVerifyOrder({
-              razorpay_order_id: razorpayRes.razorpay_order_id,
-              razorpay_payment_id: razorpayRes.razorpay_payment_id,
-              razorpay_signature: razorpayRes.razorpay_signature,
-            });
-
-            if (result && result.paymentGroup) {
-              toast.success("Payment Successful!");
-              navigate(`/orders/group/${result.paymentGroup._id}`);
-            } else if (result && result.order) {
-              toast.success("Payment Successful!");
-              navigate(`/orders/${result.order._id}`);
-            } else {
-              navigate("/orders");
-            }
-          },
-          prefill: {
-            name: selectedAddress.fullName || user?.fullName || user?.name || "",
-            email: user?.email || "",
-            contact: selectedAddress.phone || user?.phone || "",
-          },
-          theme: { color: "#111111" },
-        };
-        const rzp = new window.Razorpay(options);
-        rzp.open();
-      }
-    } catch (err) {
-      toast.error(err.message || "Failed to initiate payment");
-    } finally {
-      setCheckingOut(false);
-    }
+    navigate("/payment", { state: { address: selectedAddress } });
   };
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
       {/* Checkout Stepper */}
       <div className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
-        <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-3.5 flex items-center justify-between">
+        <div className="max-w-[1240px] mx-auto px-3 sm:px-8 py-3 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
           <button
             type="button"
-            onClick={() => navigate("/cart")}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
+            onClick={() => navigate(-1)}
+            aria-label="Back"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors shrink-0"
           >
-            <ArrowLeft size={14} />
-            Back to Bag
+            <ArrowLeft size={16} />
+            <span className="hidden sm:inline">Back to Bag</span>
           </button>
 
-          <div className="flex items-center gap-2 sm:gap-3 text-[11.5px] font-semibold">
+          <div className="flex items-center gap-1.5 sm:gap-3 text-[11px] sm:text-[11.5px] font-semibold shrink-0">
             <span className="flex items-center gap-1 text-[#287A4B]">
-              <Check size={13} />
+              <Check size={12} />
               Bag
             </span>
             <span className="text-[#D2D2D2]">&rarr;</span>
@@ -220,9 +179,9 @@ const Address = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-1 text-[10.5px] font-bold text-[#287A4B] bg-[#EAF5EE] px-2.5 py-0.5 rounded-full">
-            <Lock size={11} />
-            Razorpay Secure
+          <div className="flex items-center gap-1 text-[10px] sm:text-[10.5px] font-bold text-[#287A4B] bg-[#EAF5EE] px-2 py-0.5 rounded-full shrink-0">
+            <Lock size={10} />
+            <span className="hidden xs:inline">Razorpay Secure</span>
           </div>
         </div>
       </div>
