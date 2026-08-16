@@ -5,29 +5,36 @@ const productApiInstance = axios.create({
     withCredentials: true
 })
 
-export const createProduct = async (formData)=>{
+export const createProduct = async (formData) => {
     const response = await productApiInstance.post("/createProduct", formData)
     return response.data
 }
 
-export const getSellerProducts = async ()=>{
+export const getSellerProducts = async () => {
     const response = await productApiInstance.get("/getSellerProducts")
-    return response.data
-} 
-
-export const getProducts = async ()=>{
-    const response = await productApiInstance.get("/getProducts")
     return response.data
 }
 
-export const getProductDetail = async (productId)=>{
+export const getProducts = async (search) => {
+    const response = await productApiInstance.get("/getProducts", {
+        params: search ? { search } : {}
+    })
+    return response.data
+}
+
+export const getProductDetail = async (productId) => {
     const response = await productApiInstance.get(`/getProductDetail/${productId}`)
     return response.data
 }
 
-export const addNewVariant = async (productId, formData)=>{
+export const addNewVariant = async (productId, formData) => {
     const response = await productApiInstance.post(`/${productId}/addNewVariant`, formData)
     return response.data
 }
 
- 
+export const searchProducts = async (query) => {
+    const response = await productApiInstance.get("/searchProducts", {
+        params: { q: query }
+    })
+    return response.data
+}

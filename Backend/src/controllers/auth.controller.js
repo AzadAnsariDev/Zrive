@@ -175,15 +175,16 @@ export const mergeGuestCart = async (req, res, userId)=>{
     res.clearCookie("guestId")
 }
 
+
 export const updateProfile = async (req, res) => {
     const userId = req.user.id
     const { fullName, phone, gender, dob, preferences } = req.body
 
     const updates = {}
-    if (fullName !== undefined) updates.username = fullName
-    if (phone !== undefined) updates.contact = phone
-    if (gender !== undefined) updates.gender = gender
-    if (dob !== undefined) updates.dob = dob
+    if (fullName) updates.username = fullName
+    if (phone) updates.contact = phone
+    if (gender) updates.gender = gender
+    if (dob) updates.dob = dob
     if (preferences !== undefined) updates.preferences = preferences
 
     const user = await userModel.findByIdAndUpdate(

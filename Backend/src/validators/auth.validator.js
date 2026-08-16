@@ -47,16 +47,16 @@ export const validateUpdateProfile = [
         .isLength({ min: 3 }).withMessage("Full name must be atleast 3 character long"),
 
     body("phone")
-        .optional()
+        .optional({ checkFalsy: true })
         .isMobilePhone().withMessage("Please provide a valid contact number")
         .isLength({ min: 10, max: 10 }).withMessage("Please provide a valid contact number"),
 
     body("gender")
-        .optional()
+        .optional({ checkFalsy: true })
         .isIn(["Male", "Female", "Prefer not to say"]).withMessage("Please provide a valid gender"),
 
     body("dob")
-        .optional()
+        .optional({ checkFalsy: true })
         .isISO8601().withMessage("Please provide a valid date of birth")
         .toDate(),
 

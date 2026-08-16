@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router'
+import { useSelector } from 'react-redux'
 import {
   Search,
   Heart,
@@ -13,8 +14,12 @@ import {
   ChevronDown,
   X,
   ChevronRight,
+  ArrowLeft,
 } from 'lucide-react'
 import SellerNavIcon from '../../seller/components/SellerNavIcon'
+import SearchResultsPanel from '../components/SearchResultsPanel'
+import { useProduct } from '../../product/hook/useProduct'
+import { useDebounce } from '../components/useDebounce'
 import { CATEGORY_MENU } from '../../../constant/Categories'
 
 // Placeholder notifications — replace with a real useNotifications() hook
@@ -25,11 +30,6 @@ const MOCK_NOTIFICATIONS = [
   { id: 3, text: 'Flash sale starts tomorrow — 30% off', time: '2d ago', unread: false },
 ]
 
-// `to` values are real routes — every route referenced here MUST exist as a
-// child under the UserLayout route in router.jsx, or the link 404s.
-// NOTE: "Home" and "Categories" are rendered separately above this list —
-// Home so it can always render first, Categories because it's a dropdown
-// trigger, not a NavLink.
 const DESKTOP_LINKS = [
   { label: 'New Arrivals', to: '/new-arrivals' },
   { label: 'Orders', to: '/orders' },
@@ -38,7 +38,7 @@ const DESKTOP_LINKS = [
 
 const MOBILE_NAV = [
   { key: 'home', icon: HomeIcon, label: 'Home', to: '/' },
-  { key: 'categories', icon: LayoutGrid, label: 'Categories' }, // no `to` — opens modal instead
+  { key: 'categories', icon: LayoutGrid, label: 'Categories' },
   { key: 'cart', icon: ShoppingCart, label: 'Cart', to: '/cart' },
   { key: 'orders', icon: Package, label: 'Orders', to: '/orders' },
   { key: 'profile', icon: User, label: 'Profile', to: '/profile' },
@@ -54,13 +54,75 @@ const Navbar = () => {
   const notifRef = useRef(null)
   const closeTimer = useRef(null)
 
-  // Close the categories dropdown whenever the route changes. Navbar lives
-  // in the layout so it never unmounts between page navigations — without
-  // this, catOpen stays true after clicking a category link or navigating
-  // to a different nav item (Orders, Sale, etc.) and the panel stays open
-  // on the new page.
+  /* =========================================================
+     SEARCH — shared state, two renderings (desktop dropdown +
+     mobile full-screen), one debounce + one backend call.
+  ========================================================= */
+
+  const [query, setQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)       // desktop dropdown visibility
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false) // mobile full-screen overlay
+  const desktopSearchRef = useRef(null)
+
+  const { handleSearchProducts, handleClearSearchResults } = useProduct()
+  const searchResults = useSelector((state) => state.product.searchResults)
+  const searchLoading = useSelector((state) => state.product.loading.search)
+
+  const debouncedQuery = useDebounce(query, 400)
+
+  useEffect(() => {
+    const trimmed = debouncedQuery.trim()
+
+    if (!trimmed) {
+      handleClearSearchResults()
+      return
+    }
+
+    handleSearchProducts(trimmed)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery])
+
+  // Close the desktop search dropdown on outside click.
+  useEffect(() => {
+    const handleClickOutsideSearch = (e) => {
+      if (desktopSearchRef.current && !desktopSearchRef.current.contains(e.target)) {
+        setSearchOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutsideSearch)
+    return () => document.removeEventListener('mousedown', handleClickOutsideSearch)
+  }, [])
+
+  // Lock body scroll while the mobile search overlay is open.
+  useEffect(() => {
+    if (mobileSearchOpen) document.body.style.overflow = 'hidden'
+    else if (!mobileCatOpen) document.body.style.overflow = ''
+    return () => {
+      if (!mobileCatOpen) document.body.style.overflow = ''
+    }
+  }, [mobileSearchOpen, mobileCatOpen])
+
+  const closeMobileSearch = () => {
+    setMobileSearchOpen(false)
+    setQuery('')
+  }
+
+  const handleSelectResult = (path) => {
+    setSearchOpen(false)
+    setMobileSearchOpen(false)
+    setQuery('')
+    navigate(path)
+  }
+
+  /* ========================================================= */
+
+  // Close the categories dropdown + both search UIs whenever the route
+  // changes. Navbar lives in the layout so it never unmounts between page
+  // navigations — without this, these stay open on the new page.
   useEffect(() => {
     setCatOpen(false)
+    setSearchOpen(false)
+    setMobileSearchOpen(false)
   }, [location.pathname])
 
   // Close the notifications dropdown on outside click.
@@ -88,8 +150,6 @@ const Navbar = () => {
     navigate(`/all-products?category=${slug}`)
   }
 
-  // Small delay on mouse-leave so moving from the trigger down into the
-  // panel doesn't flicker-close the menu.
   const openMenu = () => {
     clearTimeout(closeTimer.current)
     setCatOpen(true)
@@ -97,9 +157,6 @@ const Navbar = () => {
   const scheduleClose = () => {
     closeTimer.current = setTimeout(() => setCatOpen(false), 120)
   }
-  // Close immediately when hovering onto a sibling nav link (Home, New
-  // Arrivals, Orders, Sale) — no need to wait for the whole header to lose
-  // hover before the panel disappears.
   const closeImmediately = () => {
     clearTimeout(closeTimer.current)
     setCatOpen(false)
@@ -113,7 +170,12 @@ const Navbar = () => {
           ZRIVE
         </NavLink>
         <div className="flex items-center gap-5">
-          <button type="button" aria-label="Search" onClick={() => { }} className="text-ink hover:text-gold transition-colors">
+          <button
+            type="button"
+            aria-label="Search"
+            onClick={() => setMobileSearchOpen(true)}
+            className="text-ink hover:text-gold transition-colors"
+          >
             <Search size={18} strokeWidth={1.5} />
           </button>
           <SellerNavIcon />
@@ -125,9 +187,6 @@ const Navbar = () => {
       </header>
 
       {/* ================= DESKTOP / TABLET TOP NAVBAR (>= md) ================= */}
-      {/* `relative` on the header itself — the mega-menu panel below is
-          positioned against this, not against the trigger button, so it can
-          stretch full-width without overflowing the viewport. */}
       <header
         className="hidden md:block sticky top-0 z-30 w-full bg-cream/95 backdrop-blur border-b border-border relative"
         onMouseLeave={scheduleClose}
@@ -140,8 +199,6 @@ const Navbar = () => {
 
           {/* Primary nav links */}
           <nav className="flex items-center gap-7 flex-shrink-0">
-            {/* Home — first in order. Closes the categories dropdown on
-                hover since it's a sibling link. */}
             <NavLink
               to="/"
               end
@@ -156,10 +213,6 @@ const Navbar = () => {
               Home
             </NavLink>
 
-            {/* Categories — hover-triggered mega-menu, not a route. No
-                underline on open (that's reserved for the actual active
-                page) — only text color + chevron rotation signal state,
-                so it never visually clashes with a genuinely active link. */}
             <button
               type="button"
               onMouseEnter={openMenu}
@@ -174,8 +227,6 @@ const Navbar = () => {
               />
             </button>
 
-            {/* New Arrivals, Orders, Sale — each closes the categories
-                dropdown immediately on hover. */}
             {DESKTOP_LINKS.map(({ label, to }) => (
               <NavLink
                 key={label}
@@ -194,16 +245,32 @@ const Navbar = () => {
             ))}
           </nav>
 
-          {/* Search — editorial bottom-border-only style */}
+          {/* Search — editorial bottom-border-only style + live dropdown */}
           <div className="flex-1 flex justify-center">
-            <div className="relative w-full max-w-md">
+            <div className="relative w-full max-w-md" ref={desktopSearchRef}>
               <Search size={14} strokeWidth={1.5} className="absolute left-0 top-1/2 -translate-y-1/2 text-ink-soft" />
               <input
                 type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  setSearchOpen(true)
+                }}
+                onFocus={() => query.trim() && setSearchOpen(true)}
                 placeholder="Search collections…"
-                onChange={() => { }}
                 className="w-full bg-transparent border-0 border-b border-border focus:border-ink pl-6 pr-4 py-2 text-[13px] text-ink placeholder:text-ink-soft outline-none transition-colors"
               />
+
+              {searchOpen && query.trim() && (
+                <div className="absolute left-0 right-0 top-full mt-3 bg-surface border border-border shadow-lg rounded-[3px] max-h-[70vh] overflow-y-auto z-40">
+                  <SearchResultsPanel
+                    query={query}
+                    results={searchResults}
+                    loading={searchLoading}
+                    onSelect={handleSelectResult}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -215,7 +282,6 @@ const Navbar = () => {
               <Heart size={18} strokeWidth={1.5} />
             </NavLink>
 
-            {/* Notifications dropdown */}
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
@@ -399,6 +465,47 @@ const Navbar = () => {
                 )
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MOBILE SEARCH — full-screen overlay ================= */}
+      {mobileSearchOpen && (
+        <div className="md:hidden fixed inset-0 z-50 bg-cream flex flex-col">
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-border flex-shrink-0">
+            <button
+              type="button"
+              onClick={closeMobileSearch}
+              aria-label="Close search"
+              className="text-ink-soft hover:text-ink transition-colors flex-shrink-0"
+            >
+              <ArrowLeft size={19} strokeWidth={1.5} />
+            </button>
+
+            <input
+              autoFocus
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search collections…"
+              className="flex-1 bg-cream-dark rounded-[3px] px-4 py-2.5 text-[14px] text-ink placeholder:text-ink-soft outline-none"
+            />
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {!query.trim() ? (
+              <div className="flex flex-col items-center text-center px-6 py-14">
+                <Search size={22} strokeWidth={1.4} className="text-ink-soft mb-3" />
+                <p className="text-[13px] text-ink-soft">Start typing to search products</p>
+              </div>
+            ) : (
+              <SearchResultsPanel
+                query={query}
+                results={searchResults}
+                loading={searchLoading}
+                onSelect={handleSelectResult}
+              />
+            )}
           </div>
         </div>
       )}

@@ -1,32 +1,50 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { act } from 'react'
 
 const productSlice = createSlice({
     name: "product",
-    initialState:{
+    initialState: {
         sellerProducts: [],
-        products:[],
+        products: [],
+        searchResults: [],
         loading: {
             fetch: false,
-            create: false
+            create: false,
+            search: false
         }
     },
-    reducers:{
-        setSellerProducts: (state, action)=>{
+    reducers: {
+        setSellerProducts: (state, action) => {
             state.sellerProducts = action.payload
         },
-        setProducts: (state, action)=>{
+        setProducts: (state, action) => {
             state.products = action.payload
         },
-        setFetchLoading: (state,action)=>{
+        setFetchLoading: (state, action) => {
             state.loading.fetch = action.payload
         },
-        setCreateLoading: (state, action)=>{
+        setCreateLoading: (state, action) => {
             state.loading.create = action.payload
+        },
+        setSearchResults: (state, action) => {
+            state.searchResults = action.payload
+        },
+        setSearchLoading: (state, action) => {
+            state.loading.search = action.payload
+        },
+        clearSearchResults: (state) => {
+            state.searchResults = []
         }
     }
 })
 
-export const { setSellerProducts, setProducts, setCreateLoading, setFetchLoading } = productSlice.actions
+export const {
+    setSellerProducts,
+    setProducts,
+    setCreateLoading,
+    setFetchLoading,
+    setSearchResults,
+    setSearchLoading,
+    clearSearchResults
+} = productSlice.actions
 
 export default productSlice.reducer

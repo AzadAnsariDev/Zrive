@@ -5,12 +5,10 @@ import { uploadFiles } from "../services/storage.service.js"
 export const createProduct = async (req, res) => {
     try {
         const { title, description, priceAmount, priceCurrency, status, category, variants } = req.body
-        const shippingDefaults = req.parsedShippingDefaults   // ⬅️ CHANGE 1: validator ne already parse kar diya hai
+        const shippingDefaults = req.parsedShippingDefaults
 
         const seller = req.user
 
-        // variants frontend se JSON string ke form mein aayega
-        // e.g. '[{"size":"M","color":"Black","sku":"...","stock":"10"}, {...}]'
         let parsedVariants
         try {
             parsedVariants = JSON.parse(variants)
@@ -28,7 +26,6 @@ export const createProduct = async (req, res) => {
             })
         }
 
-        // general product images (fieldname = "images")
         const generalFiles = req.files.filter(f => f.fieldname === "images")
         const images = await Promise.all(generalFiles.map(async (file) => {
             return await uploadFiles({
@@ -37,7 +34,6 @@ export const createProduct = async (req, res) => {
             })
         }))
 
-        // har variant ke liye uske index-wise images nikalo aur upload karo
         const variantsWithImages = await Promise.all(parsedVariants.map(async (variant, index) => {
             const variantFiles = req.files.filter(f => f.fieldname === `variantImages_${index}`)
 
@@ -54,7 +50,6 @@ export const createProduct = async (req, res) => {
 
             const variantAmount = variant.price?.amount ?? variant.priceAmount ?? priceAmount;
             const variantCurrency = variant.price?.currency || priceCurrency || "INR";
-
 
             const isFilled = (v) => v !== undefined && v !== null && v !== ''
 
@@ -102,7 +97,7 @@ export const createProduct = async (req, res) => {
             status,
             category,
             images,
-            shippingDefaults,  
+            shippingDefaults,
             variants: variantsWithImages
         })
 
@@ -132,17 +127,73 @@ export const getSellerProduct = async (req, res) => {
 }
 
 export const getProducts = async (req, res) => {
+    const { search } = req.query
+
     const bannedSellers = await userModel.find({ isBanned: true }).select("_id")
     const bannedSellerIds = bannedSellers.map(s => s._id)
 
-    const products = await productModel.find({
-        seller: { $nin: bannedSellerIds }
-    })
+    const filter = { seller: { $nin: bannedSellerIds } }
+
+    // search optional hai — agar nahi diya to bilkul pehle jaisa behavior
+    if (search && search.trim()) {
+        const regex = new RegExp(search.trim(), "i")
+        filter.$or = [
+            { title: regex },
+            { description: regex },
+            { category: regex }
+        ]
+    }
+
+    const products = await productModel.find(filter)
 
     res.status(200).json({
         message: "All products fetched succesfully",
         products
     })
+}
+
+// Lightweight, fast endpoint — sirf navbar ke live-search dropdown ke liye.
+// getProducts se alag isliye kyunki ye kam fields select karta hai aur
+// result count limit karta hai (dropdown me 8 se zyada dikhana bhi nahi chahiye).
+export const searchProducts = async (req, res) => {
+    try {
+        const { q } = req.query
+
+        if (!q || !q.trim()) {
+            return res.status(200).json({
+                message: "No search query provided",
+                success: true,
+                products: []
+            })
+        }
+
+        const bannedSellers = await userModel.find({ isBanned: true }).select("_id")
+        const bannedSellerIds = bannedSellers.map(s => s._id)
+
+        const regex = new RegExp(q.trim(), "i")
+
+        const products = await productModel.find({
+            seller: { $nin: bannedSellerIds },
+            $or: [
+                { title: regex },
+                { description: regex },
+                { category: regex }
+            ]
+        })
+            .select("title price images category variants")
+            .limit(8)
+
+        res.status(200).json({
+            message: "Search results fetched successfully",
+            success: true,
+            products
+        })
+    } catch (err) {
+        res.status(500).json({
+            message: err.message,
+            success: false
+        })
+    }
 }
 
 export const getProductDetail = async (req, res) => {
@@ -172,7 +223,6 @@ export const getProductDetail = async (req, res) => {
 export const addNewVariant = async (req, res) => {
     try {
         const { productId } = req.params
-        console.log(productId)
 
         const product = await productModel.findOne({
             _id: productId,
