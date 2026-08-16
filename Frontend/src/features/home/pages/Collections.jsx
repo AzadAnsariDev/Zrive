@@ -1,308 +1,133 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React from "react";
 import { useNavigate } from "react-router";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ArrowLeft, Sparkles, Layers } from "lucide-react";
 
-// ---- Layout tokens (same as Home.jsx — keep every page consistent) --------
-const SECTION_X = "px-5 md:px-8 lg:px-14";
-const CONTAINER = "max-w-[1440px] mx-auto";
-
-// ── Collection data ──────────────────────────────────────────────
-// `size` drives the bento-grid span. `accent` marks the sale tile.
 const COLLECTIONS = [
   {
-    id: "essentials",
-    name: "Everyday Essentials",
-    tag: "Core",
-    desc: "Building blocks — the pieces you reach for without thinking.",
+    id: "shirts",
+    name: "Everyday Shirts",
+    tag: "Core Essential",
+    desc: "Crisp linen, Oxford cotton, and relaxed camp-collar fits for work & leisure.",
     span: "md:col-span-2 md:row-span-2",
+    bg: "bg-[#111111] text-white",
   },
   {
-    id: "smart-casual",
-    name: "Smart Casual",
-    tag: "Versatile",
-    desc: "Off-duty tailoring for when the day has no fixed dress code.",
+    id: "jeans",
+    name: "Denim & Trousers",
+    tag: "Tailored Fits",
+    desc: "Japanese selvedge denim, pleated trousers, and structured chinos.",
     span: "md:col-span-1 md:row-span-2",
+    bg: "bg-[#FAFAFA] text-[#111111] border border-[#E5E5E5]",
   },
   {
-    id: "formal-edit",
-    name: "Formal Edit",
-    tag: "Tailored",
-    desc: "Suiting and shirting, and the details that hold a room.",
+    id: "jackets",
+    name: "Outerwear & Blazers",
+    tag: "Structured",
+    desc: "Double-breasted blazers, leather jackets, and lightweight overshirts.",
     span: "md:col-span-1 md:row-span-1",
+    bg: "bg-[#FAFAFA] text-[#111111] border border-[#E5E5E5]",
   },
   {
-    id: "street-style",
-    name: "Street Style",
-    tag: "Bold",
-    desc: "Volume, layering, and pieces that move first.",
+    id: "tshirts",
+    name: "Premium T-Shirts",
+    tag: "Heavyweight Cotton",
+    desc: "240 GSM organic cotton tees with relaxed, boxy silhouettes.",
     span: "md:col-span-1 md:row-span-1",
+    bg: "bg-[#FAFAFA] text-[#111111] border border-[#E5E5E5]",
   },
   {
-    id: "weekend",
-    name: "Weekend",
-    tag: "Relaxed",
-    desc: "Unstructured fits for slower mornings.",
+    id: "accessories",
+    name: "Leather & Accessories",
+    tag: "Details",
+    desc: "Handcrafted leather belts, wallets, and minimalist timepieces.",
     span: "md:col-span-1 md:row-span-1",
-  },
-  {
-    id: "trending",
-    name: "Trending Now",
-    tag: "Live",
-    desc: "What the city is actually buying this week.",
-    span: "md:col-span-2 md:row-span-1",
+    bg: "bg-[#FAFAFA] text-[#111111] border border-[#E5E5E5]",
   },
   {
     id: "sale",
-    name: "The Sale Edit",
-    tag: "Up to 40% off",
-    desc: "A tighter edit, better prices — while it lasts.",
-    span: "md:col-span-1 md:row-span-1",
+    name: "The Luxury Sale Edit",
+    tag: "Flat 20% OFF",
+    desc: "Curated seasonal pieces at exclusive prices.",
+    span: "md:col-span-2 md:row-span-1",
+    bg: "bg-[#F5EFE5] text-[#111111] border border-[#B08D57]",
     accent: true,
   },
 ];
 
-// ── Scroll-reveal card ────────────────────────────────────────────
-const CollectionCard = ({ item, index, onClick }) => {
-  const ref = useRef(null);
-  const [inView, setInView] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.2 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  const initial = item.name.charAt(0);
-
-  return (
-    <button
-      ref={ref}
-      type="button"
-      onClick={onClick}
-      style={{ transitionDelay: inView ? `${(index % 4) * 80}ms` : "0ms" }}
-      className={`edit-reveal ${inView ? "edit-in-view" : ""} ${item.span} group relative overflow-hidden rounded-[3px] text-left min-h-[220px] ${
-        item.accent
-          ? "bg-charcoal border border-gold/40"
-          : "bg-charcoal border border-charcoal"
-      }`}
-    >
-      {/* Giant translucent type-driven "image" — no stock photography needed */}
-      <span
-        aria-hidden="true"
-        className={`pointer-events-none absolute -right-4 -bottom-10 font-display select-none leading-none transition-transform duration-700 ease-out group-hover:scale-[1.08] ${
-          item.accent ? "text-gold/15" : "text-cream/[0.07]"
-        }`}
-        style={{ fontSize: "clamp(120px, 22vw, 260px)" }}
-      >
-        {initial}
-      </span>
-
-      {/* Bottom gradient for text legibility */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-transparent"
-      />
-
-      {/* Crop-mark corner brackets — signature hover motif (photoshoot framing) */}
-      {["top-3 left-3", "top-3 right-3", "bottom-3 left-3", "bottom-3 right-3"].map(
-        (pos, i) => (
-          <span
-            key={pos}
-            aria-hidden="true"
-            className={`crop-mark crop-mark-${i} absolute ${pos} w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out`}
-            style={{
-              borderColor: item.accent ? "var(--color-gold)" : "var(--color-cream)",
-              borderTopWidth: pos.includes("top") ? "1.5px" : 0,
-              borderBottomWidth: pos.includes("bottom") ? "1.5px" : 0,
-              borderLeftWidth: pos.includes("left") ? "1.5px" : 0,
-              borderRightWidth: pos.includes("right") ? "1.5px" : 0,
-              borderStyle: "solid",
-            }}
-          />
-        ),
-      )}
-
-      {/* Content */}
-      <span className="relative z-10 flex h-full flex-col justify-between p-5 md:p-6">
-        <span
-          className={`text-[10px] font-semibold tracking-[0.16em] uppercase ${
-            item.accent ? "text-gold" : "text-cream/60"
-          }`}
-        >
-          {item.tag}
-        </span>
-
-        <span>
-          <span className="font-display block text-[19px] md:text-[24px] font-medium text-cream mb-1.5 leading-tight">
-            {item.name}
-          </span>
-          <span className="block text-[12px] text-cream/65 max-w-[32ch] mb-3">
-            {item.desc}
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.1em] uppercase text-cream translate-y-1.5 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-400 ease-out">
-            Explore
-            <ArrowUpRight
-              size={14}
-              strokeWidth={2}
-              className="transition-transform duration-400 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-            />
-          </span>
-        </span>
-      </span>
-    </button>
-  );
-};
-
 const Collections = () => {
   const navigate = useNavigate();
 
-  const goToCollection = useCallback(
-    (id) => navigate(`/collections/${id}`),
-    [navigate],
-  );
+  const handleSelectCollection = (id) => {
+    navigate(`/all-products?category=${id}`);
+  };
 
   return (
-    <div className="bg-cream text-ink min-h-screen">
-      <style>{`
-        @keyframes edit-rise {
-          from { transform: translateY(105%); opacity: 0; }
-          to   { transform: translateY(0);    opacity: 1; }
-        }
-        @keyframes edit-line-draw {
-          from { transform: scaleX(0); }
-          to   { transform: scaleX(1); }
-        }
-        @keyframes edit-fade-up {
-          from { opacity: 0; transform: translateY(14px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes edit-marquee {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
+    <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
+      {/* Header bar */}
+      <div className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+        <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 py-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
+          >
+            <ArrowLeft size={15} strokeWidth={2} />
+            Back to Home
+          </button>
+          <span className="text-[11px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
+            Curated Lookbooks
+          </span>
+        </div>
+      </div>
 
-        .edit-hero-clip { overflow: hidden; display: inline-block; }
-        .edit-hero-word {
-          display: inline-block;
-          animation: edit-rise 0.85s cubic-bezier(0.16,1,0.3,1) both;
-        }
-        .edit-hero-sub {
-          animation: edit-fade-up 0.7s cubic-bezier(0.16,1,0.3,1) 0.65s both;
-        }
-        .edit-hero-line {
-          transform-origin: left center;
-          animation: edit-line-draw 0.9s cubic-bezier(0.16,1,0.3,1) 0.55s both;
-        }
-
-        .edit-reveal {
-          opacity: 0;
-          transform: translateY(26px) scale(0.98);
-          transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
-        }
-        .edit-in-view { opacity: 1; transform: translateY(0) scale(1); }
-
-        .crop-mark-0 { transform: translate(4px, 4px); }
-        .crop-mark-1 { transform: translate(-4px, 4px); }
-        .crop-mark-2 { transform: translate(4px, -4px); }
-        .group:hover .crop-mark-0,
-        .group:hover .crop-mark-1,
-        .group:hover .crop-mark-2,
-        .group:hover .crop-mark-3 { transform: translate(0, 0); }
-        .crop-mark-3 { transform: translate(-4px, -4px); }
-
-        .edit-marquee-track {
-          display: flex;
-          width: max-content;
-          animation: edit-marquee 22s linear infinite;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .edit-hero-word, .edit-hero-sub, .edit-hero-line,
-          .edit-reveal, .edit-marquee-track {
-            animation: none !important;
-            transition: none !important;
-            opacity: 1 !important;
-            transform: none !important;
-          }
-        }
-      `}</style>
-
-      {/* ================= Hero ================= */}
-      <section className="bg-charcoal text-cream">
-        <div className={`${SECTION_X}`}>
-          <div className={`${CONTAINER} py-16 md:py-24`}>
-            <span className="edit-hero-sub block text-[10px] md:text-[11px] font-semibold tracking-[0.16em] uppercase text-gold mb-4">
-              Menswear, Curated
+      {/* Hero Header */}
+      <div className="bg-[#111111] text-white py-12 px-5 md:px-8 lg:px-12 border-b border-[#E5E5E5]">
+        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <span className="text-[11px] font-bold tracking-[0.16em] uppercase text-[#B08D57] block mb-2">
+              CURATED CATEGORIES · 2026
             </span>
-
-            <h1 className="font-display font-medium text-[52px] md:text-[96px] leading-[0.95] mb-6">
-              <span className="edit-hero-clip">
-                <span className="edit-hero-word" style={{ animationDelay: "0ms" }}>
-                  The
-                </span>
-              </span>{" "}
-              <span className="edit-hero-clip">
-                <span className="edit-hero-word" style={{ animationDelay: "140ms" }}>
-                  Edit
-                </span>
-              </span>
+            <h1 className="font-display text-[32px] md:text-[42px] font-bold leading-tight">
+              Featured Collections
             </h1>
-
-            <span className="edit-hero-line block h-px w-24 bg-gold mb-6" />
-
-            <p className="edit-hero-sub text-[14px] md:text-[16px] text-cream/65 max-w-[46ch]">
-              Curated styles for the modern man — not everything we sell, only
-              what's worth wearing this season.
+            <p className="text-[13.5px] text-white/70 mt-1.5 max-w-lg leading-relaxed">
+              Discover Wardrobe edits built for every occasion — from effortless weekend leisure to sharp evening tailoring.
             </p>
           </div>
         </div>
+      </div>
 
-        {/* Ambient marquee strip */}
-        <div className="border-t border-cream/10 overflow-hidden py-3">
-          <div className="edit-marquee-track">
-            {[...Array(2)].map((_, dup) => (
-              <span key={dup} className="flex items-center shrink-0">
-                {["Tailored", "Curated", "Worn Well", "Season After Season"].map(
-                  (w) => (
-                    <span
-                      key={w}
-                      className="text-[11px] font-semibold tracking-[0.16em] uppercase text-cream/35 px-6 whitespace-nowrap"
-                    >
-                      {w} <span className="text-gold/50 ml-6">•</span>
-                    </span>
-                  ),
-                )}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
+      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 pt-10">
+        {/* Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[240px]">
+          {COLLECTIONS.map((c) => (
+            <div
+              key={c.id}
+              onClick={() => handleSelectCollection(c.id)}
+              className={`${c.span} ${c.bg} rounded-[10px] p-6 md:p-8 flex flex-col justify-between cursor-pointer group hover:scale-[1.01] transition-all duration-300 shadow-sm relative overflow-hidden`}
+            >
+              <div className="flex items-start justify-between">
+                <span className={`text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1 rounded-full ${c.accent ? 'bg-[#B08D57] text-[#0e0e0e]' : 'bg-black/10 text-[#B08D57]'}`}>
+                  {c.tag}
+                </span>
 
-      {/* ================= Bento grid ================= */}
-      <section className={`${SECTION_X} py-10 md:py-16`}>
-        <div className={CONTAINER}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 auto-rows-[220px] md:auto-rows-[200px]">
-            {COLLECTIONS.map((item, i) => (
-              <CollectionCard
-                key={item.id}
-                item={item}
-                index={i}
-                onClick={() => goToCollection(item.id)}
-              />
-            ))}
-          </div>
+                <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#B08D57] group-hover:text-white transition-all">
+                  <ArrowUpRight size={18} />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-display text-[22px] md:text-[28px] font-bold leading-tight mb-2">
+                  {c.name}
+                </h3>
+                <p className="text-[13px] opacity-80 leading-relaxed max-w-md">
+                  {c.desc}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
-      </section>
+      </div>
     </div>
   );
 };

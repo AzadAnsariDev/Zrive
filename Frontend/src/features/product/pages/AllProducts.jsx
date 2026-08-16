@@ -19,11 +19,15 @@ import {
   Palette,
   PackageCheck,
   IndianRupee,
+  ShoppingBag,
+  ArrowLeft,
+  Filter,
 } from "lucide-react";
 import { useProduct } from "../hook/useProduct";
 import { formatPrice } from "../../home/pages/Home";
 import { CATEGORIES } from "../../../constant/Categories";
 import WishlistButton from "../../wishlist/components/WishlistButton";
+import useCart from "../../cart/hook/useCart";
 
 const SORT_OPTIONS = [
   { id: "newest", label: "Newest First" },
@@ -34,9 +38,6 @@ const SORT_OPTIONS = [
 const NEW_BADGE_WINDOW_DAYS = 14;
 const SALE_PCTS = [20, 30, 40, 50, 25, 35, 45, 30];
 
-/* ─────────────────────────────────────────────
-   HELPERS  (unchanged — backend logic safe)
-───────────────────────────────────────────── */
 const getProductName = (p) => p?.title || p?.name || "Product";
 
 const getProductImage = (p) => {
@@ -79,144 +80,86 @@ const getProductStock = (p) => {
   return Number(p?.stock) || 0;
 };
 
-/* ─────────────────────────────────────────────
-   COUNTDOWN HOOK
-───────────────────────────────────────────── */
-function useCountdown(hours = 5) {
-  const end = useMemo(() => Date.now() + hours * 3600000, []);
-  const [left, setLeft] = useState(end - Date.now());
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setLeft((p) => Math.max(0, p - 1000));
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const hh = String(Math.floor(left / 3600000)).padStart(2, "0");
-  const mm = String(Math.floor((left % 3600000) / 60000)).padStart(2, "0");
-  const ss = String(Math.floor((left % 60000) / 1000)).padStart(2, "0");
-  return { hh, mm, ss };
-}
-
-/* ─────────────────────────────────────────────
-   UI ATOMS
-───────────────────────────────────────────── */
 const SkeletonCard = () => (
-  <div className="animate-pulse">
-    <div className="aspect-[3/4] bg-[#F0EEEA] mb-3" />
-    <div className="h-2.5 bg-[#F0EEEA] w-1/3 mb-2 rounded" />
-    <div className="h-3 bg-[#F0EEEA] w-3/4 mb-2 rounded" />
-    <div className="h-3.5 bg-[#F0EEEA] w-1/4 rounded" />
+  <div className="animate-pulse bg-[#FAFAFA] border border-[#EAEAEA] rounded-[8px] overflow-hidden p-3">
+    <div className="aspect-[3/4] bg-[#EAEAEA] rounded-md mb-3" />
+    <div className="h-3 bg-[#EAEAEA] w-1/3 mb-2 rounded" />
+    <div className="h-4 bg-[#EAEAEA] w-3/4 mb-2 rounded" />
+    <div className="h-4 bg-[#EAEAEA] w-1/4 rounded" />
   </div>
 );
 
-const NewBadge = () => (
-  <span className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-gradient-to-r from-[#B8912F] via-[#E9CD7A] to-[#B8912F] text-[#111111] text-[9px] font-bold tracking-[0.14em] uppercase px-2.5 py-1 shadow-sm border border-[#D4AF37]/40">
-    <Sparkle size={9} strokeWidth={2} fill="currentColor" />
-    New
-  </span>
-);
-
-const SaleBadge = ({ pct }) => (
-  <span className="absolute top-2.5 left-2.5 bg-[#C43D3D] text-white text-[9px] font-bold tracking-[0.12em] uppercase px-2.5 py-1 shadow-sm">
-    -{pct}%
-  </span>
-);
-
-const CountdownBlock = ({ value, label }) => (
-  <div className="flex flex-col items-center min-w-[52px]">
-    <span className="font-display text-[30px] md:text-[38px] font-bold text-[#111111] leading-none tabular-nums">
-      {value}
-    </span>
-    <span className="text-[9px] font-semibold tracking-[0.14em] uppercase text-[#999] mt-1">
-      {label}
-    </span>
-  </div>
-);
-
-/* ─────────────────────────────────────────────
-   PRODUCT CARD
-───────────────────────────────────────────── */
-const ProductCard = ({ product, onClick, salePercent = null, className = "" }) => {
+const ProductCard = ({ product, onClick, salePercent = null }) => {
   const isNew = getProductAgeInDays(product) <= NEW_BADGE_WINDOW_DAYS;
   const originalPrice = salePercent
     ? Math.round(getProductPrice(product) / (1 - salePercent / 100))
     : null;
 
   return (
-    <div className={`group cursor-pointer ${className}`} onClick={onClick}>
-      <div className="relative aspect-[3/4] overflow-hidden bg-[#F7F7F5] mb-3">
+    <div
+      className="group cursor-pointer bg-white border border-[#EAEAEA] rounded-[8px] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
+      onClick={onClick}
+    >
+      <div className="relative aspect-[3/4] overflow-hidden bg-[#FAFAFA]">
         <img
           src={getProductImage(product)}
           alt={getProductName(product)}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
-        {/* Hover dim */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/6 transition-all duration-300" />
+        {/* Badges */}
+        {salePercent ? (
+          <span className="absolute top-2.5 left-2.5 bg-[#C43D3D] text-white text-[9px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 rounded shadow">
+            -{salePercent}% OFF
+          </span>
+        ) : isNew ? (
+          <span className="absolute top-2.5 left-2.5 bg-[#B08D57] text-[#0e0e0e] text-[9px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 rounded shadow">
+            NEW
+          </span>
+        ) : null}
 
-        {/* Badge */}
-        {salePercent ? <SaleBadge pct={salePercent} /> : isNew ? <NewBadge /> : null}
-
-        {/* Wishlist */}
+        {/* Wishlist Button */}
         <WishlistButton
           productId={product._id}
           variantSku={product.variants?.[0]?.sku}
-          className="absolute top-3 right-3 z-10"
+          className="absolute top-2.5 right-2.5 z-10"
         />
-
-        {/* Quick-view slide-up */}
-        <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-[#111111] py-2.5 text-center">
-          <span className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white">
-            Quick View
-          </span>
-        </div>
       </div>
 
-      <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-[#B08D57] mb-0.5 truncate">
-        {product.brand || "ZRIVE"}
-      </p>
-      <h3 className="font-display text-[13px] md:text-[14px] text-[#111111] mb-1 truncate leading-snug">
-        {getProductName(product)}
-      </h3>
-      <div className="flex items-center gap-2">
-        <span className="text-[13px] font-semibold text-[#111111]">
-          {formatPrice(product.price)}
-        </span>
-        {originalPrice && (
-          <span className="text-[11px] text-[#999] line-through">
-            {formatPrice(originalPrice)}
-          </span>
-        )}
+      <div className="p-3.5 flex-1 flex flex-col justify-between">
+        <div>
+          <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#B08D57] mb-0.5 truncate">
+            {product.brand || "ZRIVE"}
+          </p>
+          <h3 className="font-display text-[13.5px] font-semibold text-[#111111] leading-snug truncate mb-1">
+            {getProductName(product)}
+          </h3>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[14px] font-bold text-[#111111]">
+              {formatPrice(product.price)}
+            </span>
+            {originalPrice && (
+              <span className="text-[11px] text-[#999999] line-through">
+                {formatPrice(originalPrice)}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-/* ─────────────────────────────────────────────
-   FILTER BLOCK  (re-styled — more eye-catching)
-───────────────────────────────────────────── */
 const FilterBlock = ({ title, icon: Icon, children }) => (
-  <div className="py-5 border-b border-[#EDE7DA] last:border-b-0">
-    <h3 className="flex items-center gap-2 text-[10px] font-bold tracking-[0.16em] uppercase text-[#111111] mb-4">
-      {Icon && (
-        <span className="w-5 h-5 rounded-full bg-[#B08D57]/12 flex items-center justify-center">
-          <Icon size={11} strokeWidth={2} className="text-[#B08D57]" />
-        </span>
-      )}
+  <div className="py-4 border-b border-[#EAEAEA] last:border-b-0">
+    <h3 className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.12em] uppercase text-[#111111] mb-3">
+      {Icon && <Icon size={13} className="text-[#B08D57]" />}
       {title}
     </h3>
     {children}
   </div>
 );
 
-/* ─────────────────────────────────────────────
-   FILTER PANEL CONTENT — moved OUTSIDE AllProducts
-   so its component identity stays stable across
-   re-renders (fixes: input losing focus while
-   typing, and sidebar remount causing scroll jump)
-───────────────────────────────────────────── */
 const FilterPanelContent = ({
   selectedCategories,
   setSelectedCategories,
@@ -235,11 +178,11 @@ const FilterPanelContent = ({
 }) => (
   <>
     <FilterBlock title="Category" icon={Layers}>
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         {CATEGORIES.map((cat) => (
           <label
             key={cat.id}
-            className="flex items-center gap-2.5 cursor-pointer group/cb px-2 py-1.5 -mx-2 rounded-md hover:bg-[#FAF7F0] transition-colors"
+            className="flex items-center gap-2.5 cursor-pointer group/cb px-1 py-1 rounded hover:bg-[#FAFAFA] transition-colors"
           >
             <input
               type="checkbox"
@@ -247,7 +190,7 @@ const FilterPanelContent = ({
               onChange={() => toggleInArray(selectedCategories, setSelectedCategories, cat.id)}
               className="w-3.5 h-3.5 rounded accent-[#B08D57] cursor-pointer"
             />
-            <span className="text-[13px] text-[#555] group-hover/cb:text-[#111111] transition-colors">
+            <span className="text-[12.5px] text-[#555555] group-hover/cb:text-[#111111] transition-colors">
               {cat.label}
             </span>
           </label>
@@ -255,39 +198,33 @@ const FilterPanelContent = ({
       </div>
     </FilterBlock>
 
-    <FilterBlock title="Price Range" icon={IndianRupee}>
+    <FilterBlock title="Price Range (₹)" icon={IndianRupee}>
       <div className="flex items-center gap-2">
-        <div className="relative w-full">
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[#B08D57] font-semibold">₹</span>
-          <input
-            type="number"
-            placeholder="Min"
-            value={priceMin}
-            onChange={(e) => setPriceMin(e.target.value)}
-            className="w-full border border-[#E5E5E5] bg-white pl-6 pr-2.5 py-2 text-[12.5px] text-[#111111] outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition-all rounded-sm"
-          />
-        </div>
-        <span className="text-[#B08D57] text-sm shrink-0">—</span>
-        <div className="relative w-full">
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[#B08D57] font-semibold">₹</span>
-          <input
-            type="number"
-            placeholder="Max"
-            value={priceMax}
-            onChange={(e) => setPriceMax(e.target.value)}
-            className="w-full border border-[#E5E5E5] bg-white pl-6 pr-2.5 py-2 text-[12.5px] text-[#111111] outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition-all rounded-sm"
-          />
-        </div>
+        <input
+          type="number"
+          placeholder="Min"
+          value={priceMin}
+          onChange={(e) => setPriceMin(e.target.value)}
+          className="w-full border border-[#EAEAEA] bg-[#FAFAFA] px-2.5 py-1.5 text-[12px] text-[#111111] outline-none focus:border-[#B08D57] rounded"
+        />
+        <span className="text-[#999999] text-xs">&ndash;</span>
+        <input
+          type="number"
+          placeholder="Max"
+          value={priceMax}
+          onChange={(e) => setPriceMax(e.target.value)}
+          className="w-full border border-[#EAEAEA] bg-[#FAFAFA] px-2.5 py-1.5 text-[12px] text-[#111111] outline-none focus:border-[#B08D57] rounded"
+        />
       </div>
     </FilterBlock>
 
     {availableColors.length > 0 && (
       <FilterBlock title="Color" icon={Palette}>
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {availableColors.map((color) => (
             <label
               key={color}
-              className="flex items-center gap-2.5 cursor-pointer group/cb px-2 py-1.5 -mx-2 rounded-md hover:bg-[#FAF7F0] transition-colors"
+              className="flex items-center gap-2.5 cursor-pointer group/cb px-1 py-1 rounded hover:bg-[#FAFAFA] transition-colors"
             >
               <input
                 type="checkbox"
@@ -296,10 +233,10 @@ const FilterPanelContent = ({
                 className="w-3.5 h-3.5 rounded accent-[#B08D57] cursor-pointer"
               />
               <span
-                className="w-3 h-3 rounded-full border border-[#E5E5E5] shrink-0"
+                className="w-3 h-3 rounded-full border border-[#EAEAEA] shrink-0"
                 style={{ backgroundColor: color?.toLowerCase() }}
               />
-              <span className="text-[13px] text-[#555] capitalize group-hover/cb:text-[#111111] transition-colors">
+              <span className="text-[12.5px] text-[#555555] capitalize group-hover/cb:text-[#111111]">
                 {color}
               </span>
             </label>
@@ -309,16 +246,14 @@ const FilterPanelContent = ({
     )}
 
     <FilterBlock title="Availability" icon={PackageCheck}>
-      <label className="flex items-center gap-2.5 cursor-pointer group/cb px-2 py-1.5 -mx-2 rounded-md hover:bg-[#FAF7F0] transition-colors">
+      <label className="flex items-center gap-2.5 cursor-pointer px-1 py-1 rounded hover:bg-[#FAFAFA] transition-colors">
         <input
           type="checkbox"
           checked={inStockOnly}
           onChange={() => setInStockOnly((v) => !v)}
           className="w-3.5 h-3.5 rounded accent-[#B08D57] cursor-pointer"
         />
-        <span className="text-[13px] text-[#555] group-hover/cb:text-[#111111] transition-colors">
-          In Stock Only
-        </span>
+        <span className="text-[12.5px] text-[#555555]">In Stock Only</span>
       </label>
     </FilterBlock>
 
@@ -326,584 +261,321 @@ const FilterPanelContent = ({
       <button
         type="button"
         onClick={clearAllFilters}
-        className="mt-5 w-full text-center text-[11px] font-semibold tracking-[0.10em] uppercase text-white bg-[#111111] hover:bg-[#B08D57] py-2.5 transition-colors duration-200"
+        className="mt-4 w-full text-center text-[11px] font-bold uppercase tracking-[0.08em] text-white bg-[#111111] hover:bg-[#B08D57] py-2.5 rounded transition-colors"
       >
-        Clear All Filters
+        Clear All Filters ({activeFilterCount})
       </button>
     )}
   </>
 );
 
-/* ─────────────────────────────────────────────
-   MAIN PAGE
-───────────────────────────────────────────── */
 const AllProducts = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const { handleGetProducts } = useProduct();
 
-  /* ── filter state (unchanged logic) ── */
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
-  const [sortOpen, setSortOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(true);
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [sortOption, setSortOption] = useState("newest");
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
 
-  useEffect(() => { handleGetProducts(); }, []);
+  const productsFromStore = useSelector((state) => state.product.products || []);
+  const loading = useSelector((state) => state.product.loading?.products);
 
-  // Sync category filter from URL parameter ?category=... or location state
   useEffect(() => {
-    const catParam = searchParams.get("category") || location.state?.category;
-    if (catParam) {
-      setSelectedCategories([catParam.toLowerCase().trim()]);
-    }
-  }, [searchParams, location.state]);
+    handleGetProducts();
+  }, []);
 
-  const products = useSelector((s) => s.product.products);
-  const loading = useSelector((s) => s.product.loading.fetch);
-  const { hh, mm, ss } = useCountdown(5);
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    if (categoryParam) {
+      setSelectedCategories([categoryParam]);
+    }
+  }, [location.search, searchParams]);
+
+  const toggleInArray = useCallback((arr, setFn, val) => {
+    if (arr.includes(val)) setFn(arr.filter((v) => v !== val));
+    else setFn([...arr, val]);
+  }, []);
 
   const availableColors = useMemo(() => {
     const set = new Set();
-    (products || []).forEach((p) => getProductColors(p).forEach((c) => set.add(c)));
-    return [...set];
-  }, [products]);
+    productsFromStore.forEach((p) => {
+      getProductColors(p).forEach((c) => set.add(c));
+    });
+    return Array.from(set);
+  }, [productsFromStore]);
 
-  const toggleInArray = useCallback((arr, setArr, val) => {
-    setArr(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
-  }, []);
-
-  /* ── filteredAndSorted (unchanged logic) ── */
-  const filteredAndSorted = useMemo(() => {
-    let list = products ? [...products] : [];
-    if (selectedCategories.length > 0)
-      list = list.filter((p) =>
-        selectedCategories.includes(String(p.category || "").toLowerCase().trim())
-      );
-    if (selectedColors.length > 0)
-      list = list.filter((p) =>
-        getProductColors(p).some((c) => selectedColors.includes(c))
-      );
-    if (inStockOnly) list = list.filter((p) => getProductStock(p) > 0);
-    if (priceMin !== "") list = list.filter((p) => getProductPrice(p) >= Number(priceMin));
-    if (priceMax !== "") list = list.filter((p) => getProductPrice(p) <= Number(priceMax));
-
-    if (sortBy === "newest")     list.sort((a, b) => getProductAgeInDays(a) - getProductAgeInDays(b));
-    if (sortBy === "price-asc")  list.sort((a, b) => getProductPrice(a) - getProductPrice(b));
-    if (sortBy === "price-desc") list.sort((a, b) => getProductPrice(b) - getProductPrice(a));
-    return list;
-  }, [products, selectedCategories, selectedColors, inStockOnly, priceMin, priceMax, sortBy]);
-
-  /* ── also like (unchanged logic) ── */
-  const alsoLikeProducts = useMemo(() => {
-    const all = products || [];
-    const ids = new Set(filteredAndSorted.map((p) => p._id));
-    const pool = all.filter((p) => !ids.has(p._id));
-    return (pool.length > 0 ? pool : all).slice(0, 8);
-  }, [products, filteredAndSorted]);
-
-  /* deals row — cheapest items */
-  const dealsProducts = useMemo(() => {
-    const all = products ? [...products] : [];
-    return all.sort((a, b) => getProductPrice(a) - getProductPrice(b)).slice(0, 8);
-  }, [products]);
-
-  const activeSortLabel = SORT_OPTIONS.find((s) => s.id === sortBy)?.label;
   const activeFilterCount =
     selectedCategories.length +
     selectedColors.length +
     (inStockOnly ? 1 : 0) +
-    (priceMin || priceMax ? 1 : 0);
+    (priceMin !== "" ? 1 : 0) +
+    (priceMax !== "" ? 1 : 0);
 
-  const clearAllFilters = () => {
+  const clearAllFilters = useCallback(() => {
     setSelectedCategories([]);
     setSelectedColors([]);
     setInStockOnly(false);
     setPriceMin("");
     setPriceMax("");
-  };
+  }, []);
 
-  const scrollToGrid = () =>
-    document.getElementById("zrive-product-grid")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const filteredProducts = useMemo(() => {
+    let list = [...productsFromStore];
 
-  /* props bundle passed to the stable, outer FilterPanelContent */
-  const filterPanelProps = {
+    if (selectedCategories.length > 0) {
+      list = list.filter((p) =>
+        selectedCategories.some(
+          (catId) => p.category?.toLowerCase() === catId.toLowerCase()
+        )
+      );
+    }
+
+    if (selectedColors.length > 0) {
+      list = list.filter((p) => {
+        const colors = getProductColors(p);
+        return selectedColors.some((sc) =>
+          colors.some((c) => c.toLowerCase() === sc.toLowerCase())
+        );
+      });
+    }
+
+    if (inStockOnly) {
+      list = list.filter((p) => getProductStock(p) > 0);
+    }
+
+    if (priceMin !== "") {
+      const min = Number(priceMin);
+      if (!isNaN(min)) list = list.filter((p) => getProductPrice(p) >= min);
+    }
+    if (priceMax !== "") {
+      const max = Number(priceMax);
+      if (!isNaN(max)) list = list.filter((p) => getProductPrice(p) <= max);
+    }
+
+    if (sortOption === "price-asc") {
+      list.sort((a, b) => getProductPrice(a) - getProductPrice(b));
+    } else if (sortOption === "price-desc") {
+      list.sort((a, b) => getProductPrice(b) - getProductPrice(a));
+    }
+
+    return list;
+  }, [
+    productsFromStore,
     selectedCategories,
-    setSelectedCategories,
     selectedColors,
-    setSelectedColors,
     inStockOnly,
-    setInStockOnly,
     priceMin,
-    setPriceMin,
     priceMax,
-    setPriceMax,
-    availableColors,
-    toggleInArray,
-    activeFilterCount,
-    clearAllFilters,
-  };
+    sortOption,
+  ]);
 
   return (
-    <div className="bg-white text-[#111111] min-h-screen">
-
-      {/* ══════════════════════════════════════════
-          1 · HERO BANNER
-      ══════════════════════════════════════════ */}
-      <section className="relative overflow-hidden border-b border-[#E5E5E5]">
-        {/* Subtle grid texture */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.025]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(0deg,#111 0,#111 1px,transparent 0,transparent 40px),repeating-linear-gradient(90deg,#111 0,#111 1px,transparent 0,transparent 40px)",
-          }}
-        />
-        <div className="relative max-w-[1440px] mx-auto px-5 md:px-14 pt-10 pb-8 md:pt-16 md:pb-10">
-          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.22em] uppercase text-[#B08D57] mb-2.5 flex items-center gap-2">
-            <span className="inline-block w-6 h-px bg-[#B08D57]" />
-            The Full Edit
-          </p>
-          <h1 className="font-display text-[34px] md:text-[56px] font-bold text-[#111111] leading-tight mb-2">
-            All Products
-          </h1>
-          <p className="text-[13px] md:text-[14px] text-[#666]">
-            {loading
-              ? "Loading the collection…"
-              : `${products?.length || 0} pieces, curated across every category`}
-          </p>
-        </div>
-
-        {/* Category chips */}
-        <div className="relative border-t border-[#E5E5E5] bg-[#FAFAFA]">
-          <div className="max-w-[1440px] mx-auto px-5 md:px-14 py-3.5 flex gap-2 overflow-x-auto no-scrollbar">
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              className={`flex-shrink-0 text-[11px] font-medium px-4 py-2 border transition-all duration-150 ${
-                selectedCategories.length === 0
-                  ? "bg-[#111111] text-white border-[#111111]"
-                  : "bg-white text-[#666] border-[#E5E5E5] hover:border-[#111111] hover:text-[#111111]"
-              }`}
-            >
-              All
-            </button>
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => toggleInArray(selectedCategories, setSelectedCategories, cat.id)}
-                className={`flex-shrink-0 text-[11px] font-medium px-4 py-2 border transition-all duration-150 ${
-                  selectedCategories.includes(cat.id)
-                    ? "bg-[#111111] text-white border-[#111111]"
-                    : "bg-white text-[#666] border-[#E5E5E5] hover:border-[#111111] hover:text-[#111111]"
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          2 · FLASH SALE BANNER
-      ══════════════════════════════════════════ */}
-      <section
-        className="relative overflow-hidden border-b border-[#E5E5E5]"
-        style={{ background: "linear-gradient(135deg,#FFF8ED 0%,#FDF3E3 50%,#FFF8ED 100%)" }}
-      >
-        <div className="max-w-[1440px] mx-auto px-5 md:px-14 py-7 md:py-9">
-          <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
-
-            {/* Label + heading */}
-            <div className="flex items-center gap-4 flex-1 text-center md:text-left flex-col md:flex-row">
-              <div className="w-12 h-12 bg-[#B08D57]/12 flex items-center justify-center shrink-0">
-                <Flame size={24} className="text-[#B08D57]" />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#B08D57] mb-0.5">
-                  Limited Time Offer
-                </p>
-                <h2 className="font-display text-[20px] md:text-[26px] font-bold text-[#111111] leading-tight">
-                  Flash Sale —{" "}
-                  <span className="text-[#C43D3D]">Up to 60% Off</span>
-                </h2>
-              </div>
-            </div>
-
-            {/* Countdown */}
-            <div className="flex items-end gap-1.5 shrink-0">
-              <CountdownBlock value={hh} label="Hours" />
-              <span className="font-display text-[30px] font-bold text-[#B08D57] mb-4 leading-none">
-                :
-              </span>
-              <CountdownBlock value={mm} label="Mins" />
-              <span className="font-display text-[30px] font-bold text-[#B08D57] mb-4 leading-none">
-                :
-              </span>
-              <CountdownBlock value={ss} label="Secs" />
-            </div>
-
-            {/* CTA */}
-            <button
-              type="button"
-              onClick={scrollToGrid}
-              className="shrink-0 flex items-center gap-2 bg-[#111111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase px-6 py-3.5 hover:bg-[#B08D57] transition-colors duration-200"
-            >
-              Shop Sale Now <ArrowRight size={13} />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          3 · MOBILE STICKY CONTROLS
-      ══════════════════════════════════════════ */}
-      <section className="md:hidden border-b border-[#E5E5E5] sticky top-[57px] z-10 bg-white/95 backdrop-blur">
-        <div className="flex items-center justify-between px-5 py-2.5">
+    <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
+      {/* Header breadcrumb bar */}
+      <div className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
+        <div className="max-w-[1440px] mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
           <button
             type="button"
-            onClick={() => setMobileFiltersOpen(true)}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#111111]"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
           >
-            <SlidersHorizontal size={14} strokeWidth={1.5} />
-            Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
+            <ArrowLeft size={14} />
+            Back to Home
           </button>
-          <div className="relative">
+          <span className="text-[11px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
+            Men's Marketplace Catalog
+          </span>
+        </div>
+      </div>
+
+      <div className="max-w-[1440px] mx-auto px-4 md:px-8 pt-6">
+        {/* Title Bar & Sort */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#EAEAEA]">
+          <div>
+            <h1 className="font-display text-[26px] md:text-[32px] font-bold text-[#111111]">
+              Men's Clothing Collection
+            </h1>
+            <p className="text-[13px] text-[#666666] mt-0.5">
+              Showing <strong className="text-[#111111]">{filteredProducts.length}</strong> items
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Mobile Filter Button */}
             <button
               type="button"
-              onClick={() => setSortOpen((o) => !o)}
-              className="flex items-center gap-1.5 text-[12px] font-medium text-[#666]"
+              onClick={() => setMobileFilterOpen(true)}
+              className="lg:hidden flex items-center gap-2 px-4 py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded text-[12px] font-bold text-[#111111]"
             >
-              {activeSortLabel}
-              <ChevronDown
-                size={13}
-                strokeWidth={1.5}
-                className={`transition-transform ${sortOpen ? "rotate-180" : ""}`}
-              />
+              <Filter size={14} className="text-[#B08D57]" />
+              Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
             </button>
-            {sortOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 border border-[#E5E5E5] bg-white shadow-lg overflow-hidden z-20">
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => { setSortBy(opt.id); setSortOpen(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-[12.5px] transition-colors ${
-                      sortBy === opt.id ? "text-[#111111] font-semibold bg-[#F7F7F5]" : "text-[#666] hover:bg-[#F7F7F5]"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
+
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded text-[12px] font-bold text-[#111111]"
+              >
+                <span>Sort by: {SORT_OPTIONS.find((s) => s.id === sortOption)?.label}</span>
+                <ChevronDown size={14} />
+              </button>
+
+              {sortDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-[#EAEAEA] rounded shadow-xl z-30 py-1">
+                  {SORT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => {
+                        setSortOption(opt.id);
+                        setSortDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-[12px] hover:bg-[#FAFAFA] ${
+                        sortOption === opt.id ? "font-bold text-[#B08D57]" : "text-[#555]"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </section>
 
-      {/* ══════════════════════════════════════════
-          4 · SIDEBAR + PRODUCT GRID
-      ══════════════════════════════════════════ */}
-      <section id="zrive-product-grid" className="px-5 md:px-14 py-8 md:py-12">
-        <div className="max-w-[1440px] mx-auto md:flex md:items-start md:gap-10">
-
-          {/* Sidebar — now sticky on scroll + restyled as a card */}
-          <aside
-            className={`hidden md:block flex-shrink-0 self-start sticky top-[88px] transition-all duration-200 overflow-hidden ${
-              filtersOpen ? "w-[260px]" : "w-0"
-            }`}
-          >
-            <div className="w-[260px] bg-white border border-[#E5E5E5] shadow-[0_2px_10px_rgba(17,17,17,0.05)] max-h-[calc(100vh-108px)] overflow-y-auto no-scrollbar">
-              <div className="flex items-center gap-2 px-5 pt-5 pb-4 border-b border-[#EDE7DA]">
-                <span className="w-6 h-px bg-[#B08D57]" />
-                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#B08D57]">
-                  Refine Results
+        {/* Layout Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 items-start">
+          {/* Desktop Filter Sidebar */}
+          <aside className="hidden lg:block bg-[#FAFAFA] border border-[#EAEAEA] rounded-[8px] p-5 sticky top-24">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EAEAEA] mb-2">
+              <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#111]">Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="text-[10px] font-bold text-[#B08D57] bg-[#F5EFE5] px-2 py-0.5 rounded">
+                  {activeFilterCount} Active
                 </span>
-              </div>
-              <div className="px-5">
-                <FilterPanelContent {...filterPanelProps} />
-              </div>
+              )}
             </div>
+
+            <FilterPanelContent
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
+              selectedColors={selectedColors}
+              setSelectedColors={setSelectedColors}
+              inStockOnly={inStockOnly}
+              setInStockOnly={setInStockOnly}
+              priceMin={priceMin}
+              setPriceMin={setPriceMin}
+              priceMax={priceMax}
+              setPriceMax={setPriceMax}
+              availableColors={availableColors}
+              toggleInArray={toggleInArray}
+              activeFilterCount={activeFilterCount}
+              clearAllFilters={clearAllFilters}
+            />
           </aside>
 
-          {/* Grid area */}
-          <div className="flex-1 min-w-0">
-            {/* Desktop top bar */}
-            <div className="hidden md:flex items-center justify-between mb-7 pb-4 border-b border-[#E5E5E5]">
-              <div className="flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => setFiltersOpen((o) => !o)}
-                  className="flex items-center gap-1.5 text-[12px] font-medium text-[#666] hover:text-[#111111] transition-colors"
-                >
-                  <SlidersHorizontal size={13} strokeWidth={1.5} />
-                  {filtersOpen ? "Hide Filters" : "Show Filters"}
-                  {activeFilterCount > 0 && (
-                    <span className="ml-0.5 text-[10px] bg-[#B08D57] text-white px-1.5 py-0.5 font-semibold">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </button>
-                <span className="text-[#DDD]">|</span>
-                <span className="text-[12px] text-[#999]">
-                  {filteredAndSorted.length} results
-                </span>
-              </div>
-
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setSortOpen((o) => !o)}
-                  className="flex items-center gap-1.5 text-[12px] font-medium text-[#666] hover:text-[#111111] transition-colors"
-                >
-                  Sort:{" "}
-                  <span className="text-[#111111] font-semibold">{activeSortLabel}</span>
-                  <ChevronDown
-                    size={13}
-                    strokeWidth={1.5}
-                    className={`transition-transform ${sortOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-                {sortOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 border border-[#E5E5E5] bg-white shadow-lg overflow-hidden z-20">
-                    {SORT_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => { setSortBy(opt.id); setSortOpen(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-[12.5px] transition-colors ${
-                          sortBy === opt.id
-                            ? "text-[#111111] font-semibold bg-[#F7F7F5]"
-                            : "text-[#666] hover:bg-[#F7F7F5]"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Product grid */}
+          {/* Products Grid */}
+          <main>
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <SkeletonCard key={i} />
+                ))}
               </div>
-            ) : filteredAndSorted.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {filteredAndSorted.map((product, idx) => (
+            ) : filteredProducts.length === 0 ? (
+              <div className="p-12 text-center bg-[#FAFAFA] rounded-[8px] border border-[#EAEAEA]">
+                <ShoppingBag size={32} className="text-[#B08D57] mx-auto mb-2" />
+                <h3 className="font-display text-[20px] font-bold text-[#111111]">No Products Found</h3>
+                <p className="text-[13px] text-[#666666] mt-1 mb-4">Try clearing some of your filters to see more results.</p>
+                <button
+                  onClick={clearAllFilters}
+                  className="px-6 py-2.5 bg-[#111111] text-white text-[12px] font-bold uppercase rounded hover:bg-[#B08D57] transition-all"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {filteredProducts.map((product, i) => (
                   <ProductCard
-                    key={getProductKey(product, idx)}
+                    key={getProductKey(product, i)}
                     product={product}
+                    salePercent={SALE_PCTS[i % SALE_PCTS.length]}
                     onClick={() => navigate(`/product/${product._id}`)}
                   />
                 ))}
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-28 text-center min-h-[420px]">
-                <div className="w-16 h-16 bg-[#F7F7F5] flex items-center justify-center mb-5">
-                  <SlidersHorizontal size={24} strokeWidth={1.5} className="text-[#999]" />
-                </div>
-                <p className="font-display text-[20px] text-[#111111] mb-2">
-                  No products found
-                </p>
-                <p className="text-[13px] text-[#666] max-w-xs mb-5">
-                  Try adjusting or clearing your filters to see more results.
-                </p>
-                <button
-                  type="button"
-                  onClick={clearAllFilters}
-                  className="text-[11px] font-semibold tracking-[0.12em] uppercase border-b border-[#B08D57] text-[#B08D57] pb-0.5"
-                >
-                  Clear All Filters
-                </button>
-              </div>
             )}
+          </main>
+        </div>
+
+        {/* Discovery Strip */}
+        <div className="mt-16 pt-8 border-t border-[#EAEAEA] grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 bg-[#FAFAFA] rounded border border-[#EAEAEA] text-center">
+            <Truck size={20} className="text-[#B08D57] mx-auto mb-2" />
+            <p className="text-[12px] font-bold text-[#111]">Free Shipping</p>
+            <p className="text-[10.5px] text-[#777]">On orders above ₹999</p>
+          </div>
+          <div className="p-4 bg-[#FAFAFA] rounded border border-[#EAEAEA] text-center">
+            <RotateCcw size={20} className="text-[#B08D57] mx-auto mb-2" />
+            <p className="text-[12px] font-bold text-[#111]">7-Day Exchange</p>
+            <p className="text-[10.5px] text-[#777]">Hassle-free doorstep pickup</p>
+          </div>
+          <div className="p-4 bg-[#FAFAFA] rounded border border-[#EAEAEA] text-center">
+            <ShieldCheck size={20} className="text-[#B08D57] mx-auto mb-2" />
+            <p className="text-[12px] font-bold text-[#111]">100% Genuine</p>
+            <p className="text-[10.5px] text-[#777]">Verified merchant guarantee</p>
+          </div>
+          <div className="p-4 bg-[#FAFAFA] rounded border border-[#EAEAEA] text-center">
+            <BadgeCheck size={20} className="text-[#B08D57] mx-auto mb-2" />
+            <p className="text-[12px] font-bold text-[#111]">Razorpay Escrow</p>
+            <p className="text-[10.5px] text-[#777]">Protected payments</p>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ══════════════════════════════════════════
-          5 · TODAY'S DEALS ROW
-      ══════════════════════════════════════════ */}
-      {dealsProducts.length > 0 && (
-        <section className="px-5 md:px-14 py-12 md:py-16 border-b border-[#E5E5E5]">
-          <div className="max-w-[1440px] mx-auto">
-            <div className="flex items-end justify-between mb-7">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-[#C43D3D] mb-1.5 flex items-center gap-1.5">
-                  <Tag size={11} />
-                  Limited Offers
-                </p>
-                <h2 className="font-display text-[22px] md:text-[30px] font-bold text-[#111111]">
-                  Today's Deals
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={scrollToGrid}
-                className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.1em] uppercase text-[#B08D57] hover:text-[#111111] transition-colors border-b border-[#B08D57] pb-0.5"
-              >
-                View All <ArrowRight size={12} />
-              </button>
-            </div>
-
-            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-              {dealsProducts.map((product, idx) => (
-                <div key={getProductKey(product, idx)} className="flex-shrink-0 w-[155px] md:w-[195px]">
-                  <ProductCard
-                    product={product}
-                    onClick={() => navigate(`/product/${product._id}`)}
-                    salePercent={SALE_PCTS[idx % SALE_PCTS.length]}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ══════════════════════════════════════════
-          6 · SECOND MODEL BANNER — NEW SEASON
-      ══════════════════════════════════════════ */}
-      <section
-        className="relative overflow-hidden border-b border-[#E5E5E5]"
-        style={{ background: "linear-gradient(130deg,#F7F7F5 0%,#FFFFFF 55%,#F5EFE5 100%)" }}
-      >
-        <div className="max-w-[1440px] mx-auto px-5 md:px-14 py-14 md:py-20 grid grid-cols-1 md:grid-cols-[1fr_280px] gap-10 items-center">
-          <div>
-            <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-[#B08D57] mb-3 flex items-center gap-1.5">
-              <Zap size={11} />
-              ZRIVE Exclusive
-            </p>
-            <h2 className="font-display text-[26px] md:text-[40px] font-bold text-[#111111] leading-tight mb-4">
-              New Season.
-              <br />
-              New Standards.
-            </h2>
-            <p className="text-[13px] text-[#666] leading-relaxed max-w-lg mb-8">
-              Every piece passes a rigorous quality check. We partner only with verified
-              sellers who share our vision of accessible luxury for the modern man.
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate("/new-arrivals")}
-              className="inline-flex items-center gap-2 bg-[#111111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase px-7 py-3.5 hover:bg-[#B08D57] transition-colors duration-200"
-            >
-              Explore New Arrivals <ArrowRight size={13} />
+      {/* Mobile Filter Sheet */}
+      {mobileFilterOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-white">
+          <div className="flex items-center justify-between p-4 border-b border-[#EAEAEA]">
+            <span className="font-display text-[18px] font-bold">Filter Products</span>
+            <button onClick={() => setMobileFilterOpen(false)} className="text-[#111]">
+              <X size={20} />
             </button>
           </div>
-
-          {/* Model image */}
-          <div className="hidden md:block relative overflow-hidden h-[380px]">
-            <img
-              src="https://images.unsplash.com/photo-1516826957135-700dedea698c?q=80&w=600&auto=format&fit=crop&crop=top"
-              alt="Men's Fashion — New Season"
-              className="w-full h-full object-cover object-top"
-              loading="lazy"
+          <div className="flex-1 overflow-y-auto p-4">
+            <FilterPanelContent
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
+              selectedColors={selectedColors}
+              setSelectedColors={setSelectedColors}
+              inStockOnly={inStockOnly}
+              setInStockOnly={setInStockOnly}
+              priceMin={priceMin}
+              setPriceMin={setPriceMin}
+              priceMax={priceMax}
+              setPriceMax={setPriceMax}
+              availableColors={availableColors}
+              toggleInArray={toggleInArray}
+              activeFilterCount={activeFilterCount}
+              clearAllFilters={clearAllFilters}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#F5EFE5]/40 to-transparent" />
           </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          7 · YOU MAY ALSO LIKE
-      ══════════════════════════════════════════ */}
-      {alsoLikeProducts.length > 0 && (
-        <section className="px-5 md:px-14 py-12 md:py-16 border-b border-[#E5E5E5]">
-          <div className="max-w-[1440px] mx-auto">
-            <div className="flex items-end justify-between mb-7">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-[#B08D57] mb-1.5 flex items-center gap-1.5">
-                  <Star size={11} />
-                  Keep Exploring
-                </p>
-                <h2 className="font-display text-[22px] md:text-[30px] font-bold text-[#111111]">
-                  You May Also Like
-                </h2>
-              </div>
-            </div>
-            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-              {alsoLikeProducts.map((product, idx) => (
-                <div key={getProductKey(product, idx)} className="flex-shrink-0 w-[155px] md:w-[190px]">
-                  <ProductCard
-                    product={product}
-                    onClick={() => navigate(`/product/${product._id}`)}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ══════════════════════════════════════════
-          8 · TRUST BADGES
-      ══════════════════════════════════════════ */}
-      <section className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
-        <div className="max-w-[1440px] mx-auto px-5 md:px-14 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
-          {[
-            { icon: Truck,       title: "Free Shipping",    desc: "On orders over ₹999" },
-            { icon: RotateCcw,   title: "Easy Returns",     desc: "7-day return window" },
-            { icon: ShieldCheck, title: "Secure Checkout",  desc: "Encrypted payments" },
-            { icon: BadgeCheck,  title: "Verified Sellers", desc: "Every seller vetted" },
-          ].map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="flex items-start gap-3.5">
-              <div className="w-10 h-10 bg-white border border-[#E5E5E5] flex items-center justify-center flex-shrink-0">
-                <Icon size={17} strokeWidth={1.5} className="text-[#B08D57]" />
-              </div>
-              <div>
-                <p className="text-[12.5px] font-semibold text-[#111111]">{title}</p>
-                <p className="text-[11.5px] text-[#999] mt-0.5">{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          MOBILE FILTER BOTTOM SHEET
-      ══════════════════════════════════════════ */}
-      {mobileFiltersOpen && (
-        <div className="md:hidden fixed inset-0 z-40">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setMobileFiltersOpen(false)}
-          />
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[82vh] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E5E5] flex-shrink-0">
-              <span className="font-display text-[16px] font-semibold text-[#111111]">
-                Filters
-              </span>
-              <button
-                type="button"
-                onClick={() => setMobileFiltersOpen(false)}
-                className="text-[#999] hover:text-[#111111] transition-colors w-8 h-8 flex items-center justify-center"
-              >
-                <X size={18} strokeWidth={1.5} />
-              </button>
-            </div>
-            <div className="overflow-y-auto px-5 flex-1">
-              <FilterPanelContent {...filterPanelProps} />
-            </div>
-            <div className="p-5 border-t border-[#E5E5E5] flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setMobileFiltersOpen(false)}
-                className="w-full bg-[#111111] text-white text-[12px] font-semibold tracking-[0.12em] uppercase py-3.5 hover:bg-[#B08D57] transition-colors duration-200"
-              >
-                Show {filteredAndSorted.length} Results
-              </button>
-            </div>
+          <div className="p-4 border-t border-[#EAEAEA]">
+            <button
+              onClick={() => setMobileFilterOpen(false)}
+              className="w-full bg-[#111111] text-white py-3 rounded text-[12px] font-bold uppercase"
+            >
+              Apply Filters
+            </button>
           </div>
         </div>
       )}

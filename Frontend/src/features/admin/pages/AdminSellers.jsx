@@ -1,63 +1,26 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useSelector } from 'react-redux'
-import { ChevronRight, Search } from 'lucide-react'
+import { ChevronRight, Search, ShieldAlert, CheckCircle, Clock, XCircle, ArrowLeft } from 'lucide-react'
 import { useAdmin } from '../hook/useAdmin'
 
 const STATUS_CONFIG = {
   pending_verification: {
-    label: 'Pending',
-    dot: 'bg-amber-500',
-    ping: true,
-    badgeBg: 'bg-amber-50',
-    badgeText: 'text-amber-700',
-    border: 'border-l-amber-400',
-    avatarBg: 'bg-amber-50',
-    avatarText: 'text-amber-700',
+    label: 'Pending KYC',
+    badgeBg: 'bg-[#FBF2E2] text-[#A56A16] border-[#A56A16]/30',
   },
   approved: {
-    label: 'Verified',
-    dot: 'bg-emerald-500',
-    ping: false,
-    badgeBg: 'bg-emerald-50',
-    badgeText: 'text-emerald-700',
-    border: 'border-l-emerald-400',
-    avatarBg: 'bg-emerald-50',
-    avatarText: 'text-emerald-700',
+    label: 'Verified Merchant',
+    badgeBg: 'bg-[#EAF5EE] text-[#287A4B] border-[#287A4B]/30',
   },
   rejected: {
     label: 'Rejected',
-    dot: 'bg-rose-500',
-    ping: false,
-    badgeBg: 'bg-rose-50',
-    badgeText: 'text-rose-700',
-    border: 'border-l-rose-400',
-    avatarBg: 'bg-rose-50',
-    avatarText: 'text-rose-700',
+    badgeBg: 'bg-[#FCECEC] text-[#C43D3D] border-[#C43D3D]/30',
   },
-}
-
-const StatusDot = ({ status }) => {
-  const cfg = STATUS_CONFIG[status]
-  return (
-    <span className="relative flex w-[7px] h-[7px] shrink-0">
-      {cfg.ping && (
-        <span className={`absolute inline-flex h-full w-full rounded-full ${cfg.dot} opacity-75 animate-ping`} />
-      )}
-      <span className={`relative inline-flex rounded-full w-[7px] h-[7px] ${cfg.dot}`} />
-    </span>
-  )
-}
-
-const timeAgo = (dateStr) => {
-  const diffMs = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diffMs / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  return `${days}d ago`
+  basic: {
+    label: 'Basic Info Only',
+    badgeBg: 'bg-white/10 text-white/70 border-white/20',
+  },
 }
 
 const initials = (name = '') =>
@@ -66,132 +29,148 @@ const initials = (name = '') =>
     .split(/\s+/)
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase())
-    .join('') || '?'
-
-const SellerRow = ({ seller, onClick }) => {
-  const cfg = STATUS_CONFIG[seller.applicationStatus]
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full flex items-center gap-4 pl-4 pr-3 py-3.5 rounded-lg border border-border border-l-[3px] ${cfg.border} bg-surface hover:shadow-[0_1px_8px_rgba(0,0,0,0.06)] hover:border-border transition-all text-left group`}
-    >
-      <div className={`w-9 h-9 shrink-0 rounded-full ${cfg.avatarBg} flex items-center justify-center`}>
-        <span className={`text-[12px] font-semibold ${cfg.avatarText}`}>{initials(seller.brandName)}</span>
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <h3 className="text-[13.5px] font-semibold text-ink truncate leading-tight">{seller.brandName}</h3>
-        <p className="text-[12px] text-ink-soft truncate mt-0.5">
-          {seller.businessEmail}
-          {seller.userId?.username ? ` · ${seller.userId.username}` : ''}
-        </p>
-      </div>
-
-      <div className="flex flex-col items-end gap-1 shrink-0 w-[104px]">
-        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${cfg.badgeBg} ${cfg.badgeText}`}>
-          <StatusDot status={seller.applicationStatus} />
-          {cfg.label}
-        </span>
-        <span className="text-[10.5px] text-ink-soft/70 tabular-nums">{timeAgo(seller.createdAt)}</span>
-      </div>
-
-      <ChevronRight size={16} className="text-ink-soft/30 group-hover:text-gold group-hover:translate-x-0.5 shrink-0 transition-all" />
-    </button>
-  )
-}
-
-const SectionHeader = ({ label, count, dotClass }) => (
-  <div className="flex items-center gap-2 mb-2.5 mt-6 first:mt-0">
-    <span className={`w-[6px] h-[6px] rounded-full ${dotClass}`} />
-    <h2 className="text-[10.5px] font-bold uppercase tracking-[0.09em] text-ink-soft">{label}</h2>
-    <span className="text-[10.5px] text-ink-soft/50 font-medium">{count}</span>
-    <div className="flex-1 h-px bg-border" />
-  </div>
-)
+    .join('') || 'M'
 
 const AdminSellers = () => {
   const navigate = useNavigate()
-  const { handleGetAllSellers } = useAdmin()
-  const { sellers, loading, error } = useSelector((state) => state.admin)
+  const { handleGetPendingSellers } = useAdmin()
+  const sellers = useSelector((state) => state.admin.pendingSellers || [])
+  const loading = useSelector((state) => state.admin.loading?.sellers)
+
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
 
   useEffect(() => {
-    handleGetAllSellers()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    handleGetPendingSellers()
   }, [])
 
-  const grouped = useMemo(() => {
-    const pending = sellers.filter((s) => s.applicationStatus === 'pending_verification')
-    const approved = sellers.filter((s) => s.applicationStatus === 'approved')
-    const rejected = sellers.filter((s) => s.applicationStatus === 'rejected')
-    return { pending, approved, rejected }
-  }, [sellers])
+  const filteredSellers = sellers.filter((s) => {
+    const statusMatch =
+      filterStatus === 'all' ? true : s.applicationStatus === filterStatus
+
+    if (!statusMatch) return false
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase()
+    return (
+      s.brandName?.toLowerCase().includes(q) ||
+      s.businessEmail?.toLowerCase().includes(q) ||
+      s.businessPhone?.toLowerCase().includes(q)
+    )
+  })
+
+  const pendingCount = sellers.filter((s) => s.applicationStatus === 'pending_verification').length
+  const approvedCount = sellers.filter((s) => s.applicationStatus === 'approved').length
 
   return (
-    <div className="max-w-[760px]">
-      <div className="mb-6">
-        <h1 className="font-display text-[22px] font-medium text-ink">Sellers</h1>
-        <p className="text-[12.5px] text-ink-soft mt-1">
-          Review new applications, verify KYC, and manage the seller directory.
-        </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+        <div>
+          <h1 className="font-display text-[26px] font-bold text-white">Merchant Registry</h1>
+          <p className="text-[13px] text-white/60 mt-0.5">
+            Review merchant KYC documents, approve brand applications, or revoke access.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] bg-[#A56A16]/20 text-[#D4B982] px-3 py-1.5 rounded-full border border-[#A56A16]/40">
+            {pendingCount} Pending Reviews
+          </span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] bg-[#287A4B]/20 text-[#287A4B] px-3 py-1.5 rounded-full border border-[#287A4B]/40">
+            {approvedCount} Verified Sellers
+          </span>
+        </div>
       </div>
 
-      {loading.fetch && sellers.length === 0 && (
-        <div className="flex items-center justify-center py-24">
-          <p className="text-[13px] text-ink-soft">Loading sellers...</p>
+      {/* Controls Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Search Input */}
+        <div className="relative flex-1 max-w-md">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search merchant name, email, or phone..."
+            className="w-full bg-[#131313] border border-white/15 rounded-[6px] pl-10 pr-4 py-2.5 text-[13px] text-white placeholder:text-white/30 outline-none focus:border-[#B08D57]"
+          />
         </div>
-      )}
 
-      {error && !loading.fetch && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 mb-5">
-          <p className="text-[12.5px] text-rose-600">{error}</p>
+        {/* Status Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {[
+            { key: 'all', label: 'All' },
+            { key: 'pending_verification', label: 'Pending KYC' },
+            { key: 'approved', label: 'Approved' },
+            { key: 'rejected', label: 'Rejected' },
+          ].map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilterStatus(f.key)}
+              className={`px-3.5 py-1.5 rounded-[6px] text-[12px] font-bold transition-all whitespace-nowrap ${
+                filterStatus === f.key
+                  ? 'bg-[#B08D57] text-[#0e0e0e]'
+                  : 'bg-[#131313] text-white/60 border border-white/10 hover:text-white'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
-      )}
-
-      {!loading.fetch && sellers.length === 0 && !error && (
-        <div className="flex flex-col items-center justify-center text-center py-24">
-          <Search size={20} className="text-ink-soft/40 mb-3" strokeWidth={1.5} />
-          <h3 className="text-[13.5px] font-medium text-ink mb-1">No sellers yet</h3>
-          <p className="text-[12.5px] text-ink-soft">Applications will show up here once sellers apply.</p>
-        </div>
-      )}
-
-      <div className='flex flex-col gap-6'>
-      {grouped.pending.length > 0 && (
-        <div>
-          <SectionHeader label="Pending Verification" count={grouped.pending.length} dotClass="bg-amber-500" />
-          <div className="space-y-1.5">
-            {grouped.pending.map((seller) => (
-              <SellerRow key={seller._id} seller={seller} onClick={() => navigate(`/admin/sellers/${seller._id}`)} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {grouped.approved.length > 0 && (
-        <div>
-          <SectionHeader label="Verified" count={grouped.approved.length} dotClass="bg-emerald-500" />
-          <div className="space-y-1.5">
-            {grouped.approved.map((seller) => (
-              <SellerRow key={seller._id} seller={seller} onClick={() => navigate(`/admin/sellers/${seller._id}`)} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {grouped.rejected.length > 0 && (
-        <div>
-          <SectionHeader label="Rejected" count={grouped.rejected.length} dotClass="bg-rose-500" />
-          <div className="space-y-1.5">
-            {grouped.rejected.map((seller) => (
-              <SellerRow key={seller._id} seller={seller} onClick={() => navigate(`/admin/sellers/${seller._id}`)} />
-            ))}
-          </div>
-        </div>
-      )}
-
       </div>
+
+      {/* Sellers List */}
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 bg-[#131313] border border-white/10 rounded-[8px] animate-pulse" />
+          ))}
+        </div>
+      ) : filteredSellers.length === 0 ? (
+        <div className="p-12 text-center bg-[#131313] border border-white/10 rounded-[10px]">
+          <ShieldAlert size={32} className="text-[#B08D57] mx-auto mb-2" />
+          <p className="font-display text-[18px] font-bold text-white">No Merchant Applications Found</p>
+          <p className="text-[12.5px] text-white/50 mt-1">Try adjusting search query or status filter.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredSellers.map((seller) => {
+            const cfg = STATUS_CONFIG[seller.applicationStatus] || STATUS_CONFIG.basic
+
+            return (
+              <div
+                key={seller._id}
+                onClick={() => navigate(`/admin/sellers/${seller._id}`)}
+                className="bg-[#131313] border border-white/10 rounded-[10px] p-4 md:p-5 flex items-center justify-between gap-4 hover:border-[#B08D57] cursor-pointer transition-all duration-200 group"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-11 h-11 rounded-full bg-[#B08D57] text-[#0e0e0e] font-bold text-[14px] flex items-center justify-center shrink-0 border border-white/20">
+                    {initials(seller.brandName)}
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-display text-[16px] font-bold text-white truncate">{seller.brandName}</h3>
+                      <span className={`text-[10px] font-bold uppercase tracking-[0.06em] px-2.5 py-0.5 rounded-full border ${cfg.badgeBg}`}>
+                        {cfg.label}
+                      </span>
+                    </div>
+                    <p className="text-[12.5px] text-white/50 mt-0.5 truncate">
+                      {seller.businessEmail} · {seller.businessPhone || 'No phone'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-[#B08D57] group-hover:underline">
+                    Review Application &rarr;
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

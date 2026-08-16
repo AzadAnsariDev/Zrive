@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { NavLink, useNavigate, useLocation } from 'react-router'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { NavLink, useNavigate, useLocation, Link } from 'react-router'
 import { useSelector } from 'react-redux'
 import {
   Search,
@@ -15,6 +15,11 @@ import {
   X,
   ChevronRight,
   ArrowLeft,
+  Sun,
+  Moon,
+  LogIn,
+  Sparkles,
+  TrendingUp,
 } from 'lucide-react'
 import SellerNavIcon from '../../seller/components/SellerNavIcon'
 import SearchResultsPanel from '../components/SearchResultsPanel'
@@ -22,8 +27,7 @@ import { useProduct } from '../../product/hook/useProduct'
 import { useDebounce } from '../components/useDebounce'
 import { CATEGORY_MENU } from '../../../constant/Categories'
 
-// Placeholder notifications — replace with a real useNotifications() hook
-// once the backend endpoint exists.
+// Mock notifications — replace with real hook once backend endpoint exists
 const MOCK_NOTIFICATIONS = [
   { id: 1, text: 'Your order #10234 has been shipped', time: '2h ago', unread: true },
   { id: 2, text: 'Price drop on an item in your wishlist', time: '1d ago', unread: true },
@@ -31,9 +35,10 @@ const MOCK_NOTIFICATIONS = [
 ]
 
 const DESKTOP_LINKS = [
-  { label: 'New Arrivals', to: '/new-arrivals' },
+  { label: 'New Arrivals', to: '/new-arrivals', icon: Sparkles },
+  { label: 'Trending', to: '/all-products', icon: TrendingUp },
+  { label: 'Collections', to: '/collections' },
   { label: 'Orders', to: '/orders' },
-  { label: 'Collections', to: 'collections' },
 ]
 
 const MOBILE_NAV = [
@@ -44,6 +49,14 @@ const MOBILE_NAV = [
   { key: 'profile', icon: User, label: 'Profile', to: '/profile' },
 ]
 
+// ── Dark Mode Helper ──────────────────────────────────────────────
+const getInitialDark = () => {
+  if (typeof window === 'undefined') return false
+  const stored = localStorage.getItem('zrive-theme')
+  if (stored) return stored === 'dark'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
 const Navbar = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -51,38 +64,49 @@ const Navbar = () => {
   const [catOpen, setCatOpen] = useState(false)
   const [mobileCatOpen, setMobileCatOpen] = useState(false)
   const [mobileActiveGroup, setMobileActiveGroup] = useState(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [isDark, setIsDark] = useState(getInitialDark)
   const notifRef = useRef(null)
+  const profileRef = useRef(null)
   const closeTimer = useRef(null)
 
-  /* =========================================================
-     SEARCH — shared state, two renderings (desktop dropdown +
-     mobile full-screen), one debounce + one backend call.
-  ========================================================= */
+  // Dark mode effect
+  useEffect(() => {
+    const root = document.documentElement
+    if (isDark) {
+      root.classList.add('dark')
+      localStorage.setItem('zrive-theme', 'dark')
+    } else {
+      root.classList.remove('dark')
+      localStorage.setItem('zrive-theme', 'light')
+    }
+  }, [isDark])
 
+  const toggleTheme = () => setIsDark(d => !d)
+
+  // ── Search ────────────────────────────────────────────────────────
   const [query, setQuery] = useState('')
-  const [searchOpen, setSearchOpen] = useState(false)       // desktop dropdown visibility
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false) // mobile full-screen overlay
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const desktopSearchRef = useRef(null)
 
   const { handleSearchProducts, handleClearSearchResults } = useProduct()
   const searchResults = useSelector((state) => state.product.searchResults)
   const searchLoading = useSelector((state) => state.product.loading.search)
-
   const debouncedQuery = useDebounce(query, 400)
+
+  // Auth state from Redux
+  const user = useSelector((state) => state.auth?.user)
+  const cartItems = useSelector((state) => state.cart?.items ?? [])
+  const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0)
 
   useEffect(() => {
     const trimmed = debouncedQuery.trim()
-
-    if (!trimmed) {
-      handleClearSearchResults()
-      return
-    }
-
+    if (!trimmed) { handleClearSearchResults(); return }
     handleSearchProducts(trimmed)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery])
 
-  // Close the desktop search dropdown on outside click.
   useEffect(() => {
     const handleClickOutsideSearch = (e) => {
       if (desktopSearchRef.current && !desktopSearchRef.current.contains(e.target)) {
@@ -93,120 +117,124 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutsideSearch)
   }, [])
 
-  // Lock body scroll while the mobile search overlay is open.
   useEffect(() => {
     if (mobileSearchOpen) document.body.style.overflow = 'hidden'
     else if (!mobileCatOpen) document.body.style.overflow = ''
-    return () => {
-      if (!mobileCatOpen) document.body.style.overflow = ''
-    }
+    return () => { if (!mobileCatOpen) document.body.style.overflow = '' }
   }, [mobileSearchOpen, mobileCatOpen])
 
-  const closeMobileSearch = () => {
-    setMobileSearchOpen(false)
-    setQuery('')
-  }
-
-  const handleSelectResult = (path) => {
-    setSearchOpen(false)
-    setMobileSearchOpen(false)
-    setQuery('')
-    navigate(path)
-  }
-
-  /* ========================================================= */
-
-  // Close the categories dropdown + both search UIs whenever the route
-  // changes. Navbar lives in the layout so it never unmounts between page
-  // navigations — without this, these stay open on the new page.
   useEffect(() => {
-    setCatOpen(false)
-    setSearchOpen(false)
-    setMobileSearchOpen(false)
+    setCatOpen(false); setSearchOpen(false); setMobileSearchOpen(false)
+    setProfileOpen(false)
   }, [location.pathname])
 
-  // Close the notifications dropdown on outside click.
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setNotifOpen(false)
-      }
+    const handler = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false)
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false)
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // Lock body scroll while the mobile category sheet is open.
   useEffect(() => {
     document.body.style.overflow = mobileCatOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [mobileCatOpen])
 
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => n.unread).length
+  const closeMobileSearch = () => { setMobileSearchOpen(false); setQuery('') }
+  const handleSelectResult = (path) => {
+    setSearchOpen(false); setMobileSearchOpen(false); setQuery('')
+    navigate(path)
+  }
 
+  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => n.unread).length
   const goToCategory = (slug) => {
-    setCatOpen(false)
-    setMobileCatOpen(false)
+    setCatOpen(false); setMobileCatOpen(false)
     navigate(`/all-products?category=${slug}`)
   }
 
-  const openMenu = () => {
-    clearTimeout(closeTimer.current)
-    setCatOpen(true)
-  }
-  const scheduleClose = () => {
-    closeTimer.current = setTimeout(() => setCatOpen(false), 120)
-  }
-  const closeImmediately = () => {
-    clearTimeout(closeTimer.current)
-    setCatOpen(false)
-  }
+  const openMenu = () => { clearTimeout(closeTimer.current); setCatOpen(true) }
+  const scheduleClose = () => { closeTimer.current = setTimeout(() => setCatOpen(false), 120) }
+  const closeImmediately = () => { clearTimeout(closeTimer.current); setCatOpen(false) }
+
+  // User initials for avatar
+  const userInitials = user?.fullName
+    ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'
+
+  // CSS classes based on theme
+  const navBg = isDark
+    ? 'bg-[#0e0e0e]/95 border-[#2a2a2a]'
+    : 'bg-white/95 border-[#E5E5E5]'
+  const textPrimary = isDark ? 'text-[#e5e2e1]' : 'text-[#111111]'
+  const textSoft = isDark ? 'text-[#9a8f81]' : 'text-[#666666]'
+  const surfaceBg = isDark ? 'bg-[#131313]' : 'bg-white'
+  const cardBg = isDark ? 'bg-[#1c1b1b] border-[#2a2a2a]' : 'bg-white border-[#E5E5E5]'
+  const inputBg = isDark ? 'bg-[#1c1b1b] text-[#e5e2e1] placeholder:text-[#9a8f81]' : 'bg-transparent text-[#111111] placeholder:text-[#999]'
+  const hoverBg = isDark ? 'hover:bg-[#201f1f]' : 'hover:bg-[#F7F7F5]'
 
   return (
     <>
-      {/* ================= MOBILE HEADER (< md) ================= */}
-      <header className="md:hidden sticky top-0 z-20 flex items-center justify-between px-5 py-3 bg-cream/95 backdrop-blur border-b border-border">
-        <NavLink to="/" className="font-display text-[19px] font-medium tracking-[0.06em] text-ink">
+      {/* ─── ANNOUNCEMENT BAR ────────────────────────────────── */}
+      <div className={`hidden md:flex items-center justify-center gap-6 px-4 py-2 text-[11px] font-medium tracking-[0.08em] uppercase ${isDark ? 'bg-[#B08D57]/10 text-[#D4B982] border-b border-[#B08D57]/20' : 'bg-[#111111] text-[#D4B982]'}`}>
+        <span>⚡ FLAT 20% OFF YOUR FIRST ORDER — USE: ZRIVE20</span>
+        <span className={isDark ? 'text-[#4e453a]' : 'text-[#555]'}>|</span>
+        <span>FREE SHIPPING ABOVE ₹999</span>
+        <span className={isDark ? 'text-[#4e453a]' : 'text-[#555]'}>|</span>
+        <span>7-DAY EASY RETURNS</span>
+      </div>
+
+      {/* ─── MOBILE HEADER ─────────────────────────────────────── */}
+      <header className={`md:hidden sticky top-0 z-30 flex items-center justify-between px-5 py-3.5 backdrop-blur-xl border-b ${navBg}`}>
+        <button
+          type="button"
+          aria-label="Search"
+          onClick={() => setMobileSearchOpen(true)}
+          className={`${textSoft} hover:text-[#B08D57] transition-colors`}
+        >
+          <Search size={18} strokeWidth={1.5} />
+        </button>
+
+        <NavLink to="/" className={`font-display text-[20px] font-semibold tracking-[0.12em] ${textPrimary}`}>
           ZRIVE
         </NavLink>
-        <div className="flex items-center gap-5">
-          <button
-            type="button"
-            aria-label="Search"
-            onClick={() => setMobileSearchOpen(true)}
-            className="text-ink hover:text-gold transition-colors"
-          >
-            <Search size={18} strokeWidth={1.5} />
-          </button>
+
+        <div className="flex items-center gap-4">
           <SellerNavIcon />
-          <NavLink to="/cart" aria-label="Cart" className="relative text-ink hover:text-gold transition-colors">
+          <NavLink to="/cart" aria-label="Cart" className={`relative ${textSoft} hover:text-[#B08D57] transition-colors`}>
             <ShoppingBag size={18} strokeWidth={1.5} />
-            <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-gold" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#B08D57] text-[#0e0e0e] text-[9px] font-bold flex items-center justify-center">
+                {cartCount > 9 ? '9+' : cartCount}
+              </span>
+            )}
           </NavLink>
         </div>
       </header>
 
-      {/* ================= DESKTOP / TABLET TOP NAVBAR (>= md) ================= */}
+      {/* ─── DESKTOP NAVBAR ────────────────────────────────────── */}
       <header
-        className="hidden md:block sticky top-0 z-30 w-full bg-cream/95 backdrop-blur border-b border-border relative"
+        className={`hidden md:block sticky top-0 z-30 w-full backdrop-blur-xl border-b ${navBg}`}
         onMouseLeave={scheduleClose}
       >
-        <div className="w-full max-w-[1440px] mx-auto flex items-center gap-10 lg:gap-14 px-8 lg:px-14 py-4">
+        <div className="w-full max-w-[1440px] mx-auto flex items-center gap-8 lg:gap-12 px-8 lg:px-12 py-4">
+
           {/* Logo */}
-          <NavLink to="/" className="font-display text-[22px] font-medium tracking-[0.08em] text-ink flex-shrink-0">
+          <NavLink to="/" className={`font-display text-[22px] font-semibold tracking-[0.12em] flex-shrink-0 ${textPrimary} hover:text-[#B08D57] transition-colors`}>
             ZRIVE
           </NavLink>
 
-          {/* Primary nav links */}
-          <nav className="flex items-center gap-7 flex-shrink-0">
+          {/* Primary Nav */}
+          <nav className="flex items-center gap-6 flex-shrink-0">
             <NavLink
               to="/"
               end
               onMouseEnter={closeImmediately}
               className={({ isActive }) =>
-                `relative text-[13px] font-medium tracking-[0.04em] transition-colors pb-0.5 ${isActive
-                  ? 'text-ink after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gold'
-                  : 'text-ink-soft hover:text-ink'
+                `relative text-[12.5px] font-medium tracking-[0.04em] transition-colors pb-0.5 ${isActive
+                  ? `${textPrimary} after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-[#B08D57] after:rounded-full`
+                  : `${textSoft} hover:text-[#B08D57]`
                 }`
               }
             >
@@ -216,15 +244,10 @@ const Navbar = () => {
             <button
               type="button"
               onMouseEnter={openMenu}
-              className={`relative flex items-center gap-1 text-[13px] font-medium tracking-[0.04em] transition-colors pb-0.5 outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-gold/50 ${catOpen ? 'text-ink' : 'text-ink-soft hover:text-ink'
-                }`}
+              className={`relative flex items-center gap-1 text-[12.5px] font-medium tracking-[0.04em] transition-colors pb-0.5 outline-none ${catOpen ? 'text-[#B08D57]' : `${textSoft} hover:text-[#B08D57]`}`}
             >
               Categories
-              <ChevronDown
-                size={13}
-                strokeWidth={1.5}
-                className={`transition-transform duration-200 ${catOpen ? 'rotate-180' : ''}`}
-              />
+              <ChevronDown size={12} strokeWidth={2} className={`transition-transform duration-200 ${catOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {DESKTOP_LINKS.map(({ label, to }) => (
@@ -234,9 +257,9 @@ const Navbar = () => {
                 end={to === '/'}
                 onMouseEnter={closeImmediately}
                 className={({ isActive }) =>
-                  `relative text-[13px] font-medium tracking-[0.04em] transition-colors pb-0.5 ${isActive
-                    ? 'text-ink after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gold'
-                    : 'text-ink-soft hover:text-ink'
+                  `relative text-[12.5px] font-medium tracking-[0.04em] transition-colors pb-0.5 ${isActive
+                    ? `${textPrimary} after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-[#B08D57] after:rounded-full`
+                    : `${textSoft} hover:text-[#B08D57]`
                   }`
                 }
               >
@@ -245,24 +268,24 @@ const Navbar = () => {
             ))}
           </nav>
 
-          {/* Search — editorial bottom-border-only style + live dropdown */}
+          {/* Search */}
           <div className="flex-1 flex justify-center">
-            <div className="relative w-full max-w-md" ref={desktopSearchRef}>
-              <Search size={14} strokeWidth={1.5} className="absolute left-0 top-1/2 -translate-y-1/2 text-ink-soft" />
+            <div className="relative w-full max-w-lg" ref={desktopSearchRef}>
+              <Search size={14} strokeWidth={1.5} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B08D57]" />
               <input
                 type="text"
                 value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value)
-                  setSearchOpen(true)
-                }}
+                onChange={(e) => { setQuery(e.target.value); setSearchOpen(true) }}
                 onFocus={() => query.trim() && setSearchOpen(true)}
-                placeholder="Search collections…"
-                className="w-full bg-transparent border-0 border-b border-border focus:border-ink pl-6 pr-4 py-2 text-[13px] text-ink placeholder:text-ink-soft outline-none transition-colors"
+                placeholder="Search for brands, clothes, accessories…"
+                className={`w-full rounded-[6px] border pl-10 pr-4 py-2.5 text-[12.5px] outline-none transition-all ${
+                  isDark
+                    ? 'bg-[#1c1b1b] border-[#2a2a2a] text-[#e5e2e1] placeholder:text-[#9a8f81] focus:border-[#B08D57]'
+                    : 'bg-[#F5F5F5] border-[#E5E5E5] text-[#111] placeholder:text-[#999] focus:border-[#B08D57] focus:bg-white'
+                }`}
               />
-
               {searchOpen && query.trim() && (
-                <div className="absolute left-0 right-0 top-full mt-3 bg-surface border border-border shadow-lg rounded-[3px] max-h-[70vh] overflow-y-auto z-40">
+                <div className={`absolute left-0 right-0 top-full mt-2 border shadow-2xl rounded-[6px] max-h-[70vh] overflow-y-auto z-50 ${cardBg}`}>
                   <SearchResultsPanel
                     query={query}
                     results={searchResults}
@@ -274,47 +297,55 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Icon cluster */}
-          <div className="flex items-center gap-5 flex-shrink-0">
+          {/* Icon Cluster */}
+          <div className="flex items-center gap-4 flex-shrink-0">
+            {/* Theme Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                isDark ? 'bg-[#1c1b1b] hover:bg-[#2a2a2a] text-[#D4B982]' : 'bg-[#F5F5F5] hover:bg-[#E5E5E5] text-[#666]'
+              }`}
+            >
+              {isDark ? <Sun size={15} strokeWidth={1.75} /> : <Moon size={15} strokeWidth={1.75} />}
+            </button>
+
             <SellerNavIcon />
 
-            <NavLink to="/wishlist" aria-label="Wishlist" className="text-ink hover:text-gold transition-colors">
+            <NavLink to="/wishlist" aria-label="Wishlist" className={`${textSoft} hover:text-[#B08D57] transition-colors`}>
               <Heart size={18} strokeWidth={1.5} />
             </NavLink>
 
+            {/* Notifications */}
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
                 aria-label="Notifications"
-                onClick={() => setNotifOpen((open) => !open)}
-                className="relative text-ink hover:text-gold transition-colors"
+                onClick={() => setNotifOpen((o) => !o)}
+                className={`relative ${textSoft} hover:text-[#B08D57] transition-colors`}
               >
                 <Bell size={18} strokeWidth={1.5} />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-gold" />
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#B08D57] text-[#0e0e0e] text-[9px] font-bold flex items-center justify-center">
+                    {unreadCount}
+                  </span>
                 )}
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 top-full mt-3 w-80 border border-border bg-surface shadow-lg overflow-hidden rounded-[3px]">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                    <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-ink">Notifications</span>
-                    {unreadCount > 0 && (
-                      <span className="text-[11px] text-ink-soft">{unreadCount} unread</span>
-                    )}
+                <div className={`absolute right-0 top-full mt-3 w-80 border shadow-2xl overflow-hidden rounded-[8px] animate-fade-in-down z-50 ${cardBg}`}>
+                  <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'}`}>
+                    <span className={`text-[11px] font-semibold tracking-[0.1em] uppercase ${textPrimary}`}>Notifications</span>
+                    {unreadCount > 0 && <span className="text-[11px] text-[#B08D57]">{unreadCount} unread</span>}
                   </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-border">
+                  <div className="max-h-72 overflow-y-auto divide-y divide-[#E5E5E5] dark:divide-[#2a2a2a]">
                     {MOCK_NOTIFICATIONS.map((n) => (
-                      <button
-                        key={n.id}
-                        type="button"
-                        onClick={() => { }}
-                        className="w-full flex items-start gap-2.5 text-left px-4 py-3 hover:bg-cream-dark transition-colors"
-                      >
-                        {n.unread && <span className="w-1.5 h-1.5 rounded-full bg-gold mt-1.5 flex-shrink-0" />}
+                      <button key={n.id} type="button" className={`w-full flex items-start gap-3 text-left px-4 py-3 transition-colors ${hoverBg}`}>
+                        {n.unread && <span className="w-1.5 h-1.5 rounded-full bg-[#B08D57] mt-1.5 flex-shrink-0" />}
                         <div className={n.unread ? '' : 'pl-4'}>
-                          <p className="text-[12.5px] text-ink leading-snug">{n.text}</p>
-                          <p className="text-[11px] text-ink-soft mt-0.5">{n.time}</p>
+                          <p className={`text-[12.5px] leading-snug ${textPrimary}`}>{n.text}</p>
+                          <p className={`text-[11px] mt-0.5 ${textSoft}`}>{n.time}</p>
                         </div>
                       </button>
                     ))}
@@ -323,40 +354,77 @@ const Navbar = () => {
               )}
             </div>
 
-            <NavLink to="/cart" aria-label="Cart" className="relative text-ink hover:text-gold transition-colors">
+            {/* Cart */}
+            <NavLink to="/cart" aria-label="Cart" className={`relative ${textSoft} hover:text-[#B08D57] transition-colors`}>
               <ShoppingBag size={18} strokeWidth={1.5} />
-              <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-gold" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#B08D57] text-[#0e0e0e] text-[9px] font-bold flex items-center justify-center">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
             </NavLink>
 
-            <NavLink to="/profile" aria-label="Profile" className="text-ink hover:text-gold transition-colors">
-              <User size={18} strokeWidth={1.5} />
-            </NavLink>
+            {/* Login / Profile */}
+            {user ? (
+              <div className="relative" ref={profileRef}>
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen(o => !o)}
+                  className="w-8 h-8 rounded-full bg-[#B08D57] text-[#0e0e0e] text-[11px] font-bold flex items-center justify-center hover:ring-2 hover:ring-[#B08D57]/40 transition-all"
+                >
+                  {userInitials}
+                </button>
+                {profileOpen && (
+                  <div className={`absolute right-0 top-full mt-3 w-52 border shadow-2xl overflow-hidden rounded-[8px] animate-fade-in-down z-50 ${cardBg}`}>
+                    <div className={`px-4 py-3 border-b ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'}`}>
+                      <p className={`text-[13px] font-semibold ${textPrimary}`}>{user.fullName || user.name}</p>
+                      <p className={`text-[11px] ${textSoft}`}>{user.email}</p>
+                    </div>
+                    {[
+                      { label: 'My Profile', to: '/profile' },
+                      { label: 'My Orders', to: '/orders' },
+                      { label: 'Wishlist', to: '/wishlist' },
+                      { label: 'Become a Seller', to: '/become-seller' },
+                    ].map(({ label, to }) => (
+                      <Link key={label} to={to} className={`flex items-center px-4 py-2.5 text-[12.5px] transition-colors ${textSoft} ${hoverBg} hover:text-[#B08D57]`}>
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-[6px] border border-[#B08D57] text-[#B08D57] text-[12px] font-semibold tracking-[0.06em] uppercase hover:bg-[#B08D57] hover:text-[#0e0e0e] transition-all duration-200"
+              >
+                <LogIn size={13} strokeWidth={2} />
+                Login
+              </Link>
+            )}
           </div>
         </div>
 
-        {/* ---- Mega Menu Panel (Myntra-style, full-width, hover) ---- */}
+        {/* ── Mega Menu ─────────────────────────────────── */}
         {catOpen && (
-          <div
-            onMouseEnter={openMenu}
-            className="absolute left-0 right-0 top-full w-full bg-surface border-t border-border shadow-lg z-40"
-          >
-            <div className="max-w-[1440px] mx-auto px-8 lg:px-14 py-8 grid grid-cols-5 gap-8">
+          <div onMouseEnter={openMenu} className={`absolute left-0 right-0 top-full w-full border-t shadow-2xl z-40 animate-fade-in-down ${surfaceBg} ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'}`}>
+            <div className="max-w-[1440px] mx-auto px-8 lg:px-12 py-8 grid grid-cols-5 gap-8">
               {CATEGORY_MENU.map((group) => (
                 <div key={group.title}>
                   <button
                     type="button"
                     onClick={() => goToCategory(group.groupSlug)}
-                    className="text-[12px] font-semibold tracking-[0.08em] uppercase text-gold hover:text-ink transition-colors mb-3 block"
+                    className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#B08D57] hover:text-[#8C6B3E] transition-colors mb-3 block"
                   >
                     {group.title}
                   </button>
-                  <ul className="space-y-2.5">
+                  <ul className="space-y-2">
                     {group.items.map((item) => (
                       <li key={item.slug}>
                         <button
                           type="button"
                           onClick={() => goToCategory(item.slug)}
-                          className="text-[13px] text-ink-soft hover:text-ink transition-colors text-left"
+                          className={`text-[12.5px] transition-colors text-left hover:text-[#B08D57] ${textSoft}`}
                         >
                           {item.label}
                         </button>
@@ -370,9 +438,9 @@ const Navbar = () => {
         )}
       </header>
 
-      {/* ================= MOBILE BOTTOM NAV (< md only) ================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-cream/95 backdrop-blur border-t border-border">
-        <div className="flex items-center px-2 py-1">
+      {/* ─── MOBILE BOTTOM NAV ──────────────────────────────────── */}
+      <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-30 backdrop-blur-xl border-t ${navBg}`}>
+        <div className="flex items-center px-2 py-2">
           {MOBILE_NAV.map(({ key, icon: Icon, label, to }) => {
             if (!to) {
               return (
@@ -380,13 +448,10 @@ const Navbar = () => {
                   key={key}
                   type="button"
                   onClick={() => setMobileCatOpen(true)}
-                  className={`flex-1 flex flex-col items-center gap-0.5 py-0.5 transition-colors ${mobileCatOpen ? 'text-ink' : 'text-ink-soft'
-                    }`}
+                  className={`flex-1 flex flex-col items-center gap-0.5 py-1 transition-colors ${mobileCatOpen ? 'text-[#B08D57]' : textSoft}`}
                 >
-                  <Icon size={16} strokeWidth={mobileCatOpen ? 2 : 1.5} />
-                  <span className={`text-[9px] leading-none ${mobileCatOpen ? 'font-semibold' : 'font-medium'}`}>
-                    {label}
-                  </span>
+                  <Icon size={17} strokeWidth={mobileCatOpen ? 2 : 1.5} />
+                  <span className="text-[9px] leading-none font-medium">{label}</span>
                 </button>
               )
             }
@@ -396,16 +461,13 @@ const Navbar = () => {
                 to={to}
                 end={to === '/'}
                 className={({ isActive }) =>
-                  `flex-1 flex flex-col items-center gap-0.5 py-0.5 transition-colors ${isActive ? 'text-ink' : 'text-ink-soft'
-                  }`
+                  `flex-1 flex flex-col items-center gap-0.5 py-1 transition-colors ${isActive ? 'text-[#B08D57]' : textSoft}`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={16} strokeWidth={isActive ? 2 : 1.5} />
-                    <span className={`text-[9px] leading-none ${isActive ? 'font-semibold' : 'font-medium'}`}>
-                      {label}
-                    </span>
+                    <Icon size={17} strokeWidth={isActive ? 2 : 1.5} />
+                    <span className="text-[9px] leading-none font-medium">{label}</span>
                   </>
                 )}
               </NavLink>
@@ -414,38 +476,29 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* ================= MOBILE CATEGORY BOTTOM SHEET (accordion) ================= */}
+      {/* ─── MOBILE CATEGORY SHEET ──────────────────────────────── */}
       {mobileCatOpen && (
         <div className="md:hidden fixed inset-0 z-40">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setMobileCatOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-surface rounded-t-[12px] max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
-              <span className="font-display text-[16px] text-ink">Shop By Category</span>
-              <button
-                type="button"
-                aria-label="Close"
-                onClick={() => setMobileCatOpen(false)}
-                className="text-ink-soft hover:text-ink transition-colors"
-              >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileCatOpen(false)} />
+          <div className={`absolute bottom-0 left-0 right-0 rounded-t-[20px] max-h-[85vh] flex flex-col animate-fade-in-up ${surfaceBg}`}>
+            <div className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'} flex-shrink-0`}>
+              <span className={`font-display text-[17px] ${textPrimary}`}>Shop By Category</span>
+              <button type="button" onClick={() => setMobileCatOpen(false)} className={`${textSoft} hover:text-[#B08D57] transition-colors`}>
                 <X size={18} strokeWidth={1.5} />
               </button>
             </div>
-            <div className="overflow-y-auto px-5 py-3">
+            <div className="overflow-y-auto px-5 py-3 pb-6">
               {CATEGORY_MENU.map((group) => {
                 const isOpen = mobileActiveGroup === group.title
                 return (
-                  <div key={group.title} className="border-b border-border">
+                  <div key={group.title} className={`border-b ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'}`}>
                     <button
                       type="button"
                       onClick={() => setMobileActiveGroup(isOpen ? null : group.title)}
                       className="w-full flex items-center justify-between py-4"
                     >
-                      <span className="text-[13px] font-semibold text-ink">{group.title}</span>
-                      <ChevronRight
-                        size={15}
-                        strokeWidth={1.5}
-                        className={`text-ink-soft transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
-                      />
+                      <span className={`text-[13px] font-semibold ${textPrimary}`}>{group.title}</span>
+                      <ChevronRight size={14} strokeWidth={2} className={`${textSoft} transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
                     </button>
                     {isOpen && (
                       <div className="pb-4 grid grid-cols-2 gap-x-4 gap-y-3">
@@ -454,7 +507,7 @@ const Navbar = () => {
                             key={item.slug}
                             type="button"
                             onClick={() => goToCategory(item.slug)}
-                            className="text-[12.5px] text-ink-soft text-left"
+                            className={`text-[12.5px] text-left hover:text-[#B08D57] transition-colors ${textSoft}`}
                           >
                             {item.label}
                           </button>
@@ -469,34 +522,33 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* ================= MOBILE SEARCH — full-screen overlay ================= */}
+      {/* ─── MOBILE SEARCH OVERLAY ──────────────────────────────── */}
       {mobileSearchOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-cream flex flex-col">
-          <div className="flex items-center gap-3 px-5 py-3 border-b border-border flex-shrink-0">
-            <button
-              type="button"
-              onClick={closeMobileSearch}
-              aria-label="Close search"
-              className="text-ink-soft hover:text-ink transition-colors flex-shrink-0"
-            >
+        <div className={`md:hidden fixed inset-0 z-50 flex flex-col ${surfaceBg}`}>
+          <div className={`flex items-center gap-3 px-5 py-3 border-b flex-shrink-0 ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'}`}>
+            <button type="button" onClick={closeMobileSearch} className={`${textSoft} hover:text-[#B08D57] transition-colors flex-shrink-0`}>
               <ArrowLeft size={19} strokeWidth={1.5} />
             </button>
-
-            <input
-              autoFocus
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search collections…"
-              className="flex-1 bg-cream-dark rounded-[3px] px-4 py-2.5 text-[14px] text-ink placeholder:text-ink-soft outline-none"
-            />
+            <div className="flex-1 relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B08D57]" />
+              <input
+                autoFocus
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search brands, styles, collections…"
+                className={`w-full rounded-[6px] pl-9 pr-4 py-2.5 text-[14px] outline-none border ${
+                  isDark ? 'bg-[#1c1b1b] border-[#2a2a2a] text-[#e5e2e1] placeholder:text-[#9a8f81]' : 'bg-[#F5F5F5] border-transparent text-[#111] placeholder:text-[#999]'
+                }`}
+              />
+            </div>
           </div>
-
           <div className="flex-1 overflow-y-auto">
             {!query.trim() ? (
               <div className="flex flex-col items-center text-center px-6 py-14">
-                <Search size={22} strokeWidth={1.4} className="text-ink-soft mb-3" />
-                <p className="text-[13px] text-ink-soft">Start typing to search products</p>
+                <Search size={28} strokeWidth={1.2} className={`${textSoft} mb-4`} />
+                <p className={`text-[14px] font-medium ${textPrimary} mb-1`}>Discover Your Style</p>
+                <p className={`text-[12.5px] ${textSoft}`}>Search for brands, clothing, or accessories</p>
               </div>
             ) : (
               <SearchResultsPanel

@@ -5,12 +5,11 @@ import { useNavigate } from 'react-router'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   X, Plus, UploadCloud, Info, Camera, Banknote,
-  Trash2, ImageIcon, Layers, ArrowLeft, Package,
+  Trash2, ImageIcon, Layers, ArrowLeft, Package, Check,
 } from 'lucide-react'
 import { setError, setLoading } from '../../auth/state/authSlice'
 import KycRequiredModal from '../../seller/components/KycRequiredModal'
 
-// ---- Config -----------------------------------------------------------
 const MAX_IMAGES = 6
 const MAX_VARIANT_IMAGES = 4
 const MAX_SIZE_MB = 5
@@ -19,28 +18,17 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
 const CURRENCIES = ['INR', 'USD', 'JPY', 'EUR', 'GBP']
 const CATEGORIES = [
   'T-Shirts', 'Shirts', 'Jeans', 'Trousers', 'Shorts',
-  'Jackets', 'Hoodies', 'Sweatshirts', 'Blazers', 'Ethnic Wear',
+  'Jackets', 'Hoodies', 'Sweatshirts', 'Blazers', 'Accessories',
 ]
-
-// ---- Shared classnames --------------------------------------------------
-const cardClasses = 'rounded-xl border border-border bg-surface p-5 md:p-6'
-const cardHeadClasses = 'flex items-center justify-between mb-5'
-const cardTitleClasses = 'text-[15px] font-semibold text-ink'
-const labelClasses = 'block text-[11px] font-semibold tracking-[0.06em] text-gold mb-1.5'
-const inputClasses =
-  'w-full rounded-lg border border-border bg-cream-dark px-3.5 py-2.5 text-[13.5px] text-ink placeholder:text-ink-soft outline-none focus:border-ink transition-colors'
-const errorClasses = 'text-[11.5px] text-error mt-1'
 
 const emptyVariantForm = { size: '', color: '', sku: '', stock: '', priceAmount: '', images: [] }
 
 const CreateProduct = () => {
-  // ---- general product images ----
   const [images, setImages] = useState([])
   const [imageError, setImageError] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef(null)
 
-  // ---- variants (batch, local state — nothing hits the server till Publish) ----
   const [variants, setVariants] = useState([])
   const [variantsError, setVariantsError] = useState('')
   const [showVariantForm, setShowVariantForm] = useState(false)
@@ -73,10 +61,8 @@ const CreateProduct = () => {
       variants.forEach((v) => v.images.forEach((img) => URL.revokeObjectURL(img.preview)))
       variantForm.images.forEach((img) => URL.revokeObjectURL(img.preview))
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ---------------- General images ----------------
   const addFiles = useCallback(
     (fileList) => {
       const incoming = Array.from(fileList)
@@ -104,46 +90,16 @@ const CreateProduct = () => {
 
   const removeImage = (id) => {
     setImages((prev) => {
-      const target = prev.find((img) => img.id === id)
+      const target = prev.find((i) => i.id === id)
       if (target) URL.revokeObjectURL(target.preview)
-      return prev.filter((img) => img.id !== id)
+      return prev.filter((i) => i.id !== id)
     })
   }
 
-  const handleFileInputChange = (e) => {
-    if (e.target.files?.length) addFiles(e.target.files)
-    e.target.value = ''
-  }
-  const handleDrop = (e) => {
-    e.preventDefault()
-    setIsDragging(false)
-    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files)
-  }
-  const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true) }
-  const handleDragLeave = (e) => { e.preventDefault(); setIsDragging(false) }
-  const openFilePicker = () => fileInputRef.current?.click()
-
-  // ---------------- Variant form (inline, local only) ----------------
-  const openVariantForm = () => {
-    setVariantForm(emptyVariantForm)
-    setVariantFieldErrors({})
-    setShowVariantForm(true)
-  }
-
-  const closeVariantForm = () => {
-    variantForm.images.forEach((img) => URL.revokeObjectURL(img.preview))
-    setVariantForm(emptyVariantForm)
-    setVariantFieldErrors({})
-    setShowVariantForm(false)
-  }
-
-  const handleVariantFieldChange = (field, value) => {
-    setVariantForm((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const addVariantImages = (fileList) => {
+  const addVariantFiles = (fileList) => {
     const incoming = Array.from(fileList)
-    const remainingSlots = MAX_VARIANT_IMAGES - variantForm.images.length
+    const currentCount = variantForm.images.length
+    const remainingSlots = MAX_VARIANT_IMAGES - currentCount
     if (remainingSlots <= 0) return
     const accepted = []
     incoming.forEach((file) => {
@@ -151,43 +107,50 @@ const CreateProduct = () => {
       if (file.size > MAX_SIZE_BYTES) return
       if (accepted.length >= remainingSlots) return
       accepted.push({
-        id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
+        id: `${file.name}-${Math.random().toString(36).slice(2, 8)}`,
         file,
         preview: URL.createObjectURL(file),
       })
     })
     if (accepted.length) {
       setVariantForm((prev) => ({ ...prev, images: [...prev.images, ...accepted] }))
-      setVariantFieldErrors((prev) => ({ ...prev, images: undefined }))
     }
   }
 
   const removeVariantFormImage = (id) => {
     setVariantForm((prev) => {
-      const target = prev.images.find((img) => img.id === id)
+      const target = prev.images.find((i) => i.id === id)
       if (target) URL.revokeObjectURL(target.preview)
-      return { ...prev, images: prev.images.filter((img) => img.id !== id) }
+      return { ...prev, images: prev.images.filter((i) => i.id !== id) }
     })
   }
 
-  const validateVariantForm = () => {
+  const handleAddVariant = () => {
     const errs = {}
     if (!variantForm.size.trim()) errs.size = 'Required'
     if (!variantForm.color.trim()) errs.color = 'Required'
     if (!variantForm.sku.trim()) errs.sku = 'Required'
-    if (variantForm.stock === '' || Number(variantForm.stock) < 0) errs.stock = 'Required'
-    if (variantForm.images.length === 0) errs.images = 'At least one image is required'
-    setVariantFieldErrors(errs)
-    return Object.keys(errs).length === 0
-  }
+    if (!variantForm.stock || Number(variantForm.stock) < 0) errs.stock = 'Invalid stock'
+    if (Object.keys(errs).length > 0) {
+      setVariantFieldErrors(errs)
+      return
+    }
 
-  const saveVariant = () => {
-    if (!validateVariantForm()) return
-    setVariants((prev) => [...prev, { id: `v-${Date.now()}`, ...variantForm }])
-    setVariantsError('')
+    const newVariant = {
+      id: Math.random().toString(36).slice(2, 8),
+      size: variantForm.size.trim().toUpperCase(),
+      color: variantForm.color.trim(),
+      sku: variantForm.sku.trim().toUpperCase(),
+      stock: Number(variantForm.stock),
+      priceOverride: variantForm.priceAmount ? Number(variantForm.priceAmount) : null,
+      images: variantForm.images,
+    }
+
+    setVariants((prev) => [...prev, newVariant])
     setVariantForm(emptyVariantForm)
     setVariantFieldErrors({})
     setShowVariantForm(false)
+    setVariantsError('')
   }
 
   const removeVariant = (id) => {
@@ -198,517 +161,343 @@ const CreateProduct = () => {
     })
   }
 
-  // ---------------- Submit ----------------
   const onSubmit = async (data) => {
-    if (user?.role !== 'seller') {
+    if (application?.applicationStatus !== 'approved') {
       setShowKycModal(true)
       return
     }
 
-    if (variants.length === 0) {
-      setVariantsError('Add at least one variant before publishing.')
+    if (images.length === 0) {
+      setImageError('Please upload at least 1 main product image.')
       return
     }
 
-    const formData = new FormData()
-    formData.append('title', data.name)
-    formData.append('description', data.description)
-    formData.append('priceAmount', data.priceAmount)
-    formData.append('priceCurrency', data.priceCurrency)
-    formData.append('category', data.category)
-
-    const shippingDefaults = {
-      weight: Number(data.weight),
+    const payload = {
+      name: data.name.trim(),
+      description: data.description.trim(),
+      category: data.category,
+      price: {
+        amount: Number(data.priceAmount),
+        currency: data.priceCurrency,
+      },
       dimensions: {
+        weight: Number(data.weight),
         length: Number(data.length),
         width: Number(data.width),
         height: Number(data.height),
       },
+      images: images.map((i) => i.file),
+      variants: variants.map((v) => ({
+        size: v.size,
+        color: v.color,
+        sku: v.sku,
+        stock: v.stock,
+        priceOverride: v.priceOverride,
+        images: v.images.map((img) => img.file),
+      })),
     }
-    formData.append('shippingDefaults', JSON.stringify(shippingDefaults))
 
-    const variantsPayload = variants.map(({ size, color, sku, stock, priceAmount }) => {
-      const v = { size, color, sku, stock }
-      if (priceAmount) {
-        v.price = { amount: Number(priceAmount), currency: data.priceCurrency || 'INR' }
-      }
-      return v
-    })
-    formData.append('variants', JSON.stringify(variantsPayload))
-
-    images.forEach((img) => formData.append('images', img.file))
-    variants.forEach((v, index) => {
-      v.images.forEach((img) => formData.append(`variantImages_${index}`, img.file))
-    })
-
-    dispatch(setLoading(true))
-    try {
-      await handleCreateProduct(formData)
-      navigate('/')
-    } catch (err) {
-      dispatch(setError(err.message))
-    } finally {
-      dispatch(setLoading(false))
-    }
+    const ok = await handleCreateProduct(payload)
+    if (ok) navigate('/seller/inventory')
   }
 
-  const dropzoneClasses = (base) =>
-    `${base} transition-colors ${isDragging ? 'border-gold bg-cream-dark' : 'border-border hover:border-gold hover:bg-cream-dark'
-    }`
-
   return (
-    <div className="bg-cream min-h-full">
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-[1240px] mx-auto">
-        {/* ---------------- Sticky Header ---------------- */}
-        <div className="sticky top-0 z-20 bg-cream/95 backdrop-blur-sm border-b border-border px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="sm:hidden text-ink-soft hover:text-ink transition-colors"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div>
-              <h1 className="font-display text-[20px] md:text-[24px] font-medium text-ink">List a Product</h1>
-              <p className="text-[12px] md:text-[13px] text-ink-soft mt-0.5 hidden sm:block">
-                Add details, media and variants.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="hidden sm:block rounded-lg border border-border bg-surface px-4 py-2.5 text-[12.5px] font-medium text-ink-soft hover:bg-cream-dark transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-charcoal px-4 py-2 sm:px-5 sm:py-2.5 text-[12px] sm:text-[12.5px] font-semibold text-cream hover:bg-ink transition-colors"
-            >
-              <span className="sm:hidden">Publish</span>
-              <span className="hidden sm:inline">Publish Product</span>
-            </button>
-          </div>
+    <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
+      {/* Header bar */}
+      <div className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+        <div className="max-w-[1200px] mx-auto px-5 md:px-8 py-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => navigate('/seller/inventory')}
+            className="flex items-center gap-2 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
+          >
+            <ArrowLeft size={15} strokeWidth={2} />
+            Back to Inventory
+          </button>
+          <span className="text-[11px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
+            New Product Wizard
+          </span>
+        </div>
+      </div>
+
+      <div className="max-w-[1000px] mx-auto px-5 md:px-8 pt-8">
+        <div className="mb-8 border-b border-[#E5E5E5] pb-4">
+          <h1 className="font-display text-[28px] md:text-[36px] font-bold text-[#111111]">
+            Create New Product Listing
+          </h1>
+          <p className="text-[13px] text-[#666666] mt-0.5">
+            Add high quality images, dimensions, and size/color variants for your catalog.
+          </p>
         </div>
 
-        <div className="px-4 pt-6 pb-8 md:px-8 md:pt-8 md:pb-8">
-          <div className="grid lg:grid-cols-[1fr_300px] gap-5 items-start">
-            {/* ================= LEFT: main content ================= */}
-            <div className="space-y-5">
-              {/* Product Details */}
-              <div className={cardClasses}>
-                <div className={cardHeadClasses}>
-                  <h2 className={cardTitleClasses}>Product Details</h2>
-                  <Info size={16} className="text-ink-soft/50" />
-                </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          {/* Section 1: Basic Info */}
+          <div className="bg-[#FAFAFA] border border-[#E5E5E5] rounded-[10px] p-6 md:p-8 space-y-6">
+            <h2 className="text-[12px] font-bold tracking-[0.14em] uppercase text-[#B08D57] pb-3 border-b border-[#E5E5E5]">
+              1. Basic Product Details
+            </h2>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className={labelClasses}>Product Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Premium Silk Shirt"
-                      className={inputClasses}
-                      {...register('name', { required: 'Product name is required' })}
-                    />
-                    {errors.name && <p className={errorClasses}>{errors.name.message}</p>}
-                  </div>
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-[0.1em] text-[#666666] mb-2">Product Title *</label>
+              <input
+                type="text"
+                placeholder="e.g. Classic Oversized Heavyweight Tee"
+                className="w-full bg-white border border-[#E5E5E5] rounded-[6px] px-4 py-3 text-[13px] text-[#111111] outline-none focus:border-[#B08D57]"
+                {...register('name', { required: 'Title is required' })}
+              />
+              {errors.name && <p className="text-[11px] text-[#C43D3D] mt-1">{errors.name.message}</p>}
+            </div>
 
-                  <div>
-                    <label className={labelClasses}>Category</label>
-                    <div className="relative">
-                      <select
-                        defaultValue=""
-                        className={`${inputClasses} appearance-none`}
-                        {...register('category', { required: 'Category is required' })}
-                      >
-                        <option value="" disabled>Select category</option>
-                        {CATEGORIES.map((cat) => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
-                      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] text-ink-soft">▾</span>
-                    </div>
-                    {errors.category && <p className={errorClasses}>{errors.category.message}</p>}
-                  </div>
-
-                  <div>
-                    <label className={labelClasses}>Description</label>
-                    <textarea
-                      rows={4}
-                      placeholder="Describe the materials, fit, and condition..."
-                      className={`${inputClasses} resize-none`}
-                      {...register('description', { required: 'Description is required' })}
-                    />
-                    {errors.description && <p className={errorClasses}>{errors.description.message}</p>}
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.1em] text-[#666666] mb-2">Category *</label>
+                <select
+                  className="w-full bg-white border border-[#E5E5E5] rounded-[6px] px-4 py-3 text-[13px] text-[#111111] outline-none focus:border-[#B08D57]"
+                  {...register('category', { required: 'Category is required' })}
+                >
+                  <option value="">Select Category</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                {errors.category && <p className="text-[11px] text-[#C43D3D] mt-1">{errors.category.message}</p>}
               </div>
 
-              {/* Pricing */}
-              <div className={cardClasses}>
-                <div className={cardHeadClasses}>
-                  <h2 className={cardTitleClasses}>Pricing</h2>
-                  <Banknote size={16} className="text-ink-soft/50" />
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.1em] text-[#666666] mb-2">Base Price (₹) *</label>
+                <div className="flex gap-2">
+                  <select
+                    className="w-24 bg-white border border-[#E5E5E5] rounded-[6px] px-3 py-3 text-[13px] font-bold text-[#111111] outline-none"
+                    {...register('priceCurrency')}
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    placeholder="1999"
+                    className="flex-1 bg-white border border-[#E5E5E5] rounded-[6px] px-4 py-3 text-[13px] text-[#111111] outline-none focus:border-[#B08D57]"
+                    {...register('priceAmount', { required: 'Price is required', min: 1 })}
+                  />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelClasses}>Price</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="100"
-                      placeholder="0.00"
-                      className={inputClasses}
-                      {...register('priceAmount', { required: 'Price is required', min: { value: 100, message: 'Min ₹100' } })}
-                    />
-                    {errors.priceAmount && <p className={errorClasses}>{errors.priceAmount.message}</p>}
-                  </div>
-                  <div>
-                    <label className={labelClasses}>Currency</label>
-                    <div className="relative">
-                      <select
-                        defaultValue="INR"
-                        className={`${inputClasses} appearance-none`}
-                        {...register('priceCurrency', { required: true })}
-                      >
-                        {CURRENCIES.map((cur) => (
-                          <option key={cur} value={cur}>{cur}</option>
-                        ))}
-                      </select>
-                      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] text-ink-soft">▾</span>
-                    </div>
-                  </div>
-                </div>
+                {errors.priceAmount && <p className="text-[11px] text-[#C43D3D] mt-1">{errors.priceAmount.message}</p>}
               </div>
+            </div>
 
-              {/* Shipping */}
-              <div className={cardClasses}>
-                <div className={cardHeadClasses}>
-                  <h2 className={cardTitleClasses}>Shipping Details</h2>
-                  <Package size={16} className="text-ink-soft/50" />
-                </div>
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-[0.1em] text-[#666666] mb-2">Description *</label>
+              <textarea
+                rows={4}
+                placeholder="Describe fabric composition, fit type, care instructions..."
+                className="w-full bg-white border border-[#E5E5E5] rounded-[6px] px-4 py-3 text-[13px] text-[#111111] outline-none focus:border-[#B08D57]"
+                {...register('description', { required: 'Description is required' })}
+              />
+              {errors.description && <p className="text-[11px] text-[#C43D3D] mt-1">{errors.description.message}</p>}
+            </div>
+          </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className={labelClasses}>Weight (kg)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      placeholder="0.5"
-                      className={inputClasses}
-                      {...register('weight', { required: 'Weight is required', min: { value: 0.01, message: 'Must be greater than 0' } })}
-                    />
-                    {errors.weight && <p className={errorClasses}>{errors.weight.message}</p>}
-                  </div>
+          {/* Section 2: Media Upload */}
+          <div className="bg-[#FAFAFA] border border-[#E5E5E5] rounded-[10px] p-6 md:p-8 space-y-6">
+            <h2 className="text-[12px] font-bold tracking-[0.14em] uppercase text-[#B08D57] pb-3 border-b border-[#E5E5E5]">
+              2. Product Media ({images.length}/{MAX_IMAGES})
+            </h2>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className={labelClasses}>Length (cm)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        placeholder="20"
-                        className={inputClasses}
-                        {...register('length', { required: 'Required', min: { value: 0.1, message: 'Invalid' } })}
-                      />
-                      {errors.length && <p className={errorClasses}>{errors.length.message}</p>}
-                    </div>
-                    <div>
-                      <label className={labelClasses}>Width (cm)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        placeholder="15"
-                        className={inputClasses}
-                        {...register('width', { required: 'Required', min: { value: 0.1, message: 'Invalid' } })}
-                      />
-                      {errors.width && <p className={errorClasses}>{errors.width.message}</p>}
-                    </div>
-                    <div>
-                      <label className={labelClasses}>Height (cm)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        placeholder="10"
-                        className={inputClasses}
-                        {...register('height', { required: 'Required', min: { value: 0.1, message: 'Invalid' } })}
-                      />
-                      {errors.height && <p className={errorClasses}>{errors.height.message}</p>}
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <label className="border-2 border-dashed border-[#E5E5E5] hover:border-[#B08D57] bg-white rounded-[10px] p-8 flex flex-col items-center justify-center cursor-pointer transition-colors text-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => addFiles(e.target.files)}
+                className="hidden"
+              />
+              <UploadCloud size={32} className="text-[#B08D57] mb-2" />
+              <p className="text-[13.5px] font-bold text-[#111111]">Upload High Resolution Photos</p>
+              <p className="text-[11.5px] text-[#777777] mt-0.5">Drag & drop or browse. Up to 6 photos, max 5MB each.</p>
+            </label>
 
-              {/* Variants */}
-              <div className={cardClasses}>
-                <div className={cardHeadClasses}>
-                  <div className="flex items-center gap-2">
-                    <h2 className={cardTitleClasses}>Variants</h2>
-                    <Layers size={14} className="text-ink-soft/50" />
-                  </div>
-                  {!showVariantForm && (
+            {imageError && <p className="text-[11.5px] text-[#C43D3D]">{imageError}</p>}
+
+            {images.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+                {images.map((img) => (
+                  <div key={img.id} className="relative aspect-square rounded-[6px] overflow-hidden border border-[#E5E5E5] group">
+                    <img src={img.preview} alt="" className="w-full h-full object-cover" />
                     <button
                       type="button"
-                      onClick={openVariantForm}
-                      className="flex items-center gap-1.5 text-[12.5px] font-semibold text-gold hover:text-gold-deep transition-colors"
+                      onClick={() => removeImage(img.id)}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <Plus size={14} /> Add Variant
+                      <X size={13} />
                     </button>
-                  )}
-                </div>
-
-                {variants.length === 0 && !showVariantForm && (
-                  <p className="text-[13px] text-ink-soft py-2">
-                    No variants yet. Add at least one size/color combination to publish.
-                  </p>
-                )}
-
-                {variants.length > 0 && (
-                  <div className="divide-y divide-border -mx-1 mb-1">
-                    {variants.map((v) => (
-                      <div key={v.id} className="flex items-center gap-4 py-3 px-1">
-                        <div className="w-11 h-11 shrink-0 rounded-lg bg-cream-dark overflow-hidden flex items-center justify-center">
-                          {v.images[0] ? (
-                            <img src={v.images[0].preview} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <ImageIcon size={15} className="text-ink-soft" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-0.5">
-                          <span className="text-[13px] font-medium text-ink">{v.size}</span>
-                          <span className="text-[13px] text-ink-soft">{v.color}</span>
-                          <span className="text-[11.5px] text-ink-soft truncate">{v.sku}</span>
-                          <span className="text-[12.5px] text-ink-soft">
-                            {v.stock} in stock{v.priceAmount ? ` · ₹${v.priceAmount}` : ''}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeVariant(v.id)}
-                          className="text-ink-soft hover:text-error transition-colors shrink-0"
-                          aria-label="Remove variant"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    ))}
                   </div>
-                )}
-
-                {showVariantForm && (
-                  <div className="rounded-lg border border-dashed border-gold bg-cream-dark p-4 mt-2">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-                      <div>
-                        <label className={labelClasses}>Size</label>
-                        <input
-                          type="text"
-                          placeholder="M"
-                          value={variantForm.size}
-                          onChange={(e) => handleVariantFieldChange('size', e.target.value)}
-                          className={`${inputClasses} bg-surface`}
-                        />
-                        {variantFieldErrors.size && <p className={errorClasses}>{variantFieldErrors.size}</p>}
-                      </div>
-                      <div>
-                        <label className={labelClasses}>Color</label>
-                        <input
-                          type="text"
-                          placeholder="Black"
-                          value={variantForm.color}
-                          onChange={(e) => handleVariantFieldChange('color', e.target.value)}
-                          className={`${inputClasses} bg-surface`}
-                        />
-                        {variantFieldErrors.color && <p className={errorClasses}>{variantFieldErrors.color}</p>}
-                      </div>
-                      <div>
-                        <label className={labelClasses}>SKU</label>
-                        <input
-                          type="text"
-                          placeholder="ZRV-01"
-                          value={variantForm.sku}
-                          onChange={(e) => handleVariantFieldChange('sku', e.target.value)}
-                          className={`${inputClasses} bg-surface`}
-                        />
-                        {variantFieldErrors.sku && <p className={errorClasses}>{variantFieldErrors.sku}</p>}
-                      </div>
-                      <div>
-                        <label className={labelClasses}>Stock</label>
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={variantForm.stock}
-                          onChange={(e) => handleVariantFieldChange('stock', e.target.value)}
-                          className={`${inputClasses} bg-surface`}
-                        />
-                        {variantFieldErrors.stock && <p className={errorClasses}>{variantFieldErrors.stock}</p>}
-                      </div>
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-3 mb-3">
-                      <div>
-                        <label className={labelClasses}>Variant Price (optional)</label>
-                        <input
-                          type="number"
-                          placeholder="Leave blank to use base price"
-                          value={variantForm.priceAmount}
-                          onChange={(e) => handleVariantFieldChange('priceAmount', e.target.value)}
-                          className={`${inputClasses} bg-surface`}
-                        />
-                      </div>
-                      <div>
-                        <label className={labelClasses}>Images</label>
-                        <input
-                          ref={variantFileInputRef}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          className="hidden"
-                          onChange={(e) => { if (e.target.files?.length) addVariantImages(e.target.files); e.target.value = '' }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => variantFileInputRef.current?.click()}
-                          className="w-full rounded-lg border border-dashed border-border bg-surface px-3.5 py-2.5 text-[12.5px] text-ink-soft hover:border-gold transition-colors flex items-center justify-center gap-2"
-                        >
-                          <UploadCloud size={14} /> Upload images
-                        </button>
-                        {variantFieldErrors.images && <p className={errorClasses}>{variantFieldErrors.images}</p>}
-                      </div>
-                    </div>
-
-                    {variantForm.images.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {variantForm.images.map((img) => (
-                          <div key={img.id} className="relative w-14 h-14 rounded-lg overflow-hidden border border-border">
-                            <img src={img.preview} alt="" className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => removeVariantFormImage(img.id)}
-                              className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-charcoal/80 flex items-center justify-center text-cream"
-                            >
-                              <X size={10} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex gap-2.5">
-                      <button
-                        type="button"
-                        onClick={saveVariant}
-                        className="rounded-lg bg-charcoal px-4 py-2 text-[12px] font-semibold text-cream hover:bg-ink transition-colors"
-                      >
-                        Add
-                      </button>
-                      <button
-                        type="button"
-                        onClick={closeVariantForm}
-                        className="rounded-lg border border-border bg-surface px-4 py-2 text-[12px] font-medium text-ink-soft hover:bg-cream-dark transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {variantsError && <p className={errorClasses}>{variantsError}</p>}
+                ))}
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* ================= RIGHT: media + summary ================= */}
-            <div className="space-y-5">
-              {/* Product Media */}
-              <div className={cardClasses}>
-                <div className={cardHeadClasses}>
-                  <h2 className={cardTitleClasses}>Product Media</h2>
-                  <Camera size={16} className="text-ink-soft/50" />
-                </div>
+          {/* Section 3: Package Dimensions */}
+          <div className="bg-[#FAFAFA] border border-[#E5E5E5] rounded-[10px] p-6 md:p-8 space-y-6">
+            <h2 className="text-[12px] font-bold tracking-[0.14em] uppercase text-[#B08D57] pb-3 border-b border-[#E5E5E5]">
+              3. Package Dimensions (For Shiprocket Courier Calculation)
+            </h2>
 
-                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileInputChange} />
-
-                <button
-                  type="button"
-                  onClick={openFilePicker}
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  className={dropzoneClasses('w-full rounded-lg border-2 border-dashed py-6 flex flex-col items-center justify-center gap-2 bg-cream-dark/40 mb-3')}
-                >
-                  <UploadCloud size={18} className="text-gold" />
-                  <span className="text-[11.5px] text-ink-soft text-center leading-relaxed px-2">
-                    Click or drag images to upload
-                  </span>
-                </button>
-
-                {images.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {images.map((img, i) => (
-                      <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden border border-border">
-                        <img src={img.preview} alt="" className="w-full h-full object-cover" />
-                        {i === 0 && (
-                          <span className="absolute top-1 left-1 text-[8.5px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-charcoal text-cream">
-                            Cover
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeImage(img.id)}
-                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-charcoal/80 flex items-center justify-center text-cream"
-                        >
-                          <X size={11} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {imageError && <p className={`${errorClasses} mt-2`}>{imageError}</p>}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase text-[#666666] mb-1.5">Weight (KG) *</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="0.5"
+                  className="w-full bg-white border border-[#E5E5E5] rounded-[6px] px-3.5 py-2.5 text-[13px] outline-none focus:border-[#B08D57]"
+                  {...register('weight', { required: 'Required' })}
+                />
               </div>
 
-              {/* Listing Summary */}
-              <div className={cardClasses}>
-                <div className={cardHeadClasses}>
-                  <h2 className={cardTitleClasses}>Listing Summary</h2>
-                </div>
-                <div className="space-y-0 -mt-1">
-                  <div className="flex justify-between py-2.5 border-t border-border text-[12.5px]">
-                    <span className="text-ink-soft">Variants</span>
-                    <span className="font-medium text-ink">{variants.length}</span>
-                  </div>
-                  <div className="flex justify-between py-2.5 border-t border-border text-[12.5px]">
-                    <span className="text-ink-soft">Product Images</span>
-                    <span className="font-medium text-ink">{images.length}</span>
-                  </div>
-                  <div className="flex justify-between py-2.5 border-t border-border text-[12.5px]">
-                    <span className="text-ink-soft">Total Stock</span>
-                    <span className="font-medium text-ink">
-                      {variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)}
-                    </span>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase text-[#666666] mb-1.5">Length (CM) *</label>
+                <input
+                  type="number"
+                  placeholder="30"
+                  className="w-full bg-white border border-[#E5E5E5] rounded-[6px] px-3.5 py-2.5 text-[13px] outline-none focus:border-[#B08D57]"
+                  {...register('length', { required: 'Required' })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase text-[#666666] mb-1.5">Width (CM) *</label>
+                <input
+                  type="number"
+                  placeholder="20"
+                  className="w-full bg-white border border-[#E5E5E5] rounded-[6px] px-3.5 py-2.5 text-[13px] outline-none focus:border-[#B08D57]"
+                  {...register('width', { required: 'Required' })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase text-[#666666] mb-1.5">Height (CM) *</label>
+                <input
+                  type="number"
+                  placeholder="5"
+                  className="w-full bg-white border border-[#E5E5E5] rounded-[6px] px-3.5 py-2.5 text-[13px] outline-none focus:border-[#B08D57]"
+                  {...register('height', { required: 'Required' })}
+                />
               </div>
             </div>
           </div>
-        </div>
 
-      </form>
-      {showKycModal && (
-        <KycRequiredModal
-          onClose={() => setShowKycModal(false)}
-          onGoToKyc={() => navigate('/seller/become-seller/verify')}
-          applicationStatus={application.applicationStatus}
-        />
-      )}
+          {/* Section 4: Variants */}
+          <div className="bg-[#FAFAFA] border border-[#E5E5E5] rounded-[10px] p-6 md:p-8 space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E5]">
+              <h2 className="text-[12px] font-bold tracking-[0.14em] uppercase text-[#B08D57]">
+                4. Variants & Stock ({variants.length})
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowVariantForm(!showVariantForm)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-[6px] bg-[#111111] text-white text-[11px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
+              >
+                <Plus size={14} />
+                Add Variant
+              </button>
+            </div>
+
+            {showVariantForm && (
+              <div className="bg-white p-5 rounded-[8px] border border-[#E5E5E5] space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">Size (e.g. M, L)</label>
+                    <input
+                      type="text"
+                      placeholder="M"
+                      value={variantForm.size}
+                      onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value })}
+                      className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded p-2 text-[12.5px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">Color (e.g. Navy)</label>
+                    <input
+                      type="text"
+                      placeholder="Navy"
+                      value={variantForm.color}
+                      onChange={(e) => setVariantForm({ ...variantForm, color: e.target.value })}
+                      className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded p-2 text-[12.5px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">SKU Code</label>
+                    <input
+                      type="text"
+                      placeholder="TEE-NAVY-M"
+                      value={variantForm.sku}
+                      onChange={(e) => setVariantForm({ ...variantForm, sku: e.target.value })}
+                      className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded p-2 text-[12.5px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">Stock Count</label>
+                    <input
+                      type="number"
+                      placeholder="50"
+                      value={variantForm.stock}
+                      onChange={(e) => setVariantForm({ ...variantForm, stock: e.target.value })}
+                      className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded p-2 text-[12.5px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowVariantForm(false)}
+                    className="px-4 py-2 border rounded text-[11px] font-bold uppercase"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddVariant}
+                    className="px-5 py-2 bg-[#B08D57] text-[#0e0e0e] rounded text-[11px] font-bold uppercase"
+                  >
+                    Save Variant
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {variants.length > 0 && (
+              <div className="space-y-2">
+                {variants.map((v) => (
+                  <div key={v.id} className="flex items-center justify-between p-3.5 bg-white border border-[#E5E5E5] rounded-[6px]">
+                    <div className="flex items-center gap-3 text-[12.5px]">
+                      <span className="font-bold text-[#111111]">{v.sku}</span>
+                      <span className="text-[#666666]">Size: {v.size} · Color: {v.color}</span>
+                      <span className="text-[#287A4B] font-bold">Stock: {v.stock}</span>
+                    </div>
+                    <button type="button" onClick={() => removeVariant(v.id)} className="text-[#C43D3D]">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <button
+              type="submit"
+              className="flex items-center gap-2 bg-[#111111] text-white px-10 py-4 rounded-[6px] text-[13px] font-bold uppercase tracking-[0.08em] hover:bg-[#B08D57] transition-all shadow-lg"
+            >
+              Publish Product to Storefront
+              <Check size={16} strokeWidth={3} />
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {showKycModal && <KycRequiredModal onClose={() => setShowKycModal(false)} />}
     </div>
   )
 }

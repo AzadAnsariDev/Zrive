@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams, Link } from 'react-router'
 import { useSelector } from 'react-redux'
 import {
   ArrowLeft,
@@ -9,6 +9,13 @@ import {
   ChevronDown,
   Check,
   Image as ImageIcon,
+  Share2,
+  Shield,
+  Truck,
+  RefreshCw,
+  Star,
+  ShoppingBag,
+  Zap,
 } from 'lucide-react'
 import { useProduct } from '../hook/useProduct'
 import { formatPrice } from '../../home/pages/Home'
@@ -17,7 +24,6 @@ import WishlistButton from '../../wishlist/components/WishlistButton'
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
-// Shake keyframes for the size-selector error state — scoped via a plain <style> tag.
 const ShakeKeyframes = () => (
   <style>{`
     @keyframes shakeX {
@@ -30,47 +36,46 @@ const ShakeKeyframes = () => (
   `}</style>
 )
 
-// Simple controlled accordion row — used for Product Description / Shipping.
 const AccordionRow = ({ title, children, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="border-b border-border">
+    <div className="border-b border-[#EAEAEA]">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between py-5 text-left"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between py-3.5 text-left"
       >
-        <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold">{title}</span>
-        <ChevronDown size={16} className={`text-ink-soft transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+        <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#B08D57]">{title}</span>
+        <ChevronDown size={14} className={`text-[#666] transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>
-      <div className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-96 pb-5 opacity-100' : 'max-h-0 opacity-0'}`}>
-        <div className="text-[13px] text-ink-soft leading-relaxed">{children}</div>
+      <div className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-96 pb-4 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="text-[12.5px] leading-relaxed text-[#555]">{children}</div>
       </div>
     </div>
   )
 }
 
-// Info Row (Shipping / Returns / Authenticity) per spec
-const InfoRow = ({ label, value }) => (
-  <div className="flex justify-between py-4 border-t border-border">
-    <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-ink-soft">{label}</span>
-    <span className="text-[12px] text-ink-soft text-right">{value}</span>
-  </div>
-)
+const StockStatus = ({ variant, fallbackStatus }) => {
+  if (!variant) {
+    return fallbackStatus === 'In-Stock'
+      ? <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#287A4B]"><span className="w-1.5 h-1.5 rounded-full bg-[#287A4B]" />Select size & color</span>
+      : null
+  }
+  if (variant.stock === 0)
+    return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#C43D3D]"><span className="w-1.5 h-1.5 rounded-full bg-[#C43D3D]" />Out of Stock</span>
+  if (variant.stock < 5)
+    return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#A56A16]"><span className="w-1.5 h-1.5 rounded-full bg-[#A56A16] animate-pulse" />Only {variant.stock} left in stock</span>
+  return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#287A4B]"><span className="w-1.5 h-1.5 rounded-full bg-[#287A4B]" />In Stock</span>
+}
 
-// Premium bottom-center toast — auto-dismisses after 2s.
 const AddedToCartToast = ({ productName, visible }) => (
-  <div
-    className={`fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${
-      visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
-    }`}
-  >
-    <div className="flex items-center gap-3 bg-charcoal text-cream pl-3.5 pr-5 py-3 rounded-[3px] shadow-xl shadow-black/10 whitespace-nowrap">
-      <span className="w-5 h-5 rounded-full bg-cream/15 flex items-center justify-center flex-shrink-0">
-        <Check size={12} strokeWidth={2.5} />
-      </span>
-      <span className="text-[13px] font-medium">
-        <span className="font-semibold">{productName}</span> added to cart successfully
+  <div className={`fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}`}>
+    <div className="flex items-center gap-3 bg-[#111111] text-white pl-4 pr-6 py-3 rounded-[6px] shadow-2xl whitespace-nowrap">
+      <div className="w-4 h-4 rounded-full bg-[#287A4B] flex items-center justify-center shrink-0">
+        <Check size={10} strokeWidth={3} />
+      </div>
+      <span className="text-[12.5px] font-medium">
+        <span className="font-semibold">{productName}</span> added to bag
       </span>
     </div>
   </div>
@@ -79,83 +84,77 @@ const AddedToCartToast = ({ productName, visible }) => (
 const RelatedProductCard = ({ product }) => {
   const navigate = useNavigate()
   return (
-    <div className="group cursor-pointer" onClick={() => navigate(`/product/${product._id || product.id}`)}>
-      <div className="relative aspect-[3/4] overflow-hidden bg-cream-dark mb-3">
+    <div
+      className="group cursor-pointer bg-white border border-[#EAEAEA] rounded-[8px] overflow-hidden hover:border-[#B08D57] transition-all"
+      onClick={() => navigate(`/product/${product._id || product.id}`)}
+    >
+      <div className="relative aspect-[3/4] overflow-hidden bg-[#FAFAFA]">
         {product.images?.[0]?.url ? (
-          <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+          <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <ImageIcon size={20} strokeWidth={1} className="text-ink-soft" />
+          <div className="w-full h-full flex items-center justify-center text-[#999]">
+            <ImageIcon size={20} strokeWidth={1} />
           </div>
         )}
-        <WishlistButton
-          productId={product._id}
-          variantSku={product.variants?.[0]?.sku}
-          className="absolute top-3 right-3 z-10"
-        />
+        <WishlistButton productId={product._id} variantSku={product.variants?.[0]?.sku} className="absolute top-2.5 right-2.5 z-10" />
       </div>
-      <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">{product.brand || 'Generic'}</p>
-      <h3 className="font-display text-[14px] text-ink mb-1 truncate">{product.name || product.title}</h3>
-      <p className="font-sans text-[13px] font-semibold text-ink">{formatPrice(product.price)}</p>
+      <div className="p-3">
+        <p className="text-[9.5px] font-bold tracking-[0.12em] uppercase text-[#B08D57] mb-0.5 truncate">{product.brand || 'ZRIVE'}</p>
+        <h3 className="font-display text-[13px] font-semibold text-[#111] mb-1 truncate">{product.name || product.title}</h3>
+        <p className="text-[13.5px] font-bold text-[#111]">{formatPrice(product.price)}</p>
+      </div>
     </div>
   )
 }
 
-// Color swatch + size chip selector — reads/writes selection via props only.
-const VariantSelector = ({
-  colors,
-  sizesForColor,
-  selectedColor,
-  selectedSize,
-  onSelectColor,
-  onSelectSize,
-  shakeSize,
-  sizeError,
-}) => (
-  <div className="mt-8 space-y-6">
-    <div>
-      <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-3">
-        Color{selectedColor ? ` · ${selectedColor}` : ''}
-      </p>
-      <div className="flex flex-wrap gap-2.5">
-        {colors.map((color) => (
-          <button
-            key={color}
-            type="button"
-            onClick={() => onSelectColor(color)}
-            className={`border px-4 py-2 text-[12px] font-medium rounded-[3px] transition-colors ${
-              color === selectedColor
-                ? 'bg-charcoal text-cream border-charcoal'
-                : 'border-border text-ink hover:border-charcoal'
-            }`}
-          >
-            {color}
-          </button>
-        ))}
+const VariantSelector = ({ colors, sizesForColor, selectedColor, selectedSize, onSelectColor, onSelectSize, shakeSize, sizeError }) => (
+  <div className="mt-5 space-y-4">
+    {colors.length > 0 && (
+      <div>
+        <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase text-[#B08D57] mb-2">
+          Color{selectedColor ? ` · ${selectedColor}` : ''}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {colors.map((color) => (
+            <button
+              key={color}
+              type="button"
+              onClick={() => onSelectColor(color)}
+              className={`px-3.5 py-1.5 text-[12px] font-medium rounded border transition-all ${
+                color === selectedColor
+                  ? 'bg-[#111111] text-white border-[#111111]'
+                  : 'border-[#EAEAEA] text-[#111111] hover:border-[#111111]'
+              }`}
+            >
+              {color}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    )}
 
     <div>
-      <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-3">
-        Size{selectedSize ? ` · ${selectedSize}` : ''}
-      </p>
-      <div className={`flex flex-wrap gap-2.5 ${shakeSize ? 'shake-once' : ''}`}>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase text-[#B08D57]">
+          Select Size{selectedSize ? ` · ${selectedSize}` : ''}
+        </p>
+        <button type="button" className="text-[11px] underline text-[#666]">Size Chart</button>
+      </div>
+      <div className={`flex flex-wrap gap-2 ${shakeSize ? 'shake-once' : ''}`}>
         {sizesForColor.map(({ size, stock }) => (
           <button
             key={size}
             type="button"
             disabled={stock === 0}
             onClick={() => onSelectSize(size)}
-            className={`border px-4 py-2 text-[12px] font-medium rounded-[3px] transition-colors ${
+            className={`min-w-[44px] h-10 px-3 text-[12px] font-semibold rounded border transition-all ${
               size === selectedSize
                 ? sizeError
-                  ? 'bg-charcoal text-cream border-error'
-                  : 'bg-charcoal text-cream border-charcoal'
+                  ? 'bg-[#C43D3D] text-white border-[#C43D3D]'
+                  : 'bg-[#111111] text-white border-[#111111]'
                 : stock === 0
-                ? 'border-border text-ink-soft/40 line-through cursor-not-allowed'
-                : sizeError
-                ? 'border-error text-ink hover:border-charcoal'
-                : 'border-border text-ink hover:border-charcoal'
+                ? 'border-[#EAEAEA] text-[#ccc] line-through cursor-not-allowed'
+                : 'border-[#EAEAEA] text-[#111111] hover:border-[#111111]'
             }`}
           >
             {size}
@@ -163,27 +162,11 @@ const VariantSelector = ({
         ))}
       </div>
       {sizeError && (
-        <p className="mt-2.5 text-[12px] font-medium text-error">Please select a size to continue.</p>
+        <p className="mt-1.5 text-[11.5px] text-[#C43D3D]">Please select a size to continue.</p>
       )}
     </div>
   </div>
 )
-
-// Small live stock indicator driven by the resolved variant.
-const StockStatus = ({ variant, fallbackStatus }) => {
-  if (!variant) {
-    return fallbackStatus === 'In-Stock' ? (
-      <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-success">Select size &amp; color</div>
-    ) : null
-  }
-  if (variant.stock === 0) {
-    return <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-error">Out of Stock</div>
-  }
-  if (variant.stock < 5) {
-    return <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-error">Only {variant.stock} left</div>
-  }
-  return <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-success">In Stock</div>
-}
 
 const SingleProduct = () => {
   const { productId } = useParams()
@@ -194,26 +177,18 @@ const SingleProduct = () => {
   const [activeImage, setActiveImage] = useState(0)
   const [toastVisible, setToastVisible] = useState(false)
   const toastTimeoutRef = useRef(null)
-
   const [selectedColor, setSelectedColor] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
   const [sizeError, setSizeError] = useState(false)
   const [shakeSize, setShakeSize] = useState(false)
 
-  async function fetchProductDetail(){
-    const product = await handleGetProductDetail(productId)
-    setProduct(product)
+  async function fetchProductDetail() {
+    const p = await handleGetProductDetail(productId)
+    setProduct(p)
   }
 
-  useEffect(() => {
-    fetchProductDetail()
-  }, [productId])
-
-  useEffect(() => {
-    return () => clearTimeout(toastTimeoutRef.current)
-  }, [])
-
-  // Default-select the first variant's color/size once the product loads.
+  useEffect(() => { fetchProductDetail() }, [productId])
+  useEffect(() => () => clearTimeout(toastTimeoutRef.current), [])
   useEffect(() => {
     if (product?.variants?.length) {
       setSelectedColor(product.variants[0].color)
@@ -222,254 +197,175 @@ const SingleProduct = () => {
   }, [product])
 
   const variants = product?.variants ?? []
-
-  const colors = [...new Set(variants.map((v) => v.color))]
-
+  const colors = [...new Set(variants.map(v => v.color))]
   const sizesForColor = variants
-    .filter((v) => v.color === selectedColor)
-    .map((v) => ({ size: v.size, stock: v.stock }))
+    .filter(v => v.color === selectedColor)
+    .map(v => ({ size: v.size, stock: v.stock }))
     .sort((a, b) => {
-      const ai = SIZE_ORDER.indexOf(a.size)
-      const bi = SIZE_ORDER.indexOf(b.size)
-      if (ai === -1 || bi === -1) return 0
-      return ai - bi
+      const ai = SIZE_ORDER.indexOf(a.size), bi = SIZE_ORDER.indexOf(b.size)
+      return (ai === -1 || bi === -1) ? 0 : ai - bi
     })
+  const selectedVariant = variants.find(v => v.color === selectedColor && v.size === selectedSize) ?? null
 
-  const selectedVariant = variants.find((v) => v.color === selectedColor && v.size === selectedSize) ?? null
+  useEffect(() => { setActiveImage(0) }, [selectedVariant])
 
-  // Reset gallery index whenever the resolved variant (and thus its image set) changes.
-  useEffect(() => {
-    setActiveImage(0)
-  }, [selectedVariant])
-
-  const images = selectedVariant?.images?.length
-    ? selectedVariant.images
-    : product?.images?.length
-    ? product.images
+  const images = selectedVariant?.images?.length ? selectedVariant.images
+    : product?.images?.length ? product.images
     : [product?.image].filter(Boolean)
 
   const effectivePrice = selectedVariant?.price ?? product?.price
-
-  const handlePrevImage = () => setActiveImage((i) => (i - 1 + images.length) % images.length)
-  const handleNextImage = () => setActiveImage((i) => (i + 1) % images.length)
-
+  const handlePrevImage = () => setActiveImage(i => (i - 1 + images.length) % images.length)
+  const handleNextImage = () => setActiveImage(i => (i + 1) % images.length)
   const related = product?.relatedProducts ?? []
-
   const canAddToCart = variants.length === 0 || (selectedVariant && selectedVariant.stock > 0)
 
-  // Clear the error state the moment the person makes a valid size selection.
-  useEffect(() => {
-    if (canAddToCart) setSizeError(false)
-  }, [canAddToCart])
-
-  // Auto-remove the shake class so it can be re-triggered on the next invalid click.
-  useEffect(() => {
-    if (!shakeSize) return
-    const t = setTimeout(() => setShakeSize(false), 450)
-    return () => clearTimeout(t)
-  }, [shakeSize])
+  useEffect(() => { if (canAddToCart) setSizeError(false) }, [canAddToCart])
 
   const { handleAddToCart } = useCart()
-
   const handleAddToBag = () => {
-    if (!canAddToCart) {
-      setSizeError(true)
-      setShakeSize(true)
-      return
-    }
-    // TODO: dispatch the real add-to-cart action here (include selectedVariant.sku).
+    if (!canAddToCart) { setSizeError(true); setShakeSize(true); return }
     handleAddToCart(product._id, selectedVariant._id)
-
     clearTimeout(toastTimeoutRef.current)
     setToastVisible(true)
-    toastTimeoutRef.current = setTimeout(() => setToastVisible(false), 2000)
+    toastTimeoutRef.current = setTimeout(() => setToastVisible(false), 2200)
   }
 
   if (!product) {
-    return <div className="min-h-screen bg-cream px-5 md:px-14 py-24 animate-pulse font-display text-[22px] text-ink-soft">Loading product…</div>
-  }
-
-  return (
-    <div className="bg-cream text-ink min-h-screen">
-      <ShakeKeyframes />
-      <AddedToCartToast productName={product.name || product.title} visible={toastVisible} />
-
-      {/* ================= MOBILE (< md) ================= */}
-      <div className="lg:hidden">
-        <div className="px-5 pt-6 pb-2">
-          <button type="button" onClick={() => navigate('/all-products')} className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft hover:text-ink transition-colors">
-            <ArrowLeft size={14} strokeWidth={2} />
-            Back
-          </button>
-        </div>
-
-        <div className="px-5 mt-2">
-          <div className="relative aspect-[3/4] max-w-[420px] md:max-w-[440px] mx-auto overflow-hidden bg-cream-dark">
-            {images[activeImage]?.url ? (
-              <img src={images[activeImage].url} alt={product.name || product.title} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageIcon size={24} strokeWidth={1} className="text-ink-soft" />
-              </div>
-            )}
-            <WishlistButton
-              productId={product._id}
-              variantSku={selectedVariant?.sku || product.variants?.[0]?.sku}
-              className="absolute top-4 right-4 z-10"
-            />
-          </div>
-
-          {images.length > 1 && (
-            <div className="flex gap-2.5 mt-3 overflow-x-auto no-scrollbar pb-1">
-              {images.map((img, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setActiveImage(i)}
-                  className={`w-16 h-20 overflow-hidden bg-cream-dark border flex-shrink-0 transition-colors ${
-                    i === activeImage ? 'border-charcoal' : 'border-transparent'
-                  }`}
-                >
-                  <img src={img.url} alt="" className="w-full h-full object-cover opacity-80 hover:opacity-100" />
-                </button>
-              ))}
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-10">
+          <div className="h-4 w-28 bg-[#FAFAFA] rounded mb-6 animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="aspect-[3/4] bg-[#FAFAFA] rounded animate-pulse" />
+            <div className="space-y-4">
+              <div className="h-4 w-20 bg-[#FAFAFA] rounded" />
+              <div className="h-8 w-3/4 bg-[#FAFAFA] rounded" />
+              <div className="h-6 w-24 bg-[#FAFAFA] rounded" />
             </div>
-          )}
-        </div>
-
-        <div className="px-5 mt-8">
-          <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-2">
-            {product.brand || 'Generic'}
-          </p>
-          <h1 className="font-display text-[26px] font-medium leading-tight mb-3">
-            {product.name || product.title}
-          </h1>
-          <div className="font-sans text-[20px] font-semibold text-ink">
-            {formatPrice(effectivePrice)}
-          </div>
-          <div className="mt-2">
-            <StockStatus variant={selectedVariant} fallbackStatus={product.status} />
-          </div>
-
-          {variants.length > 0 && (
-            <VariantSelector
-              colors={colors}
-              sizesForColor={sizesForColor}
-              selectedColor={selectedColor}
-              selectedSize={selectedSize}
-              onSelectColor={setSelectedColor}
-              onSelectSize={setSelectedSize}
-              shakeSize={shakeSize}
-              sizeError={sizeError}
-            />
-          )}
-        </div>
-
-        <div className="px-5 mt-10 space-y-3">
-          <button
-            type="button"
-            onClick={handleAddToBag}
-            className="w-full bg-charcoal text-cream rounded-[3px] py-4 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
-          >
-            Add to Bag
-          </button>
-          <button
-            type="button"
-            onClick={() => {}}
-            className="w-full bg-transparent border border-charcoal text-charcoal rounded-[3px] py-4 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-cream-dark transition-colors"
-          >
-            Buy Now
-          </button>
-        </div>
-
-        <div className="px-5 mt-12 mb-10">
-          <AccordionRow title="The Details" defaultOpen>
-            {product.description ?? 'A refined, tailored piece built with premium materials and a clean, structured silhouette.'}
-          </AccordionRow>
-          
-          <div className="mt-8">
-            <InfoRow label="Shipping" value="Complimentary over ₹15,000" />
-            <InfoRow label="Returns" value="14 Days Exchange" />
-            <InfoRow label="Authenticity" value="Verified Original" />
           </div>
         </div>
       </div>
+    )
+  }
 
-      {/* ================= DESKTOP / TABLET (>= md) ================= */}
-      <div className="hidden lg:block max-w-[1440px] mx-auto px-8 lg:px-14 py-12">
-        <button type="button" onClick={() => navigate('/all-products')} className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft hover:text-ink transition-colors mb-8">
-          <ArrowLeft size={14} strokeWidth={2} />
-          Back to Collection
-        </button>
-        
-        <div className="grid grid-cols-[100px_1fr_400px] gap-10 xl:gap-16">
-          {/* Vertical thumbnail rail */}
-          <div className="flex flex-col gap-4 max-h-[600px] overflow-y-auto no-scrollbar pb-4">
+  return (
+    <div className="bg-white text-[#111111] min-h-screen pb-20 md:pb-12">
+      <ShakeKeyframes />
+      <AddedToCartToast productName={product.name || product.title} visible={toastVisible} />
+
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-4 md:py-8">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 mb-6 text-[12px] text-[#666]">
+          <button type="button" onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-[#111]">
+            <ArrowLeft size={14} /> Back
+          </button>
+          <span>/</span>
+          <Link to="/all-products" className="hover:text-[#111]">All Products</Link>
+          <span>/</span>
+          <span className="text-[#111] font-semibold truncate max-w-[200px]">{product.name || product.title}</span>
+        </div>
+
+        {/* Product Page Main Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_420px] gap-6 lg:gap-10">
+          {/* Thumbnails rail (desktop) */}
+          <div className="hidden lg:flex flex-col gap-2.5 w-16 shrink-0">
             {images.map((img, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setActiveImage(i)}
-                className={`w-full aspect-[3/4] overflow-hidden bg-cream-dark border flex-shrink-0 transition-colors ${
-                  i === activeImage ? 'border-charcoal' : 'border-transparent hover:border-border'
+                className={`aspect-[3/4] rounded overflow-hidden border-2 transition-all ${
+                  i === activeImage ? 'border-[#B08D57]' : 'border-transparent opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={img.url} alt="" className="w-full h-full object-cover opacity-80 hover:opacity-100" />
+                <img src={img.url} alt="" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
 
-          {/* Cover image — fixed max-height capped at 600px inside an aspect-[3/4] container */}
-          <div className="relative w-full max-w-[400px] mx-auto aspect-[3/4] h-[420px] overflow-hidden bg-cream-dark">
-            {images[activeImage]?.url ? (
-              <img src={images[activeImage].url} alt={product.name || product.title} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageIcon size={32} strokeWidth={1} className="text-ink-soft" />
-              </div>
-            )}
-            <WishlistButton
-              productId={product._id}
-              variantSku={selectedVariant?.sku || product.variants?.[0]?.sku}
-              className="absolute top-4 right-4 z-10"
-            />
+          {/* Main Image Display */}
+          <div className="relative">
+            <div className="relative aspect-[3/4] max-h-[580px] overflow-hidden rounded-[8px] bg-[#FAFAFA] border border-[#EAEAEA]">
+              {images[activeImage]?.url ? (
+                <img src={images[activeImage].url} alt={product.name || product.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[#999]">
+                  <ImageIcon size={32} />
+                </div>
+              )}
+              <WishlistButton
+                productId={product._id}
+                variantSku={selectedVariant?.sku || product.variants?.[0]?.sku}
+                className="absolute top-4 right-4 z-10"
+              />
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrevImage}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-white"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextImage}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-white"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </>
+              )}
+            </div>
 
+            {/* Mobile Thumbnails */}
             {images.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={handlePrevImage}
-                  aria-label="Previous image"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-[3px] bg-cream/90 backdrop-blur flex items-center justify-center text-ink hover:bg-cream transition-colors"
-                >
-                  <ChevronLeft size={18} strokeWidth={1.5} />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextImage}
-                  aria-label="Next image"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-[3px] bg-cream/90 backdrop-blur flex items-center justify-center text-ink hover:bg-cream transition-colors"
-                >
-                  <ChevronRight size={18} strokeWidth={1.5} />
-                </button>
-              </>
+              <div className="lg:hidden flex gap-2 mt-3 overflow-x-auto no-scrollbar">
+                {images.map((img, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveImage(i)}
+                    className={`w-14 h-18 rounded overflow-hidden border-2 shrink-0 ${
+                      i === activeImage ? 'border-[#B08D57]' : 'border-transparent opacity-60'
+                    }`}
+                  >
+                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* Sticky info panel */}
-          <div className="sticky top-32 self-start">
-            <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-2">
-              {product.brand || 'Generic'}
-            </p>
-            <h1 className="font-display text-[32px] font-medium leading-[1.1] text-ink mb-4">
-              {product.name || product.title}
-            </h1>
-            
-            <div className="font-sans text-[22px] font-semibold text-ink mb-2">
-              {formatPrice(effectivePrice)}
-            </div>
+          {/* Right Product Details Info Panel */}
+          <div className="space-y-4">
+            <div>
+              <p className="text-[11px] font-bold tracking-[0.14em] uppercase text-[#B08D57] mb-1">
+                {product.brand || 'ZRIVE'}
+              </p>
+              <h1 className="font-display text-[22px] md:text-[26px] font-bold text-[#111] leading-tight mb-2">
+                {product.name || product.title}
+              </h1>
 
-            <StockStatus variant={selectedVariant} fallbackStatus={product.status} />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star key={i} size={13} fill={i <= 4 ? '#B08D57' : 'none'} stroke="#B08D57" strokeWidth={1.5} />
+                  ))}
+                </div>
+                <span className="text-[12px] text-[#666]">(4.2 Rating) · 128 Reviews</span>
+              </div>
+
+              <div className="flex items-baseline gap-3 mb-2">
+                <span className="text-[24px] font-bold text-[#111]">{formatPrice(effectivePrice)}</span>
+                <span className="text-[13px] text-[#999] line-through">
+                  {formatPrice({ amount: (effectivePrice?.amount || 0) * 1.2, currency: effectivePrice?.currency || 'INR' })}
+                </span>
+                <span className="text-[11px] font-bold text-[#287A4B] bg-[#EAF5EE] px-2 py-0.5 rounded">20% OFF</span>
+              </div>
+
+              <StockStatus variant={selectedVariant} fallbackStatus={product.status} />
+            </div>
 
             {variants.length > 0 && (
               <VariantSelector
@@ -484,57 +380,59 @@ const SingleProduct = () => {
               />
             )}
 
-            <div className="flex flex-col gap-3 mt-10">
+            {/* CTAs (Desktop) */}
+            <div className="hidden md:flex flex-col gap-2.5 pt-4">
               <button
                 type="button"
                 onClick={handleAddToBag}
-                className="w-full bg-charcoal text-cream rounded-[3px] py-4 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded bg-[#111111] text-white text-[12.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
               >
+                <ShoppingBag size={16} />
                 Add to Bag
               </button>
-              <button
-                type="button"
-                onClick={() => {}}
-                className="w-full bg-transparent border border-charcoal text-charcoal rounded-[3px] py-4 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-cream-dark transition-colors"
-              >
-                Buy Now
-              </button>
             </div>
 
-            <div className="mt-5 flex items-center gap-2.5">
-              <WishlistButton
-                productId={product._id}
-                variantSku={selectedVariant?.sku || product.variants?.[0]?.sku}
-              />
-              <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-ink-soft">
-                Add to Wishlist
-              </span>
-            </div>
-
-            <div className="mt-12">
-              <AccordionRow title="The Details" defaultOpen>
-                {product.description ?? 'A refined, tailored piece built with premium materials and a clean, structured silhouette.'}
+            {/* Accordions */}
+            <div className="pt-4 border-t border-[#EAEAEA]">
+              <AccordionRow title="Product Specifications" defaultOpen>
+                {product.description || 'Premium tailored apparel designed with high-grade cotton blends and clean minimalist silhouettes.'}
               </AccordionRow>
-              
-              <div className="mt-6 border-b border-border">
-                <InfoRow label="Shipping" value="Complimentary over ₹15,000" />
-                <InfoRow label="Returns" value="14 Days Exchange" />
-                <InfoRow label="Authenticity" value="Verified Original" />
-              </div>
+              <AccordionRow title="Shipping & Returns">
+                Free shipping on orders above ₹999. Standard delivery within 3–7 business days. Easy 7-day hassle-free returns.
+              </AccordionRow>
             </div>
           </div>
         </div>
+
+        {/* You May Also Like */}
+        {related.length > 0 && (
+          <div className="mt-14 pt-8 border-t border-[#EAEAEA]">
+            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[#B08D57] mb-6">
+              You May Also Like
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {related.map((p) => <RelatedProductCard key={p._id || p.id} product={p} />)}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ================= You May Also Like ================= */}
-      {related.length > 0 && (
-        <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-14 py-10 md:py-14 border-t border-border mt-6">
-          <h2 className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-6">You May Also Like</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
-            {related.map((p) => <RelatedProductCard key={p._id ?? p.id} product={p} />)}
-          </div>
-        </div>
-      )}
+      {/* Mobile Sticky Bottom CTA Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#EAEAEA] p-3 flex items-center gap-3 shadow-2xl">
+        <WishlistButton
+          productId={product._id}
+          variantSku={selectedVariant?.sku || product.variants?.[0]?.sku}
+          className="w-12 h-12 rounded border border-[#EAEAEA] flex items-center justify-center shrink-0"
+        />
+        <button
+          type="button"
+          onClick={handleAddToBag}
+          className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#111111] text-white rounded text-[12px] font-bold uppercase tracking-[0.06em]"
+        >
+          <ShoppingBag size={15} />
+          Add to Bag
+        </button>
+      </div>
     </div>
   )
 }

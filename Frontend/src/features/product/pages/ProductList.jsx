@@ -1,23 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { Bell, Search, SlidersHorizontal, Plus, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Bell, Search, Plus, ChevronLeft, ChevronRight, ArrowLeft, Boxes, Layers, ExternalLink } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 import { useProduct } from '../hook/useProduct'
 import { useSelector } from 'react-redux'
 import EmptyProductState from '../components/EmptyProductState'
 import { formatPrice } from '../../home/pages/Home'
 
-// ---- Tabs ----
 const FILTER_TABS = ['All', 'In Stock', 'Out of Stock']
 
-const StatusDot = ({ status }) => (
-  <span
-    className={`inline-block w-1.5 h-1.5 rounded-full ${
-      status === 'In-Stock' ? 'bg-success' : 'bg-error'
-    }`}
-  />
-)
-
-const ImageSlider = ({ images, alt, className = '', arrowSize = 14, dotClassName = '' }) => {
+const ImageSlider = ({ images, alt, className = '' }) => {
   const [index, setIndex] = useState(0)
   const safeImages = images && images.length > 0 ? images : [{ url: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=500&auto=format&fit=crop' }]
   const total = safeImages.length
@@ -28,43 +19,27 @@ const ImageSlider = ({ images, alt, className = '', arrowSize = 14, dotClassName
   }
 
   return (
-    <div className={`relative group/slider overflow-hidden bg-cream-dark ${className}`}>
+    <div className={`relative group/slider overflow-hidden bg-[#FAFAFA] ${className}`}>
       <img src={safeImages[index]?.url || safeImages[index]} alt={alt} className="w-full h-full object-cover" />
 
       {total > 1 && (
         <>
           <button
             type="button"
-            aria-label="Previous photo"
             onClick={(e) => goTo(e, index - 1)}
-            className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-[3px] bg-charcoal/50 text-cream flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-charcoal"
+            className="absolute left-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity"
           >
-            <ChevronLeft size={arrowSize} strokeWidth={2} />
+            <ChevronLeft size={12} strokeWidth={2} />
           </button>
           <button
             type="button"
-            aria-label="Next photo"
             onClick={(e) => goTo(e, index + 1)}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-[3px] bg-charcoal/50 text-cream flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-charcoal"
+            className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity"
           >
-            <ChevronRight size={arrowSize} strokeWidth={2} />
+            <ChevronRight size={12} strokeWidth={2} />
           </button>
 
-          <div className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 ${dotClassName}`}>
-            {safeImages.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`Show photo ${i + 1}`}
-                onClick={(e) => goTo(e, i)}
-                className={`transition-all rounded-full ${
-                  i === index ? 'w-3 h-1.5 bg-cream' : 'w-1.5 h-1.5 bg-cream/50 hover:bg-cream/80'
-                }`}
-              />
-            ))}
-          </div>
-
-          <span className="absolute top-1.5 right-1.5 text-[9px] font-semibold tracking-[0.1em] uppercase px-1.5 py-0.5 rounded-[3px] bg-charcoal/50 text-cream">
+          <span className="absolute top-1 right-1 text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white">
             {index + 1}/{total}
           </span>
         </>
@@ -76,274 +51,168 @@ const ImageSlider = ({ images, alt, className = '', arrowSize = 14, dotClassName
 const ProductList = () => {
   const PRODUCTS = useSelector((state) => state.product.sellerProducts) || []
   const [activeFilter, setActiveFilter] = useState('All')
-
-  const filteredProducts = PRODUCTS.filter((p) => {
-    if (activeFilter === 'In Stock') return p.status === 'In-Stock'
-    if (activeFilter === 'Out of Stock') return p.status === 'Out of Stock'
-    return true
-  })
+  const [searchQuery, setSearchQuery] = useState('')
 
   const { handleGetSellerProducts } = useProduct()
-
   const navigate = useNavigate()
 
   useEffect(() => {
     handleGetSellerProducts()
   }, [])
 
-  const totalStock = PRODUCTS.reduce((sum, p) => sum + (Number(p.stock) || 0), 0)
-  const activeSales = PRODUCTS.filter((p) => p.status === 'In-Stock').length
+  const filteredProducts = PRODUCTS.filter((p) => {
+    const matchesFilter =
+      activeFilter === 'In Stock'
+        ? p.status === 'In-Stock'
+        : activeFilter === 'Out of Stock'
+        ? p.status === 'Out of Stock'
+        : true
+
+    if (!matchesFilter) return false
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase()
+    return (
+      p.title?.toLowerCase().includes(q) ||
+      p.name?.toLowerCase().includes(q) ||
+      p.category?.toLowerCase().includes(q)
+    )
+  })
+
+  const inStockCount = PRODUCTS.filter((p) => p.status === 'In-Stock').length
+  const outStockCount = PRODUCTS.filter((p) => p.status === 'Out of Stock').length
 
   return (
-    <div className="bg-cream text-ink min-h-full">
-      {/* ============================================================ */}
-      {/* MOBILE (< md)                                                 */}
-      {/* ============================================================ */}
-      <div className="md:hidden pb-24">
-        {/* Header */}
-        <header className="flex items-center justify-between px-5 pt-6 pb-5">
-          <h1 className="font-display text-[26px] font-medium tracking-tight">My Products</h1>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="w-9 h-9 flex items-center justify-center hover:text-gold transition-colors"
-            >
-              <Bell size={20} strokeWidth={1.5} />
-            </button>
-            <img
-              src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop"
-              alt="Profile"
-              className="w-9 h-9 rounded-[3px] object-cover border border-border"
-            />
-          </div>
-        </header>
-
-        {/* Search + filter */}
-        <div className="flex items-center gap-3 px-5 mb-5">
-          <div className="flex-1 flex items-center gap-2 rounded-[3px] border border-border px-3.5 py-3 bg-cream-dark">
-            <Search size={16} strokeWidth={1.5} className="text-ink-soft" />
-            <input
-              type="text"
-              placeholder="Search inventory..."
-              className="w-full text-[14px] outline-none placeholder:text-ink-soft bg-transparent text-ink"
-            />
-          </div>
+    <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
+      {/* Top Header Bar */}
+      <div className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+        <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 py-4 flex items-center justify-between">
           <button
             type="button"
-            aria-label="Filters"
-            className="w-[48px] h-[48px] shrink-0 flex items-center justify-center rounded-[3px] border border-border bg-surface hover:bg-cream-dark transition-colors"
+            onClick={() => navigate('/seller')}
+            className="flex items-center gap-2 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
           >
-            <SlidersHorizontal size={17} strokeWidth={1.5} />
+            <ArrowLeft size={15} strokeWidth={2} />
+            Back to Dashboard
           </button>
-        </div>
 
-        {/* Add product */}
-        <div className="px-5 mb-6">
-          <Link
-            to="/seller/inventory/new"
-            className="w-full flex items-center justify-center gap-2 rounded-[3px] bg-charcoal text-cream py-3.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
-          >
-            <Plus size={15} strokeWidth={2.5} />
-            Add Product
-          </Link>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 px-5 mb-8">
-          <div className="rounded-[3px] border border-border bg-surface px-4 py-4">
-            <div className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-1">
-              Total Stock
-            </div>
-            <div className="font-display text-[26px] font-medium">{totalStock}</div>
-          </div>
-          <div className="rounded-[3px] border border-border bg-surface px-4 py-4">
-            <div className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-1">
-              Active Sales
-            </div>
-            <div className="font-display text-[26px] font-medium">{activeSales}</div>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
+            <Boxes size={14} />
+            Merchant Inventory & Variants
           </div>
         </div>
+      </div>
 
-        {/* Product list */}
-        {PRODUCTS.length === 0 ? (
+      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 pt-8">
+        {/* Title & Actions */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-4 border-b border-[#E5E5E5]">
+          <div>
+            <h1 className="font-display text-[28px] md:text-[34px] font-bold text-[#111111]">
+              Product Catalog
+            </h1>
+            <p className="text-[13px] text-[#666666] mt-0.5">
+              Manage product listings, size/color variants, and live stock.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="relative w-full md:w-64">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999999]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search catalog..."
+                className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-[6px] pl-9 pr-3 py-2 text-[12.5px] outline-none focus:border-[#B08D57]"
+              />
+            </div>
+
+            <button
+              onClick={() => navigate('/seller/inventory/new')}
+              className="flex items-center gap-2 bg-[#111111] text-white px-5 py-2.5 rounded-[6px] text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all shadow-md shrink-0"
+            >
+              <Plus size={15} />
+              Add Product
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-4 mb-6 border-b border-[#E5E5E5]">
+          {FILTER_TABS.map((tab) => {
+            const active = activeFilter === tab
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveFilter(tab)}
+                className={`px-4 py-2 rounded-[6px] text-[12px] font-bold tracking-[0.04em] transition-all whitespace-nowrap ${
+                  active
+                    ? 'bg-[#111111] text-white shadow-sm'
+                    : 'bg-[#FAFAFA] text-[#666666] border border-[#E5E5E5] hover:border-[#111111]'
+                }`}
+              >
+                {tab} {tab === 'In Stock' ? `(${inStockCount})` : tab === 'Out of Stock' ? `(${outStockCount})` : `(${PRODUCTS.length})`}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Content */}
+        {filteredProducts.length === 0 ? (
           <EmptyProductState />
         ) : (
-          <div className="flex flex-col gap-4 px-5">
-            {filteredProducts.map((product) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filteredProducts.map((p) => (
               <div
-                onClick={()=>{navigate(`/seller/inventory/${product._id}/addVariant`)}}
-                key={product._id || product.id}
-                className="flex rounded-[3px] border border-border bg-surface overflow-hidden"
+                key={p._id || p.id}
+                className="bg-white border border-[#E5E5E5] rounded-[10px] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
               >
-                <ImageSlider
-                  images={product.images}
-                  alt={product.title}
-                  className="w-[110px] h-[120px] shrink-0"
-                  arrowSize={11}
-                />
-                <div className="flex-1 flex flex-col justify-center px-4 py-3 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">
-                      {product.brand || 'Generic'}
-                    </p>
-                    <button
-                      type="button"
-                      aria-label="Product options"
-                      className="shrink-0 text-ink-soft hover:text-ink"
-                    >
-                      <MoreVertical size={16} strokeWidth={1.5} />
-                    </button>
+                <div>
+                  <ImageSlider images={p.images} alt={p.title || p.name} className="aspect-[3/4] w-full" />
+
+                  <div className="p-4">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#B08D57]">
+                        {p.category || 'Menswear'}
+                      </span>
+                      <span
+                        className={`text-[9.5px] font-bold uppercase px-2 py-0.5 rounded ${
+                          p.status === 'In-Stock' ? 'bg-[#EAF5EE] text-[#287A4B]' : 'bg-[#FCECEC] text-[#C43D3D]'
+                        }`}
+                      >
+                        {p.status || 'In-Stock'}
+                      </span>
+                    </div>
+
+                    <h3 className="font-display text-[15px] font-bold text-[#111111] truncate">
+                      {p.title || p.name}
+                    </h3>
+                    <p className="text-[14px] font-bold text-[#111111] mt-1">{formatPrice(p.price)}</p>
+
+                    <div className="mt-3 pt-3 border-t border-[#E5E5E5] text-[11px] text-[#666666] flex items-center justify-between">
+                      <span>Variants: <strong className="text-[#111111]">{p.variants?.length || 0}</strong></span>
+                      <span>Brand: <strong className="text-[#111111]">{p.brand || 'ZRIVE'}</strong></span>
+                    </div>
                   </div>
-                  <h3 className="font-display text-[15.5px] font-medium leading-snug truncate mb-1">
-                    {product.title}
-                  </h3>
-                  <div className="font-sans text-[15px] font-semibold mb-2">{formatPrice(product.price)}</div>
-                  
-                  <div className="flex items-center gap-1.5 mt-auto">
-                    <StatusDot status={product.status} />
-                    <span className={`text-[10px] font-semibold tracking-[0.1em] uppercase ${product.status === 'In-Stock' ? 'text-success' : 'text-error'}`}>
-                      {product.status === 'In-Stock' ? `IN STOCK (${product.stock || 0})` : 'OUT OF STOCK'}
-                    </span>
-                  </div>
+                </div>
+
+                <div className="p-4 pt-0 grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => navigate(`/seller/inventory/${p._id}/addVariant`)}
+                    className="py-2 px-3 rounded-[6px] border border-[#E5E5E5] text-[#111111] text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-[#FAFAFA] hover:border-[#111111] transition-all flex items-center justify-center gap-1"
+                  >
+                    <Layers size={13} />
+                    Add Variant
+                  </button>
+                  <button
+                    onClick={() => navigate(`/product/${p._id}`)}
+                    className="py-2 px-3 rounded-[6px] bg-[#111111] text-white text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-[#B08D57] transition-all flex items-center justify-center gap-1"
+                  >
+                    View Product
+                  </button>
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* ============================================================ */}
-      {/* DESKTOP / LAPTOP (>= md)                                      */}
-      {/* ============================================================ */}
-      <div className="hidden md:block px-10 py-8 lg:px-14 lg:py-10">
-        <div className="flex items-start justify-between gap-6 mb-8">
-          <div>
-            <h2 className="font-display text-[34px] font-medium tracking-tight leading-none mb-3">
-              My Products
-            </h2>
-            <p className="text-[13px] text-ink-soft">
-              Showing {filteredProducts.length} items in your premium inventory.
-            </p>
-          </div>
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="flex items-center gap-2 rounded-[3px] border border-border px-3.5 py-3 bg-cream-dark w-64 lg:w-72 focus-within:border-ink transition-colors">
-              <Search size={15} strokeWidth={1.5} className="text-ink-soft" />
-              <input
-                type="text"
-                placeholder="Search inventory..."
-                className="w-full text-[13.5px] outline-none placeholder:text-ink-soft bg-transparent text-ink"
-              />
-            </div>
-            <Link
-              to="/seller/inventory/new"
-              className="flex items-center justify-center gap-2 rounded-[3px] bg-charcoal text-cream px-8 py-3.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
-            >
-              <Plus size={15} strokeWidth={2.5} />
-              Add Product
-            </Link>
-          </div>
-        </div>
-
-        {PRODUCTS.length === 0 ? (
-          <EmptyProductState />
-        ) : (
-          <>
-            {/* Filter tabs */}
-            <div className="flex items-center gap-2 mb-8">
-              {FILTER_TABS.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveFilter(tab)}
-                  className={`px-5 py-2.5 rounded-[3px] text-[11px] font-semibold tracking-[0.1em] uppercase border transition-colors ${
-                    activeFilter === tab
-                      ? 'bg-charcoal text-cream border-charcoal'
-                      : 'bg-surface text-ink border-border hover:bg-cream-dark'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            {/* Product grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
-              {filteredProducts.map((product) => (
-                <div
-                  onClick={()=>{navigate(`/seller/inventory/${product._id}/addVariant`)}}
-                  key={product._id || product.id}
-                  className="rounded-[3px] border border-border bg-surface overflow-hidden group"
-                >
-                  <div className="relative">
-                    <ImageSlider images={product.images} alt={product.title} className="w-full aspect-[3/4]" />
-                  </div>
-                  <div className="px-5 py-5 border-t border-border">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold truncate mr-2">
-                        {product.brand || 'Generic'}
-                      </span>
-                      <span
-                        className={`flex items-center gap-1.5 text-[9px] font-semibold tracking-[0.1em] uppercase shrink-0 ${
-                          product.status === 'In-Stock' ? 'text-success' : 'text-error'
-                        }`}
-                      >
-                        <StatusDot status={product.status} />
-                        {product.status === 'In-Stock' ? 'In Stock' : 'Out of Stock'}
-                      </span>
-                    </div>
-                    <h3 className="font-display text-[16px] font-medium mb-1 truncate">{product.title}</h3>
-                    <div className="font-sans text-[15px] font-semibold text-ink">{formatPrice(product.price)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between mt-12 pt-6 border-t border-border">
-              <span className="text-[12px] font-medium text-ink-soft">
-                Showing 1-{filteredProducts.length} of {PRODUCTS.length} products
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  aria-label="Previous page"
-                  className="w-9 h-9 rounded-[3px] border border-border flex items-center justify-center text-ink-soft hover:bg-cream-dark transition-colors"
-                >
-                  <ChevronLeft size={16} strokeWidth={1.5} />
-                </button>
-                {[1, 2, 3].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    className={`w-9 h-9 rounded-[3px] text-[12px] font-medium flex items-center justify-center transition-colors ${
-                      n === 1
-                        ? 'bg-charcoal text-cream'
-                        : 'border border-border text-ink hover:bg-cream-dark'
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-                <span className="w-9 h-9 flex items-center justify-center text-ink-soft text-[13px]">
-                  ...
-                </span>
-                <button
-                  type="button"
-                  className="w-9 h-9 rounded-[3px] border border-border text-[12px] font-medium text-ink hover:bg-cream-dark flex items-center justify-center transition-colors"
-                >
-                  5
-                </button>
-                <button
-                  type="button"
-                  aria-label="Next page"
-                  className="w-9 h-9 rounded-[3px] border border-border flex items-center justify-center text-ink hover:bg-cream-dark transition-colors"
-                >
-                  <ChevronRight size={16} strokeWidth={1.5} />
-                </button>
-              </div>
-            </div>
-          </>
         )}
       </div>
     </div>

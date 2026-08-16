@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { useSelector } from "react-redux";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowLeft, ShieldCheck, Zap, TrendingUp, Store, Check, Sparkles } from "lucide-react";
 import useSeller from "../hook/useSeller";
-import ZriveLogo from "../../auth/components/ZriveLogo";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[6-9]\d{9}$/;
@@ -33,172 +32,136 @@ const BecomeSeller = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-cream px-6 py-8 ">
-      <style>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(14px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fillLine {
-          from { width: 0%; }
-          to { width: 50%; }
-        }
-        .field-in {
-          opacity: 0;
-          animation: fadeUp 0.5s ease forwards;
-        }
-        .progress-fill {
-          animation: fillLine 5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-      `}</style>
-
-      <div className="mx-auto w-full max-w-[460px]">
-        {/* Logo */}
-        <div className="flex justify-center mb-10 field-in" style={{ animationDelay: "0ms" }}>
-          <div className="flex flex-col items-center">
-            <div className="text-ink">
-              <ZriveLogo />
-            </div>
-            <p className="mt-4 font-display tracking-[0.35em] text-[20px] text-ink font-medium">
-              ZRIVE
-            </p>
-            <p className="mt-1 text-[10px] font-semibold tracking-[0.25em] text-gold uppercase">
-              Seller Registry
-            </p>
+    <div className="min-h-screen bg-[#FFFFFF] text-[#111111]">
+      {/* Top Header */}
+      <div className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
+        <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-3.5 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111]"
+          >
+            <ArrowLeft size={14} />
+            Back to Marketplace
+          </button>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
+            <Store size={14} />
+            ZRIVE Merchant Partner Program
           </div>
         </div>
+      </div>
 
-        {/* Heading */}
-        <h1 className="text-center font-display text-[32px] font-medium leading-[1.1] tracking-tight text-ink mb-2 field-in" style={{ animationDelay: "60ms" }}>
-          Join the Zrive Community
-        </h1>
-        <p className="text-center text-[13px] leading-relaxed text-ink-soft mb-9 field-in" style={{ animationDelay: "120ms" }}>
-          Begin your journey as an exclusive seller. Tell us about your
-          brand to get started.
-        </p>
-
-        <div className="rounded-[3px] border border-border bg-surface p-6 md:p-8 shadow-sm">
-          {/* ===== Step progress line ===== */}
-          <div className="relative mb-8 field-in" style={{ animationDelay: "160ms" }}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.08em] uppercase text-ink">
-                <span className="w-1.5 h-1.5 rounded-full bg-charcoal" />
-                Basic Details
-              </span>
-              <span className="flex items-center gap-2 text-[11px] font-medium tracking-[0.08em] uppercase text-ink-soft/60">
-                Verification
-                <span className="w-1.5 h-1.5 rounded-full border border-ink-soft/40" />
-              </span>
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+          {/* Left Column: Brand Pitch */}
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F5EFE5] text-[#B08D57] text-[11px] font-bold uppercase tracking-[0.08em]">
+              <Sparkles size={13} />
+              Merchant Partner Program
             </div>
-            <div className="relative h-[3px] w-full bg-border rounded-full overflow-hidden">
-              <div className="progress-fill absolute inset-y-0 left-0 bg-charcoal rounded-full" style={{ width: 0 }} />
+
+            <h1 className="font-display text-[32px] md:text-[40px] font-bold leading-tight text-[#111111]">
+              Grow Your Fashion Brand on ZRIVE
+            </h1>
+
+            <p className="text-[13.5px] text-[#666666] leading-relaxed">
+              Reach millions of high-intent male fashion buyers across India. Enjoy instant escrow payouts, integrated Shiprocket logistics, and premium catalog tools.
+            </p>
+
+            <div className="space-y-3 pt-2">
+              <div className="flex items-start gap-3 p-3.5 rounded-[6px] bg-[#FAFAFA] border border-[#EAEAEA]">
+                <div className="w-7 h-7 rounded-full bg-[#B08D57]/15 text-[#B08D57] flex items-center justify-center shrink-0">
+                  <Zap size={15} />
+                </div>
+                <div>
+                  <h4 className="text-[13px] font-bold text-[#111111]">Zero Onboarding Fee</h4>
+                  <p className="text-[11.5px] text-[#666666]">No upfront setup or monthly subscription fees. Pay only when you sell.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3.5 rounded-[6px] bg-[#FAFAFA] border border-[#EAEAEA]">
+                <div className="w-7 h-7 rounded-full bg-[#287A4B]/15 text-[#287A4B] flex items-center justify-center shrink-0">
+                  <ShieldCheck size={15} />
+                </div>
+                <div>
+                  <h4 className="text-[13px] font-bold text-[#111111]">Automated Escrow Settlements</h4>
+                  <p className="text-[11.5px] text-[#666666]">Direct bank deposits guaranteed upon successful parcel delivery.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3.5 rounded-[6px] bg-[#FAFAFA] border border-[#EAEAEA]">
+                <div className="w-7 h-7 rounded-full bg-[#111111] text-white flex items-center justify-center shrink-0">
+                  <TrendingUp size={15} />
+                </div>
+                <div>
+                  <h4 className="text-[13px] font-bold text-[#111111]">Shiprocket Logistics</h4>
+                  <p className="text-[11.5px] text-[#666666]">Automated AWB generation, doorstep pickup, and nationwide delivery.</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-            <div className="field-in" style={{ animationDelay: "200ms" }}>
-              <label htmlFor="brandName" className="mb-2 block text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft">
-                Brand Name
-              </label>
-              <input
-                id="brandName"
-                type="text"
-                placeholder="e.g. Vardhan & Co."
-                aria-invalid={errors.brandName ? "true" : "false"}
-                className={`w-full rounded-[3px] border bg-cream-dark px-4 py-3.5 text-[14px] text-ink placeholder:text-ink-soft outline-none transition-all duration-200 focus:border-ink focus:bg-surface ${
-                  errors.brandName ? "border-error" : "border-border"
-                }`}
-                {...register("brandName", {
-                  required: "Brand name is required",
-                  minLength: { value: 2, message: "Enter a valid brand name" },
-                })}
-              />
-              {errors.brandName && (
-                <p className="mt-1.5 text-[12px] text-error">{errors.brandName.message}</p>
-              )}
+          {/* Right Column: Register Card */}
+          <div className="bg-white border border-[#EAEAEA] rounded-[10px] p-6 md:p-8 shadow-xl space-y-6">
+            <div>
+              <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-[#B08D57]">Step 1 of 2</span>
+              <h2 className="font-display text-[22px] font-bold text-[#111111] mt-0.5">Register Your Merchant Account</h2>
+              <p className="text-[12.5px] text-[#666666] mt-1">Fill in your brand and contact details below.</p>
             </div>
 
-            <div className="field-in" style={{ animationDelay: "260ms" }}>
-              <label htmlFor="businessEmail" className="mb-2 block text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft">
-                Business Email
-              </label>
-              <input
-                id="businessEmail"
-                type="email"
-                placeholder="hello@yourbrand.com"
-                aria-invalid={errors.businessEmail ? "true" : "false"}
-                className={`w-full rounded-[3px] border bg-cream-dark px-4 py-3.5 text-[14px] text-ink placeholder:text-ink-soft outline-none transition-all duration-200 focus:border-ink focus:bg-surface ${
-                  errors.businessEmail ? "border-error" : "border-border"
-                }`}
-                {...register("businessEmail", {
-                  required: "Business email is required",
-                  pattern: { value: EMAIL_REGEX, message: "Enter a valid email address" },
-                })}
-              />
-              {errors.businessEmail && (
-                <p className="mt-1.5 text-[12px] text-error">{errors.businessEmail.message}</p>
-              )}
-            </div>
-
-            <div className="field-in" style={{ animationDelay: "320ms" }}>
-              <label htmlFor="businessPhone" className="mb-2 block text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft">
-                Business Phone
-              </label>
-              <div
-                className={`flex items-center overflow-hidden rounded-[3px] border bg-cream-dark transition-all duration-200 focus-within:border-ink focus-within:bg-surface ${
-                  errors.businessPhone ? "border-error" : "border-border"
-                }`}
-              >
-                <span className="border-r border-border bg-cream px-4 py-3.5 text-[13px] font-semibold text-ink-soft">
-                  +91
-                </span>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#666666] mb-1.5">Brand / Store Name *</label>
                 <input
-                  id="businessPhone"
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="98765 43210"
-                  aria-invalid={errors.businessPhone ? "true" : "false"}
-                  className="w-full bg-transparent px-4 py-3.5 text-[14px] text-ink placeholder:text-ink-soft outline-none"
-                  {...register("businessPhone", {
-                    required: "Business phone is required",
-                    pattern: { value: PHONE_REGEX, message: "Enter a valid 10-digit mobile number" },
+                  type="text"
+                  placeholder="e.g. Rare Rabbit Clothing"
+                  className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded px-3.5 py-2.5 text-[13px] text-[#111111] outline-none focus:border-[#B08D57]"
+                  {...register("brandName", { required: "Brand name is required" })}
+                />
+                {errors.brandName && <p className="text-[11px] text-[#C43D3D] mt-1">{errors.brandName.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#666666] mb-1.5">Business Email *</label>
+                <input
+                  type="email"
+                  placeholder="merchant@brand.com"
+                  className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded px-3.5 py-2.5 text-[13px] text-[#111111] outline-none focus:border-[#B08D57]"
+                  {...register("businessEmail", {
+                    required: "Business email is required",
+                    pattern: { value: EMAIL_REGEX, message: "Invalid email format" },
                   })}
                 />
+                {errors.businessEmail && <p className="text-[11px] text-[#C43D3D] mt-1">{errors.businessEmail.message}</p>}
               </div>
-              {errors.businessPhone && (
-                <p className="mt-1.5 text-[12px] text-error">{errors.businessPhone.message}</p>
-              )}
-            </div>
 
-            {error && (
-              <div className="field-in rounded-[3px] border border-error/30 bg-error/5 px-4 py-3 text-[12.5px] text-error">
-                {error}
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#666666] mb-1.5">Business Phone (10 digits) *</label>
+                <input
+                  type="tel"
+                  placeholder="9876543210"
+                  className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded px-3.5 py-2.5 text-[13px] text-[#111111] outline-none focus:border-[#B08D57]"
+                  {...register("businessPhone", {
+                    required: "Phone number is required",
+                    pattern: { value: PHONE_REGEX, message: "Enter valid 10-digit Indian phone number" },
+                  })}
+                />
+                {errors.businessPhone && <p className="text-[11px] text-[#C43D3D] mt-1">{errors.businessPhone.message}</p>}
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={submitting || loading}
-              className="field-in group flex w-full items-center justify-center gap-2 rounded-[3px] bg-charcoal py-4 mt-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-cream transition-colors hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ animationDelay: "380ms" }}
-            >
-              {submitting || loading ? (
-                <span className="w-3.5 h-3.5 border-2 border-cream/40 border-t-cream rounded-full animate-spin" />
-              ) : (
-                <>
-                  Continue to Dashboard
-                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-                </>
-              )}
-            </button>
-          </form>
+              {error && <p className="text-[11.5px] text-[#C43D3D] bg-[#FCECEC] p-2.5 rounded border border-[#C43D3D]/30">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={submitting || loading?.create}
+                className="w-full flex items-center justify-center gap-2 bg-[#111111] text-white py-3.5 rounded text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all disabled:opacity-60"
+              >
+                {submitting ? "Registering Merchant..." : "Continue to Merchant Dashboard"}
+                <ArrowRight size={15} />
+              </button>
+            </form>
+          </div>
         </div>
-
-        <p className="mt-6 text-center text-[11px] leading-relaxed text-ink-soft field-in" style={{ animationDelay: "440ms" }}>
-          You'll finish KYC & verification from your dashboard —
-          <br />
-          your account stays view-only for listings until then.
-        </p>
       </div>
     </div>
   );

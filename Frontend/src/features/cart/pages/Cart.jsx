@@ -1,68 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useSelector } from 'react-redux'
-import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react'
+import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, ShieldCheck, Truck, RefreshCw, Tag, ArrowRight, Lock, Check } from 'lucide-react'
 import useCart from '../hook/useCart'
 import { formatPrice } from '../../home/pages/Home'
-import { useRazorpay } from "react-razorpay";
 
-// Scoped keyframes for entrance / removal / total-pulse / instant-feedback animations.
-const CartAnimations = () => (
-  <style>{`
-    @keyframes cartFadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes totalPulse {
-      0%   { color: #9C8A5C; transform: scale(1.08); }
-      100% { color: #18160F; transform: scale(1); }
-    }
-    @keyframes numberPop {
-      0%   { transform: scale(1); }
-      35%  { transform: scale(1.28); color: #9C8A5C; }
-      100% { transform: scale(1); color: #18160F; }
-    }
-    .cart-item-enter { animation: cartFadeUp 0.5s cubic-bezier(.22,.61,.36,1) both; }
-    .cart-item-removing {
-      max-height: 0 !important;
-      opacity: 0 !important;
-      transform: translateX(-16px);
-      padding-top: 0 !important;
-      padding-bottom: 0 !important;
-      margin: 0 !important;
-      border-color: transparent !important;
-      overflow: hidden;
-    }
-    .cart-total-pulse { display: inline-block; animation: totalPulse 0.5s ease-out; transform-origin: right center; }
-    .cart-number-pop { display: inline-block; animation: numberPop 0.4s ease-out; }
-
-    @keyframes bagSway {
-      0%, 100% { transform: rotate(-3deg); }
-      50%      { transform: rotate(3deg); }
-    }
-    .empty-bag-sway { animation: bagSway 3.2s ease-in-out infinite; transform-origin: 100px 30px; }
-    @keyframes emptyFadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .empty-fade-1 { animation: emptyFadeUp 0.6s ease-out both; }
-    .empty-fade-2 { animation: emptyFadeUp 0.6s ease-out 0.15s both; }
-    .empty-fade-3 { animation: emptyFadeUp 0.6s ease-out 0.3s both; }
-  `}</style>
-)
-
-const InfoRow = ({ label, value, strong }) => (
-  <div className="flex justify-between py-3 border-t border-border">
-    <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-ink-soft">{label}</span>
-    <span className={`text-[13px] ${strong ? 'font-semibold text-ink' : 'text-ink-soft'}`}>{value}</span>
-  </div>
-)
-
-const CartItemRow = ({ item, index, isRemoving, isPulsing, onIncrement, onDecrement, onRemove }) => {
+const CartItemRow = ({ item, index, onIncrement, onDecrement, onRemove }) => {
   const variant = item.product?.variants
   const cover = variant?.images?.[0]?.url ?? item.product?.images?.[0]?.url
 
-  // Safe fallback chain — avoids crashing when variant.priceOverride or item.price is missing.
   const unitPrice = variant?.price?.amount != null
     ? variant.price
     : variant?.priceOverride != null
@@ -70,81 +16,86 @@ const CartItemRow = ({ item, index, isRemoving, isPulsing, onIncrement, onDecrem
     : (item.price ?? item.product?.price ?? { amount: 0, currency: 'INR' })
 
   return (
-    <div
-      className={`flex gap-5 py-8 border-t border-border transition-all duration-400 ease-out ${
-        isRemoving ? 'cart-item-removing' : 'cart-item-enter'
-      }`}
-      style={{ transitionDelay: isRemoving ? '0ms' : `${index * 60}ms`, animationDelay: `${index * 60}ms` }}
-    >
-      <div className="w-24 h-28 md:w-32 md:h-40 shrink-0 rounded-[3px] overflow-hidden bg-cream-dark">
+    <div className="flex gap-4 py-5 border-b border-[#EAEAEA] items-start w-full">
+      {/* Thumbnail */}
+      <div className="w-20 h-24 sm:w-24 sm:h-28 shrink-0 rounded-[6px] overflow-hidden bg-[#FAFAFA] border border-[#EAEAEA] relative">
         {cover ? (
-          <img src={cover} alt={item.product?.title} className="w-full h-full object-cover" />
+          <img src={cover} alt={item.product?.title || 'Product'} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <ShoppingBag size={18} strokeWidth={1.25} className="text-ink-soft" />
+          <div className="w-full h-full flex items-center justify-center text-[#999]">
+            <ShoppingBag size={18} strokeWidth={1.5} />
           </div>
         )}
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-1.5">
-              {item.product?.category}
-            </p>
-            <h3 className="font-display text-[16px] md:text-[18px] text-ink leading-snug mb-1.5 truncate">
-              {item.product?.title}
-            </h3>
-            {variant && (
-              <div className="flex items-center gap-2">
-                <span className="border border-border rounded-[3px] px-2.5 py-1 text-[10.5px] font-medium text-ink-soft">
-                  {variant.size}
-                </span>
-                <span className="border border-border rounded-[3px] px-2.5 py-1 text-[10.5px] font-medium text-ink-soft">
-                  {variant.color}
-                </span>
-              </div>
-            )}
-          </div>
+      {/* Info */}
+      <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch">
+        <div>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold tracking-[0.1em] uppercase text-[#B08D57] mb-0.5 truncate">
+                {item.product?.brand || item.product?.category || 'ZRIVE'}
+              </p>
+              <h3 className="text-[13.5px] font-medium text-[#111111] leading-snug truncate max-w-full">
+                {item.product?.title || item.product?.name}
+              </h3>
 
-          <button
-            type="button"
-            onClick={() => onRemove(item)}
-            aria-label="Remove item"
-            className="shrink-0 text-ink-soft hover:text-error transition-colors"
-          >
-            <Trash2 size={16} strokeWidth={1.5} />
-          </button>
+              {variant && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                  {variant.size && (
+                    <span className="border border-[#EAEAEA] bg-[#FAFAFA] rounded px-2 py-0.5 text-[10.5px] font-semibold text-[#555]">
+                      Size: {variant.size}
+                    </span>
+                  )}
+                  {variant.color && (
+                    <span className="border border-[#EAEAEA] bg-[#FAFAFA] rounded px-2 py-0.5 text-[10.5px] font-semibold text-[#555]">
+                      Color: {variant.color}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onRemove(item)}
+              aria-label="Remove item"
+              className="p-1 text-[#999999] hover:text-[#C43D3D] transition-colors shrink-0"
+            >
+              <Trash2 size={15} strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-end justify-between mt-auto pt-6">
-          <div className="flex items-center border border-border rounded-[3px]">
+        {/* Quantity & Pricing */}
+        <div className="flex items-end justify-between pt-3 mt-auto">
+          <div className="flex items-center border border-[#EAEAEA] rounded bg-[#FAFAFA] shrink-0">
             <button
               type="button"
               onClick={() => onDecrement(item)}
               disabled={item.quantity <= 1}
-              className="w-8 h-8 flex items-center justify-center text-ink hover:bg-cream-dark transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-7 h-7 flex items-center justify-center text-[#111111] hover:bg-[#EAEAEA] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <Minus size={12} strokeWidth={2} />
+              <Minus size={11} strokeWidth={2} />
             </button>
-            <span className={`w-9 text-center text-[13px] font-medium text-ink tabular-nums ${isPulsing ? 'cart-number-pop' : ''}`}>
+            <span className="w-8 text-center text-[12px] font-semibold text-[#111111] tabular-nums">
               {item.quantity}
             </span>
             <button
               type="button"
               onClick={() => onIncrement(item)}
-              className="w-8 h-8 flex items-center justify-center text-ink hover:bg-cream-dark transition-colors"
+              className="w-7 h-7 flex items-center justify-center text-[#111111] hover:bg-[#EAEAEA] transition-colors"
             >
-              <Plus size={12} strokeWidth={2} />
+              <Plus size={11} strokeWidth={2} />
             </button>
           </div>
 
-          <div className="text-right">
-            <p className={`font-sans text-[15px] font-semibold text-ink ${isPulsing ? 'cart-number-pop' : ''}`}>
+          <div className="text-right shrink-0">
+            <p className="text-[14.5px] font-bold text-[#111111]">
               {formatPrice({ ...unitPrice, amount: (unitPrice?.amount ?? 0) * item.quantity })}
             </p>
             {item.quantity > 1 && (
-              <p className="text-[11px] text-ink-soft mt-0.5">{formatPrice(unitPrice)} each</p>
+              <p className="text-[10px] text-[#777777]">{formatPrice(unitPrice)} each</p>
             )}
           </div>
         </div>
@@ -153,63 +104,29 @@ const CartItemRow = ({ item, index, isRemoving, isPulsing, onIncrement, onDecrem
   )
 }
 
-const EmptyBagIllustration = () => (
-  <svg width="180" height="180" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* drop shadow */}
-    <ellipse cx="103" cy="176" rx="34" ry="6" fill="#18160F" opacity="0.07" />
-
-    {/* motion lines — implies the bag swinging, light and empty */}
-    <g stroke="#8A8371" strokeWidth="1.6" strokeLinecap="round" opacity="0.7">
-      <path d="M18 96 H34" />
-      <path d="M14 108 Q34 108 42 100" fill="none" />
-      <path d="M22 120 Q36 120 41 114" fill="none" />
-    </g>
-
-    {/* bag — sways gently */}
-    <g className="empty-bag-sway">
-      <path
-        d="M79 72 C79 46 88 30 103 30 C118 30 127 46 127 72"
-        stroke="#18160F"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d="M65 72 H141 L131 166 C131 170.5 127.5 174 123 174 H83 C78.5 174 75 170.5 75 166 Z"
-        fill="#F1ECE1"
-        stroke="#18160F"
-        strokeWidth="1.6"
-      />
-      <text x="103" y="130" textAnchor="middle" fontFamily="Georgia, serif" fontSize="30" fill="#9C8A5C">
-        Z
-      </text>
-    </g>
-  </svg>
-)
-
 const EmptyCart = () => (
-  <div className="flex flex-col items-center justify-center text-center px-5">
-    <div className="empty-fade-1">
-      <EmptyBagIllustration />
+  <div className="flex flex-col items-center justify-center text-center px-4 py-16 bg-white rounded-[10px] border border-[#EAEAEA] max-w-lg mx-auto my-8">
+    <div className="w-16 h-16 rounded-full bg-[#F5EFE5] flex items-center justify-center mb-4">
+      <ShoppingBag size={28} strokeWidth={1.5} className="text-[#B08D57]" />
     </div>
-    <h2 className="empty-fade-2 font-display text-[26px] text-ink mt-2 mb-2">
-      An Empty Canvas
+    <h2 className="text-[20px] font-bold text-[#111111] mb-1">
+      Your Bag is Empty
     </h2>
-    <p className="empty-fade-2 text-[13px] text-ink-soft mb-8 max-w-xs leading-relaxed">
-      Your bag has nothing to carry yet. Discover a piece worth adding.
+    <p className="text-[12.5px] text-[#666666] mb-6 max-w-xs leading-relaxed">
+      Explore our collections and discover items to add to your bag.
     </p>
-    <div className="empty-fade-3 flex flex-col sm:flex-row items-center gap-3">
+    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
       <Link
         to="/all-products"
-        className="bg-charcoal text-cream rounded-[3px] px-8 py-3.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
+        className="w-full sm:w-auto bg-[#111111] text-white rounded px-6 py-3 text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
       >
-        Explore The Collection
+        Explore Catalog
       </Link>
       <Link
         to="/wishlist"
-        className="border border-charcoal text-charcoal rounded-[3px] px-8 py-3.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-cream-dark transition-colors"
+        className="w-full sm:w-auto border border-[#111111] text-[#111111] rounded px-6 py-3 text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#FAFAFA] transition-all"
       >
-        From Your Wishlist
+        View Wishlist
       </Link>
     </div>
   </div>
@@ -217,16 +134,8 @@ const EmptyCart = () => (
 
 const Cart = () => {
   const { handleGetCart, handleAddToCart, handleRemoveCartItem } = useCart()
-  const { error, isLoading, Razorpay } = useRazorpay();
-
   const { items, totalPrice: subtotal, currency } = useSelector((state) => state.cart)
-  const user = useSelector((state)=> state.auth.user)
-
   const [loading, setLoading] = useState(true)
-  const [removingIds, setRemovingIds] = useState(new Set())
-  const [pulseTotal, setPulseTotal] = useState(false)
-  const [pulsingItemId, setPulsingItemId] = useState(null)
-
   const navigate = useNavigate()
 
   const fetchCartItems = async () => {
@@ -238,129 +147,188 @@ const Cart = () => {
     fetchCartItems()
   }, [])
 
-
-  // Fires an instant, localized pulse right where the click happened —
-  // not tied to the network round-trip, so feedback is immediate.
-  const triggerPulse = (item) => {
-    setPulsingItemId(item._id)
-    setPulseTotal(true)
-    setTimeout(() => setPulsingItemId(null), 400)
-    setTimeout(() => setPulseTotal(false), 500)
-  }
-
-  // ---------------- Quantity handlers ----------------
   const handleIncrement = async (item) => {
-    triggerPulse(item)
     await handleAddToCart(item.product._id, item.variant)
     await fetchCartItems()
   }
 
   const handleDecrement = async (item) => {
-    triggerPulse(item)
     await handleRemoveCartItem(item.product._id, item.variant, "decrement")
     await fetchCartItems()
-    // TODO: dispatch(updateCartQuantity({ itemId: item._id, quantity: item.quantity - 1 }))
-    console.log('decrement', item._id)
   }
 
-  // ---------------- Remove handler (animated, stub — wire to real cart action later) ----------------
   const handleRemove = async (item) => {
-
     await handleRemoveCartItem(item.product._id, item.variant, "remove")
     await fetchCartItems()
-    setTimeout(() => {
-      // TODO: dispatch(removeCartItem(item._id)) — once removed from the store,
-      // this item will naturally drop out of `items` and this local flag is irrelevant.
-      console.log('remove', item._id)
-    }, 400)
   }
 
-  const isFreeShipping = subtotal >= 15000
+  const isFreeShipping = subtotal >= 999
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <p className="font-display text-[20px] text-ink-soft animate-pulse">Loading your bag…</p>
+      <div className="min-h-[60vh] bg-white flex flex-col items-center justify-center gap-3">
+        <div className="w-8 h-8 border-2 border-[#EAEAEA] border-t-[#B08D57] rounded-full animate-spin" />
+        <p className="text-[13px] text-[#666666]">Loading your shopping bag…</p>
       </div>
     )
   }
 
-  const handleCheckOut = async ()=>{
-    navigate("/address")
-  }
-
   return (
-    <div className="min-h-screen bg-cream">
-      <CartAnimations />
+    <div className="min-h-screen bg-[#FFFFFF] text-[#111111]">
+      {/* Checkout Stepper */}
+      <div className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
+        <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-3.5 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => navigate('/all-products')}
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
+          >
+            <ArrowLeft size={14} />
+            <span className="hidden sm:inline">Continue Shopping</span>
+          </button>
 
-      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-14 py-5 md:py-8">
-        <Link
-          to="/all-products"
-          className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft hover:text-ink transition-colors mb-5"
-        >
-          <ArrowLeft size={14} strokeWidth={1.75} />
-          Continue Shopping
-        </Link>
+          <div className="flex items-center gap-2 sm:gap-3 text-[11.5px] font-semibold">
+            <span className="flex items-center gap-1 text-[#B08D57]">
+              <span className="w-4 h-4 rounded-full bg-[#B08D57] text-white text-[9px] flex items-center justify-center font-bold">1</span>
+              Bag
+            </span>
+            <span className="text-[#D2D2D2]">&rarr;</span>
+            <span className="flex items-center gap-1 text-[#999999]">
+              <span className="w-4 h-4 rounded-full bg-[#EAEAEA] text-[#777] text-[9px] flex items-center justify-center font-bold">2</span>
+              Address
+            </span>
+            <span className="text-[#D2D2D2]">&rarr;</span>
+            <span className="flex items-center gap-1 text-[#999999]">
+              <span className="w-4 h-4 rounded-full bg-[#EAEAEA] text-[#777] text-[9px] flex items-center justify-center font-bold">3</span>
+              Payment
+            </span>
+          </div>
 
-        <div className="mb-6">
-          <h1 className="font-display text-[30px] md:text-[36px] text-ink leading-tight">Your Bag</h1>
+          <div className="flex items-center gap-1 text-[10.5px] font-bold text-[#287A4B] bg-[#EAF5EE] px-2.5 py-0.5 rounded-full">
+            <Lock size={11} />
+            <span className="hidden md:inline">Razorpay Escrow</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Container */}
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-6">
+        <div className="mb-6 flex items-baseline justify-between border-b border-[#EAEAEA] pb-3">
+          <h1 className="text-[24px] md:text-[28px] font-bold text-[#111111] leading-tight">
+            Shopping Bag
+          </h1>
           {items?.length > 0 && (
-            <p className="text-[12px] text-ink-soft mt-1.5">
+            <span className="text-[12px] font-medium text-[#666666]">
               {items.length} {items.length === 1 ? 'item' : 'items'}
-            </p>
+            </span>
           )}
         </div>
 
         {(!items || items.length === 0) ? (
           <EmptyCart />
         ) : (
-          <div className="grid lg:grid-cols-[1fr_400px] gap-12 lg:gap-16 items-start">
-            {/* ── Item list ── */}
-            <div>
-              {items.map((item, i) => (
-                <CartItemRow
-                  key={item._id}
-                  item={item}
-                  index={i}
-                  isRemoving={removingIds.has(item._id)}
-                  isPulsing={pulsingItemId === item._id}
-                  onIncrement={() => handleIncrement(item)}
-                  onDecrement={handleDecrement}
-                  onRemove={handleRemove}
-                />
-              ))}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start w-full">
+            {/* Left: Items */}
+            <div className="min-w-0 w-full">
+              {/* Promo Banner */}
+              <div className="flex items-center justify-between p-3.5 bg-[#F5EFE5] rounded-[6px] border border-[#D4B982] mb-4">
+                <div className="flex items-center gap-2.5">
+                  <Tag size={16} className="text-[#B08D57]" />
+                  <div>
+                    <p className="text-[12px] font-bold text-[#111111]">ZRIVE20 Code Applied</p>
+                    <p className="text-[10.5px] text-[#666666]">Flat 20% discount reflected at final checkout</p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-[#B08D57] bg-white px-2 py-0.5 rounded border border-[#B08D57]/30">APPLIED</span>
+              </div>
+
+              {/* Items List */}
+              <div className="bg-white divide-y divide-[#EAEAEA]">
+                {items.map((item, i) => (
+                  <CartItemRow
+                    key={item._id}
+                    item={item}
+                    index={i}
+                    onIncrement={() => handleIncrement(item)}
+                    onDecrement={() => handleDecrement(item)}
+                    onRemove={() => handleRemove(item)}
+                  />
+                ))}
+              </div>
+
+              {/* Trust Strip */}
+              <div className="grid grid-cols-3 gap-3 pt-6 mt-4 border-t border-[#EAEAEA]">
+                <div className="flex items-center gap-2 p-3 rounded bg-[#FAFAFA]">
+                  <Truck size={16} className="text-[#B08D57] shrink-0" />
+                  <div>
+                    <p className="text-[11px] font-bold text-[#111111]">Free Express Delivery</p>
+                    <p className="text-[10px] text-[#777]">Orders above ₹999</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 rounded bg-[#FAFAFA]">
+                  <RefreshCw size={16} className="text-[#B08D57] shrink-0" />
+                  <div>
+                    <p className="text-[11px] font-bold text-[#111111]">7-Day Returns</p>
+                    <p className="text-[10px] text-[#777]">Hassle-free exchange</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 rounded bg-[#FAFAFA]">
+                  <ShieldCheck size={16} className="text-[#B08D57] shrink-0" />
+                  <div>
+                    <p className="text-[11px] font-bold text-[#111111]">Secure Escrow</p>
+                    <p className="text-[10px] text-[#777]">Verified Merchant</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* ── Order summary ── */}
-            <div className="bg-surface border border-border rounded-[3px] p-4 lg:p-5 lg:sticky lg:top-32">
-              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-3">
-                Order Summary
-              </p>
+            {/* Right: Summary */}
+            <div className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded-[8px] p-5 lg:sticky lg:top-24 shadow-sm">
+              <h2 className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#B08D57] mb-3 pb-2 border-b border-[#EAEAEA]">
+                Price Details ({items.length} Items)
+              </h2>
 
-              <InfoRow label="Subtotal" value={formatPrice({ amount: subtotal, currency })} />
-              <InfoRow
-                label="Shipping"
-                value={isFreeShipping ? 'Complimentary' : `Free over ${formatPrice({ amount: 15000, currency })}`}
-              />
+              <div className="space-y-2 text-[12.5px] mb-4">
+                <div className="flex justify-between">
+                  <span className="text-[#666]">Total MRP</span>
+                  <span className="font-semibold text-[#111]">{formatPrice({ amount: subtotal, currency })}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#666]">Shipping Fee</span>
+                  <span className={`font-semibold ${isFreeShipping ? 'text-[#287A4B]' : 'text-[#111]'}`}>
+                    {isFreeShipping ? 'FREE' : formatPrice({ amount: 99, currency })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#666]">GST Tax</span>
+                  <span className="font-semibold text-[#111]">Included</span>
+                </div>
+              </div>
 
-              <div className="flex justify-between items-center py-3 border-t border-border mt-1">
-                <span className="text-[12px] font-semibold tracking-[0.08em] uppercase text-ink">Total</span>
-                <span className={`text-[20px] font-semibold text-ink ${pulseTotal ? 'cart-total-pulse' : ''}`}>
-                  {formatPrice({ amount: subtotal, currency })}
+              <div className="flex justify-between items-center py-3 border-t border-b border-[#EAEAEA] my-3">
+                <div>
+                  <span className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#111]">Total Amount</span>
+                </div>
+                <span className="text-[20px] font-bold text-[#111]">
+                  {formatPrice({ amount: isFreeShipping ? subtotal : subtotal + 99, currency })}
                 </span>
               </div>
 
               <button
                 type="button"
-                onClick={handleCheckOut}
-                className="w-full bg-charcoal text-cream rounded-[3px] py-4 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors mt-1"
+                onClick={() => navigate('/address')}
+                className="w-full flex items-center justify-center gap-2 bg-[#111111] text-white rounded py-3.5 text-[12px] font-bold tracking-[0.06em] uppercase hover:bg-[#B08D57] transition-all shadow-sm"
               >
-                Proceed to Checkout
+                Proceed to Select Address
+                <ArrowRight size={15} />
               </button>
 
-              <p className="text-[11px] text-ink-soft text-center mt-3 leading-relaxed">
-                Secure checkout · Easy 14-day returns
-              </p>
+              <div className="mt-3 text-center">
+                <p className="text-[10.5px] text-[#777] flex items-center justify-center gap-1">
+                  <ShieldCheck size={12} className="text-[#287A4B]" />
+                  Safe & Secure Checkout via Razorpay
+                </p>
+              </div>
             </div>
           </div>
         )}

@@ -1,28 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router'
+import { useParams, Link, useNavigate } from 'react-router'
 import { useForm } from 'react-hook-form'
-import { ArrowLeft, Plus, Pencil, X, ImageIcon } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, X, ImageIcon, Layers, Check } from 'lucide-react'
 import { useProduct } from '../hook/useProduct'
 
-const CATEGORY_LABEL = {
-  'T-Shirts': 'T-Shirts',
-  Shirts: 'Shirts',
-  Jeans: 'Jeans',
-  Trousers: 'Trousers',
-  Shorts: 'Shorts',
-  Jackets: 'Jackets',
-  Hoodies: 'Hoodies',
-  Sweatshirts: 'Sweatshirts',
-  Blazers: 'Blazers',
-  'Ethnic Wear': 'Ethnic Wear',
-}
-
 const InfoRow = ({ label, value }) => (
-  <div className="flex justify-between py-3 border-t border-border">
-    <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-ink-soft">
-      {label}
-    </span>
-    <span className="text-[12px] text-ink text-right">{value}</span>
+  <div className="flex justify-between py-2.5 border-b border-[#E5E5E5] text-[13px]">
+    <span className="text-[#666666] font-medium">{label}</span>
+    <span className="font-semibold text-[#111111]">{value}</span>
   </div>
 )
 
@@ -31,54 +16,64 @@ const VariantCard = ({ variant, basePrice, currency, isEditing, onToggleEdit, ed
   const cover = variant.images?.[0]?.url
 
   return (
-    <div className="border-t border-border pt-6 pb-6">
-      <div className="flex items-center gap-5">
-        <div className="w-16 h-16 shrink-0 rounded-[3px] bg-cream-dark overflow-hidden flex items-center justify-center">
-          {cover ? (
-            <img src={cover} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <ImageIcon size={18} strokeWidth={1.5} className="text-ink-soft" />
-          )}
-        </div>
-
-        <div className="flex-1 flex flex-wrap items-center gap-x-6 gap-y-1">
-          <div className="flex items-center gap-2">
-            <span className="border border-border rounded-[3px] px-3 py-1 text-[11px] font-semibold text-ink">
-              {variant.size}
-            </span>
-            <span className="border border-border rounded-[3px] px-3 py-1 text-[11px] font-semibold text-ink">
-              {variant.color}
-            </span>
+    <div className="bg-[#FAFAFA] border border-[#E5E5E5] rounded-[8px] p-4 mb-3">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-[6px] bg-white border border-[#E5E5E5] overflow-hidden flex items-center justify-center shrink-0">
+            {cover ? (
+              <img src={cover} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <ImageIcon size={18} strokeWidth={1.5} className="text-[#999999]" />
+            )}
           </div>
-          <span className="text-[11px] text-ink-soft">SKU · {variant.sku}</span>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft">
-            {variant.stock > 0 ? `${variant.stock} in stock` : 'Out of stock'}
-          </span>
-          <span className="text-[13px] font-semibold text-ink">
-            {currency} {effectivePrice}
-          </span>
+
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="bg-[#111111] text-white px-2 py-0.5 rounded text-[11px] font-bold">
+                Size: {variant.size}
+              </span>
+              <span className="bg-[#F5EFE5] text-[#B08D57] px-2 py-0.5 rounded text-[11px] font-bold">
+                Color: {variant.color}
+              </span>
+            </div>
+            <p className="text-[11px] text-[#777777]">SKU: {variant.sku}</p>
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onToggleEdit}
-          className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-ink-soft hover:text-ink transition-colors"
-        >
-          <Pencil size={13} strokeWidth={1.75} />
-          {isEditing ? 'Close' : 'Edit'}
-        </button>
+        <div className="flex items-center gap-6">
+          <div>
+            <p className="text-[10px] uppercase font-bold text-[#999999]">Stock</p>
+            <p className={`text-[13px] font-bold ${variant.stock > 0 ? 'text-[#287A4B]' : 'text-[#C43D3D]'}`}>
+              {variant.stock > 0 ? `${variant.stock} units` : 'Out of stock'}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[10px] uppercase font-bold text-[#999999]">Variant Price</p>
+            <p className="text-[14px] font-bold text-[#111111]">₹{effectivePrice}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onToggleEdit}
+            className="flex items-center gap-1 text-[11px] font-bold uppercase text-[#B08D57] hover:underline"
+          >
+            <Pencil size={12} />
+            {isEditing ? 'Close' : 'Edit'}
+          </button>
+        </div>
       </div>
 
-      {isEditing && <div className="mt-6 pl-[84px]">{editForm}</div>}
+      {isEditing && <div className="mt-4 pt-4 border-t border-[#E5E5E5]">{editForm}</div>}
     </div>
   )
 }
 
 const SellerProductDetail = () => {
   const { productId } = useParams()
+  const navigate = useNavigate()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [activeImage, setActiveImage] = useState(0)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingVariantId, setEditingVariantId] = useState(null)
 
@@ -95,401 +90,158 @@ const SellerProductDetail = () => {
     fetchProductDetail()
   }, [productId])
 
-  // ---------------- Add Variant form ----------------
   const {
     register: registerAdd,
     handleSubmit: handleSubmitAdd,
     reset: resetAdd,
-    formState: { errors: addErrors, isSubmitting: isAddSubmitting },
   } = useForm()
 
-  const onSubmitAddVariant = async (data) => {
-    const formData = new FormData()
-    formData.append('size', data.size)
-    formData.append('color', data.color)
-    formData.append('sku', data.sku)
-    formData.append('stock', data.stock)
-    if (data.priceAmount) formData.append('priceAmount', data.priceAmount)
-    if (data.images && data.images.length > 0) {
-      Array.from(data.images).forEach((file) => formData.append('images', file))
+  const onAddVariant = async (data) => {
+    const payload = {
+      size: data.size.toUpperCase(),
+      color: data.color,
+      sku: data.sku.toUpperCase(),
+      stock: Number(data.stock),
+      priceOverride: data.price ? Number(data.price) : undefined,
     }
 
-    await handleAddVariant(productId, formData)
-    resetAdd()
-    setShowAddForm(false)
-    fetchProductDetail()
-  }
-
-  // ---------------- Edit Variant form (stub — wire the API call later) ----------------
-  const {
-    register: registerEdit,
-    handleSubmit: handleSubmitEdit,
-    reset: resetEdit,
-  } = useForm()
-
-  const openEditVariant = (variant) => {
-    if (editingVariantId === variant._id) {
-      setEditingVariantId(null)
-      return
+    const ok = await handleAddVariant(productId, payload)
+    if (ok) {
+      setShowAddForm(false)
+      resetAdd()
+      fetchProductDetail()
     }
-    setEditingVariantId(variant._id)
-    resetEdit({
-      size: variant.size,
-      color: variant.color,
-      sku: variant.sku,
-      stock: variant.stock,
-      priceAmount: variant.price?.amount ?? '',
-    })
   }
 
-  const onSubmitEditVariant = async (data) => {
-    // TODO: wire to a handleEditVariant(productId, variantId, formData) hook call once available
-    console.log('Edit variant submit —', editingVariantId, data)
-  }
-
-  if (loading) {
+  if (loading || !product) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <p className="text-[13px] text-ink-soft">Loading product…</p>
-      </div>
-    )
-  }
-
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <p className="text-[13px] text-ink-soft">Product not found.</p>
+      <div className="min-h-screen bg-[#FFFFFF] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#E5E5E5] border-t-[#B08D57] rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-cream">
-      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-14 py-10 md:py-16">
-        {/* ── Back + breadcrumb ── */}
-        <Link
-          to="/seller/inventory"
-          className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-soft hover:text-ink transition-colors mb-8"
-        >
-          <ArrowLeft size={14} strokeWidth={1.75} />
-          Back to Inventory
-        </Link>
-
-        {/* ── Title row ── */}
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-12">
-          <div>
-            <span className="block text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-2">
-              {CATEGORY_LABEL[product.category] ?? product.category}
-            </span>
-            <h1 className="font-display font-normal text-[32px] md:text-[40px] leading-[1.05] text-ink">
-              {product.title}
-            </h1>
-          </div>
-          <span
-            className={`text-[11px] font-semibold tracking-[0.1em] uppercase ${
-              product.status === 'In-Stock' ? 'text-success' : 'text-error'
-            }`}
+    <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
+      {/* Header bar */}
+      <div className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+        <div className="max-w-[1200px] mx-auto px-5 md:px-8 py-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => navigate('/seller/inventory')}
+            className="flex items-center gap-2 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
           >
-            {product.status}
+            <ArrowLeft size={15} strokeWidth={2} />
+            Back to Inventory
+          </button>
+          <span className="text-[11px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
+            Variant Manager
           </span>
         </div>
+      </div>
 
-        {/* ── Details grid ── */}
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 mb-20">
-          {/* Gallery */}
+      <div className="max-w-[1100px] mx-auto px-5 md:px-8 pt-8">
+        <div className="bg-[#FAFAFA] border border-[#E5E5E5] rounded-[10px] p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="aspect-square rounded-[3px] overflow-hidden bg-cream-dark">
-              {product.images?.[activeImage]?.url ? (
-                <img
-                  src={product.images[activeImage].url}
-                  alt={product.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <ImageIcon size={28} strokeWidth={1.25} className="text-ink-soft" />
-                </div>
-              )}
-            </div>
-            {product.images?.length > 1 && (
-              <div className="flex gap-3 mt-4">
-                {product.images.map((img, i) => (
-                  <button
-                    key={img.url + i}
-                    type="button"
-                    onClick={() => setActiveImage(i)}
-                    className={`w-16 h-16 rounded-[3px] overflow-hidden bg-cream-dark border ${
-                      activeImage === i ? 'border-charcoal' : 'border-transparent'
-                    }`}
-                  >
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
+            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#B08D57]">{product.category || 'Menswear'}</p>
+            <h1 className="font-display text-[26px] font-bold text-[#111111]">{product.name || product.title}</h1>
+            <p className="text-[13px] text-[#666666] mt-1">Base Price: <strong className="text-[#111111]">₹{product.price?.amount || product.price}</strong></p>
           </div>
 
-          {/* Details panel */}
-          <div>
-            <span className="block text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-3">
-              The Details
-            </span>
-            <p className="text-[14px] leading-relaxed text-ink-soft mb-8">
-              {product.description}
-            </p>
-
-            <div className="text-[20px] font-semibold text-ink mb-2">
-              {product.price?.currency} {product.price?.amount}
-            </div>
-
-            <div className="space-y-0">
-              <InfoRow label="Category" value={CATEGORY_LABEL[product.category] ?? product.category} />
-              <InfoRow label="Total Stock" value={product.stock} />
-              <InfoRow label="Status" value={product.status} />
-              <InfoRow
-                label="Listed On"
-                value={new Date(product.createdAt).toLocaleDateString('en-IN', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              />
-            </div>
-          </div>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center gap-2 bg-[#111111] text-white px-5 py-3 rounded-[6px] text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all shrink-0"
+          >
+            <Plus size={16} />
+            Add New Variant
+          </button>
         </div>
 
-        {/* ── Variants section ── */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-gold">
-              Variants · {product.variants?.length ?? 0}
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowAddForm((s) => !s)}
-              className="flex items-center gap-2 bg-charcoal text-cream rounded-[3px] px-5 py-2.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
-            >
-              {showAddForm ? <X size={14} strokeWidth={2} /> : <Plus size={14} strokeWidth={2} />}
-              {showAddForm ? 'Cancel' : 'Add Variant'}
-            </button>
-          </div>
+        {/* Add Form */}
+        {showAddForm && (
+          <div className="bg-white border border-[#E5E5E5] rounded-[10px] p-6 mb-8 shadow-sm">
+            <h3 className="font-display text-[18px] font-bold text-[#111111] pb-3 border-b border-[#E5E5E5] mb-4">
+              Add Size / Color Variant
+            </h3>
 
-          {(!product.variants || product.variants.length === 0) && !showAddForm && (
-            <p className="text-[13px] text-ink-soft border-t border-border pt-6 mt-4">
-              No variants yet. Add the first size/color combination to make this product sellable.
-            </p>
-          )}
-
-          <div className="mt-4">
-            {product.variants?.map((variant) => (
-              <VariantCard
-                key={variant._id}
-                variant={variant}
-                basePrice={product.price?.amount}
-                currency={product.price?.currency}
-                isEditing={editingVariantId === variant._id}
-                onToggleEdit={() => openEditVariant(variant)}
-                editForm={
-                  <form
-                    onSubmit={handleSubmitEdit(onSubmitEditVariant)}
-                    className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"
-                  >
-                    <div>
-                      <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                        Size
-                      </label>
-                      <input
-                        {...registerEdit('size', { required: true })}
-                        className="w-full rounded-[3px] border border-border bg-surface px-3.5 py-2.5 text-[13px] text-ink outline-none focus:border-charcoal"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                        Color
-                      </label>
-                      <input
-                        {...registerEdit('color', { required: true })}
-                        className="w-full rounded-[3px] border border-border bg-surface px-3.5 py-2.5 text-[13px] text-ink outline-none focus:border-charcoal"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                        SKU
-                      </label>
-                      <input
-                        {...registerEdit('sku', { required: true })}
-                        className="w-full rounded-[3px] border border-border bg-surface px-3.5 py-2.5 text-[13px] text-ink outline-none focus:border-charcoal"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                        Stock
-                      </label>
-                      <input
-                        type="number"
-                        {...registerEdit('stock', { required: true, min: 0 })}
-                        className="w-full rounded-[3px] border border-border bg-surface px-3.5 py-2.5 text-[13px] text-ink outline-none focus:border-charcoal"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                        Variant Price
-                      </label>
-                      <input
-                        type="number"
-                        placeholder={`Default ₹${product.price?.amount}`}
-                        {...registerEdit('priceAmount')}
-                        className="w-full rounded-[3px] border border-border bg-surface px-3.5 py-2.5 text-[13px] text-ink placeholder:text-ink-soft outline-none focus:border-charcoal"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2 lg:col-span-3 flex gap-3 pt-1">
-                      <button
-                        type="submit"
-                        className="bg-charcoal text-cream rounded-[3px] px-6 py-2.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors"
-                      >
-                        Save Changes
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingVariantId(null)}
-                        className="border border-charcoal text-charcoal rounded-[3px] px-6 py-2.5 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-cream-dark transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                }
-              />
-            ))}
-          </div>
-
-          {/* ── Inline Add Variant form ── */}
-          {showAddForm && (
-            <form
-              onSubmit={handleSubmitAdd(onSubmitAddVariant)}
-              className="border-t border-border pt-8 mt-6"
-            >
-              <span className="block text-[10px] font-semibold tracking-[0.16em] uppercase text-gold mb-5">
-                New Variant
-              </span>
-
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-5">
+            <form onSubmit={handleSubmitAdd(onAddVariant)} className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                    Size
-                  </label>
+                  <label className="block text-[10px] font-bold uppercase text-[#666666] mb-1">Size (e.g. L)</label>
                   <input
-                    placeholder="M"
-                    aria-invalid={addErrors.size ? 'true' : 'false'}
-                    className={`w-full rounded-[3px] border bg-surface px-3.5 py-2.5 text-[13px] text-ink placeholder:text-ink-soft outline-none focus:border-charcoal ${
-                      addErrors.size ? 'border-error' : 'border-border'
-                    }`}
-                    {...registerAdd('size', { required: 'Size is required' })}
+                    type="text"
+                    placeholder="L"
+                    className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-[6px] p-2.5 text-[13px] outline-none"
+                    {...registerAdd('size', { required: true })}
                   />
-                  {addErrors.size && (
-                    <p className="mt-1 text-[11px] text-error">{addErrors.size.message}</p>
-                  )}
                 </div>
-
                 <div>
-                  <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                    Color
-                  </label>
+                  <label className="block text-[10px] font-bold uppercase text-[#666666] mb-1">Color (e.g. Black)</label>
                   <input
+                    type="text"
                     placeholder="Black"
-                    aria-invalid={addErrors.color ? 'true' : 'false'}
-                    className={`w-full rounded-[3px] border bg-surface px-3.5 py-2.5 text-[13px] text-ink placeholder:text-ink-soft outline-none focus:border-charcoal ${
-                      addErrors.color ? 'border-error' : 'border-border'
-                    }`}
-                    {...registerAdd('color', { required: 'Color is required' })}
+                    className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-[6px] p-2.5 text-[13px] outline-none"
+                    {...registerAdd('color', { required: true })}
                   />
-                  {addErrors.color && (
-                    <p className="mt-1 text-[11px] text-error">{addErrors.color.message}</p>
-                  )}
                 </div>
-
                 <div>
-                  <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                    SKU
-                  </label>
+                  <label className="block text-[10px] font-bold uppercase text-[#666666] mb-1">SKU Code</label>
                   <input
-                    placeholder="ZRV-SHT-BLK-M"
-                    aria-invalid={addErrors.sku ? 'true' : 'false'}
-                    className={`w-full rounded-[3px] border bg-surface px-3.5 py-2.5 text-[13px] text-ink placeholder:text-ink-soft outline-none focus:border-charcoal ${
-                      addErrors.sku ? 'border-error' : 'border-border'
-                    }`}
-                    {...registerAdd('sku', { required: 'SKU is required' })}
+                    type="text"
+                    placeholder="TEE-BLK-L"
+                    className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-[6px] p-2.5 text-[13px] outline-none"
+                    {...registerAdd('sku', { required: true })}
                   />
-                  {addErrors.sku && (
-                    <p className="mt-1 text-[11px] text-error">{addErrors.sku.message}</p>
-                  )}
                 </div>
-
                 <div>
-                  <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                    Stock
-                  </label>
+                  <label className="block text-[10px] font-bold uppercase text-[#666666] mb-1">Stock Count</label>
                   <input
                     type="number"
-                    placeholder="0"
-                    aria-invalid={addErrors.stock ? 'true' : 'false'}
-                    className={`w-full rounded-[3px] border bg-surface px-3.5 py-2.5 text-[13px] text-ink placeholder:text-ink-soft outline-none focus:border-charcoal ${
-                      addErrors.stock ? 'border-error' : 'border-border'
-                    }`}
-                    {...registerAdd('stock', { required: 'Stock is required', min: { value: 0, message: 'Stock cannot be negative' } })}
-                  />
-                  {addErrors.stock && (
-                    <p className="mt-1 text-[11px] text-error">{addErrors.stock.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                    Variant Price
-                  </label>
-                  <input
-                    type="number"
-                    placeholder={`Default ₹${product.price?.amount ?? ''}`}
-                    className="w-full rounded-[3px] border border-border bg-surface px-3.5 py-2.5 text-[13px] text-ink placeholder:text-ink-soft outline-none focus:border-charcoal"
-                    {...registerAdd('priceAmount')}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-semibold tracking-[0.1em] uppercase text-ink-soft mb-1.5">
-                    Images
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="w-full rounded-[3px] border border-border bg-surface px-3.5 py-2.5 text-[12px] text-ink-soft outline-none focus:border-charcoal file:mr-3 file:rounded-[3px] file:border-0 file:bg-cream-dark file:px-3 file:py-1.5 file:text-[11px] file:font-semibold file:uppercase file:tracking-[0.05em] file:text-ink"
-                    {...registerAdd('images')}
+                    placeholder="25"
+                    className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-[6px] p-2.5 text-[13px] outline-none"
+                    {...registerAdd('stock', { required: true })}
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={isAddSubmitting}
-                  className="bg-charcoal text-cream rounded-[3px] px-7 py-3 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-ink transition-colors disabled:opacity-60"
-                >
-                  {isAddSubmitting ? 'Adding…' : 'Add Variant'}
-                </button>
+              <div className="flex justify-end gap-3 pt-3 border-t border-[#E5E5E5]">
                 <button
                   type="button"
-                  onClick={() => {
-                    resetAdd()
-                    setShowAddForm(false)
-                  }}
-                  className="border border-charcoal text-charcoal rounded-[3px] px-7 py-3 text-[11px] font-semibold tracking-[0.1em] uppercase hover:bg-cream-dark transition-colors"
+                  onClick={() => setShowAddForm(false)}
+                  className="px-5 py-2.5 border rounded-[6px] text-[12px] font-bold uppercase text-[#555555]"
                 >
                   Cancel
                 </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-[#B08D57] text-[#0e0e0e] rounded-[6px] text-[12px] font-bold uppercase hover:bg-[#D4B982]"
+                >
+                  Save Variant
+                </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Existing Variants */}
+        <div className="bg-white border border-[#E5E5E5] rounded-[10px] p-6 shadow-sm">
+          <h2 className="text-[12px] font-bold tracking-[0.14em] uppercase text-[#B08D57] mb-4 pb-3 border-b border-[#E5E5E5]">
+            Active Variants ({product.variants?.length || 0})
+          </h2>
+
+          {product.variants?.length === 0 ? (
+            <p className="text-[13px] text-[#666666] py-6 text-center">No variants created yet. Click 'Add New Variant' above.</p>
+          ) : (
+            product.variants?.map((v) => (
+              <VariantCard
+                key={v._id || v.sku}
+                variant={v}
+                basePrice={product.price?.amount || product.price}
+                currency="₹"
+                isEditing={editingVariantId === v._id}
+                onToggleEdit={() => setEditingVariantId(editingVariantId === v._id ? null : v._id)}
+              />
+            ))
           )}
         </div>
       </div>

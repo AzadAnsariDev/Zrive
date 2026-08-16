@@ -2,20 +2,20 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import {
-  Heart,
-  ChevronDown,
-  SlidersHorizontal,
-  X,
   Sparkle,
+  SlidersHorizontal,
+  ChevronDown,
+  ArrowLeft,
+  ShoppingBag,
+  Sparkles,
 } from "lucide-react";
 import { useProduct } from "../../product/hook/useProduct";
 import { formatPrice } from "./Home";
 import { CATEGORIES } from "../../../constant/Categories";
 import WishlistButton from "../../wishlist/components/WishlistButton";
+import useCart from "../../cart/hook/useCart";
 
-// TODO(refactor): pull from shared constants/categories.js once created
-
-const FILTER_CATEGORIES = CATEGORIES
+const FILTER_CATEGORIES = CATEGORIES;
 
 const SORT_OPTIONS = [
   { id: "newest", label: "Newest First" },
@@ -23,385 +23,135 @@ const SORT_OPTIONS = [
   { id: "price-desc", label: "Price: High to Low" },
 ];
 
-const NEW_BADGE_WINDOW_DAYS = 14;
-const SECTION_X = "px-5 md:px-8 lg:px-14";
-const CONTAINER = "max-w-[1440px] mx-auto";
-
-const ProductCardSkeleton = ({ className = "" }) => (
-  <div className={`animate-pulse bg-cream-dark ${className}`} />
-);
-
-const getProductName = (product) =>
-  product?.title || product?.name || "Product";
-
-const getProductImage = (product) => {
-  if (product?.images && product.images.length > 0) {
-    const img = product.images[0];
-    return typeof img === "string" ? img : img?.url || "";
-  }
-  return (
-    product?.image ||
-    "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=500&auto=format&fit=crop"
-  );
-};
-
-const getProductKey = (product, idx) => product?._id || product?.id || idx;
-
-const getProductAgeInDays = (product) => {
-  let createdAt = product?.createdAt;
-  if (
-    !createdAt &&
-    product?._id &&
-    typeof product._id === "string" &&
-    product._id.length === 24
-  ) {
-    const timestampHex = product._id.substring(0, 8);
-    createdAt = new Date(parseInt(timestampHex, 16) * 1000);
-  }
-  if (!createdAt) return Infinity;
-  const diffMs = Date.now() - new Date(createdAt).getTime();
-  return diffMs / (1000 * 60 * 60 * 24);
-};
-
-const getProductPrice = (product) => {
-  const p = product?.price;
-  if (typeof p === "number") return p;
-  if (typeof p === "object" && p !== null) return p.amount ?? p.value ?? 0;
-  return Number(p) || 0;
-};
-
-// Pulls unique variant colors off a product, if the schema has them.
-const getProductColors = (product) => {
-  if (!Array.isArray(product?.variants)) return [];
-  return [...new Set(product.variants.map((v) => v.color).filter(Boolean))];
-};
-
-// Total stock across all variants — used for the "In Stock" filter.
-const getProductStock = (product) => {
-  if (Array.isArray(product?.variants)) {
-    return product.variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
-  }
-  return Number(product?.stock) || 0;
-};
-
-// ---- Premium gold "NEW" badge ---------------------------------------------
-const NewBadge = () => (
-  <span className="absolute top-2.5 left-2.5 md:top-3 md:left-3 flex items-center gap-1 bg-gradient-to-r from-[#B8912F] via-[#E9CD7A] to-[#B8912F] text-charcoal text-[9px] font-bold tracking-[0.14em] uppercase px-2.5 py-1 rounded-[2px] shadow-[0_1px_4px_rgba(0,0,0,0.25)] border border-[#D4AF37]/40">
-    <Sparkle size={9} strokeWidth={2} fill="currentColor" />
-    New
-  </span>
-);
-
-// ---- Product card -----------------------------------------------------
-const ProductCard = ({ product, onClick }) => {
-  const isNew = getProductAgeInDays(product) <= NEW_BADGE_WINDOW_DAYS;
-
-  return (
-    <div className="group cursor-pointer" onClick={onClick}>
-      <div className="relative aspect-[3/4] overflow-hidden bg-cream-dark mb-2.5 md:mb-3">
-        <img
-          src={getProductImage(product)}
-          alt={getProductName(product)}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-        {isNew && <NewBadge />}
-        <WishlistButton 
-          productId={product._id}
-          variantSku={product.variants?.[0]?.sku}
-          className="absolute top-3 right-3 z-10"
-        />
-      </div>
-      <p className="text-[9px] font-semibold tracking-[0.16em] uppercase text-gold mb-0.5 truncate">
-        {product.brand || "Generic"}
-      </p>
-      <h3 className="font-display text-[13px] md:text-[14px] text-ink mb-0.5 truncate">
-        {getProductName(product)}
-      </h3>
-      <span className="font-sans text-[12px] md:text-[13px] font-semibold text-ink">
-        {formatPrice(product.price)}
-      </span>
-    </div>
-  );
-};
-
-// ---- Sidebar filter block helper ---------------------------------------
-const FilterBlock = ({ title, children }) => (
-  <div className="py-5 border-b border-border">
-    <h3 className="text-[11px] font-semibold tracking-[0.12em] uppercase text-ink mb-3.5">
-      {title}
-    </h3>
-    {children}
-  </div>
-);
-
 const NewArrivals = () => {
   const navigate = useNavigate();
   const { handleGetProducts } = useProduct();
+  const { handleAddToCart } = useCart();
 
-  const [selectedCategories, setSelectedCategories] = useState([]);
-  const [selectedColors, setSelectedColors] = useState([]);
-  const [inStockOnly, setInStockOnly] = useState(false);
-  const [priceMin, setPriceMin] = useState("");
-  const [priceMax, setPriceMax] = useState("");
+  const productsFromStore = useSelector((state) => state.product.products || []);
+  const loading = useSelector((state) => state.product.loading?.products);
 
-  const [sortBy, setSortBy] = useState("newest");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedSort, setSelectedSort] = useState("newest");
   const [sortOpen, setSortOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(true); // desktop sidebar toggle
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false); // mobile sheet
 
   useEffect(() => {
     handleGetProducts();
   }, []);
 
-  const products = useSelector((state) => state.product.products);
-  const loading = useSelector((state) => state.product.loading.fetch);
+  const filteredProducts = useMemo(() => {
+    let list = [...productsFromStore];
 
-  const availableColors = useMemo(() => {
-    const set = new Set();
-    (products || []).forEach((p) =>
-      getProductColors(p).forEach((c) => set.add(c)),
-    );
-    return [...set];
-  }, [products]);
-
-  const toggleInArray = (arr, setArr, value) => {
-    setArr(
-      arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value],
-    );
-  };
-
-  const filteredAndSorted = useMemo(() => {
-    let list = products ? [...products] : [];
-    if (selectedCategories.length > 0) {
-      list = list.filter((p) =>
-        selectedCategories.includes(
-          String(p.category || "")
-            .toLowerCase()
-            .trim(),
-        ),
+    if (selectedCategory !== "all") {
+      list = list.filter(
+        (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
       );
     }
-    if (selectedColors.length > 0) {
-      list = list.filter((p) =>
-        getProductColors(p).some((c) => selectedColors.includes(c)),
-      );
-    }
-    if (inStockOnly) {
-      list = list.filter((p) => getProductStock(p) > 0);
-    }
-    if (priceMin !== "") {
-      list = list.filter((p) => getProductPrice(p) >= Number(priceMin));
-    }
-    if (priceMax !== "") {
-      list = list.filter((p) => getProductPrice(p) <= Number(priceMax));
-    }
 
-    if (sortBy === "newest") {
-      list.sort((a, b) => getProductAgeInDays(a) - getProductAgeInDays(b));
-    } else if (sortBy === "price-asc") {
-      list.sort((a, b) => getProductPrice(a) - getProductPrice(b));
-    } else if (sortBy === "price-desc") {
-      list.sort((a, b) => getProductPrice(b) - getProductPrice(a));
+    if (selectedSort === "price-asc") {
+      list.sort((a, b) => (a.price?.amount || a.price) - (b.price?.amount || b.price));
+    } else if (selectedSort === "price-desc") {
+      list.sort((a, b) => (b.price?.amount || b.price) - (a.price?.amount || a.price));
     }
 
     return list;
-  }, [
-    products,
-    selectedCategories,
-    selectedColors,
-    inStockOnly,
-    priceMin,
-    priceMax,
-    sortBy,
-  ]);
-
-  const activeSortLabel = SORT_OPTIONS.find((s) => s.id === sortBy)?.label;
-  const activeFilterCount =
-    selectedCategories.length +
-    selectedColors.length +
-    (inStockOnly ? 1 : 0) +
-    (priceMin || priceMax ? 1 : 0);
-
-  const clearAllFilters = () => {
-    setSelectedCategories([]);
-    setSelectedColors([]);
-    setInStockOnly(false);
-    setPriceMin("");
-    setPriceMax("");
-  };
-
-  // ---- shared filter body, rendered in both the desktop sidebar and the
-  // mobile bottom-sheet so filter logic never has to be written twice ----
-  const FilterPanelContent = () => (
-    <>
-      <FilterBlock title="Category">
-        <div className="space-y-2.5">
-          {FILTER_CATEGORIES.map((cat) => (
-            <label
-              key={cat.id}
-              className="flex items-center gap-2.5 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={selectedCategories.includes(cat.id)}
-                onChange={() =>
-                  toggleInArray(
-                    selectedCategories,
-                    setSelectedCategories,
-                    cat.id,
-                  )
-                }
-                className="w-3.5 h-3.5 accent-charcoal rounded-[2px]"
-              />
-              <span className="text-[13px] text-ink-soft">{cat.label}</span>
-            </label>
-          ))}
-        </div>
-      </FilterBlock>
-
-      <FilterBlock title="Price">
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            placeholder="Min"
-            value={priceMin}
-            onChange={(e) => setPriceMin(e.target.value)}
-            className="w-full border border-border bg-cream px-2.5 py-2 text-[12.5px] text-ink outline-none focus:border-ink transition-colors rounded-[3px]"
-          />
-          <span className="text-ink-soft text-[12px]">—</span>
-          <input
-            type="number"
-            placeholder="Max"
-            value={priceMax}
-            onChange={(e) => setPriceMax(e.target.value)}
-            className="w-full border border-border bg-cream px-2.5 py-2 text-[12.5px] text-ink outline-none focus:border-ink transition-colors rounded-[3px]"
-          />
-        </div>
-      </FilterBlock>
-
-      {availableColors.length > 0 && (
-        <FilterBlock title="Color">
-          <div className="space-y-2.5">
-            {availableColors.map((color) => (
-              <label
-                key={color}
-                className="flex items-center gap-2.5 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedColors.includes(color)}
-                  onChange={() =>
-                    toggleInArray(selectedColors, setSelectedColors, color)
-                  }
-                  className="w-3.5 h-3.5 accent-charcoal rounded-[2px]"
-                />
-                <span className="text-[13px] text-ink-soft capitalize">
-                  {color}
-                </span>
-              </label>
-            ))}
-          </div>
-        </FilterBlock>
-      )}
-
-      <FilterBlock title="Availability">
-        <label className="flex items-center gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={inStockOnly}
-            onChange={() => setInStockOnly((v) => !v)}
-            className="w-3.5 h-3.5 accent-charcoal rounded-[2px]"
-          />
-          <span className="text-[13px] text-ink-soft">In Stock Only</span>
-        </label>
-      </FilterBlock>
-
-      {activeFilterCount > 0 && (
-        <button
-          type="button"
-          onClick={clearAllFilters}
-          className="mt-4 text-[11px] font-semibold tracking-[0.08em] uppercase text-gold hover:text-ink transition-colors"
-        >
-          Clear All Filters
-        </button>
-      )}
-    </>
-  );
+  }, [productsFromStore, selectedCategory, selectedSort]);
 
   return (
-    <div className="bg-cream text-ink min-h-screen">
-      {/* ================= Header ================= */}
-      <section
-        className={`${SECTION_X} pt-8 pb-6 md:pt-12 md:pb-8 border-b border-border`}
-      >
-        <div className={CONTAINER}>
-          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.16em] uppercase text-gold mb-1">
-            Just Landed
-          </p>
-          <h1 className="font-display text-[26px] md:text-[36px] font-medium text-ink">
-            New Arrivals
-          </h1>
-        </div>
-      </section>
-
-      {/* ================= Mobile control row (separate rows so nothing overlaps) ================= */}
-      <section className="md:hidden border-b border-border sticky top-[57px] z-10 bg-cream/95 backdrop-blur">
-        {/* Row 1: category chips, horizontal scroll, full width to itself */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar px-5 py-3">
-          {FILTER_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() =>
-                toggleInArray(selectedCategories, setSelectedCategories, cat.id)
-              }
-              className={`flex-shrink-0 text-[11px] font-medium px-3.5 py-1.5 rounded-[3px] border transition-colors ${
-                selectedCategories.includes(cat.id)
-                  ? "bg-charcoal text-cream border-charcoal"
-                  : "bg-transparent text-ink-soft border-border"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-        {/* Row 2: filter + sort, own row, no squeezing against chips */}
-        <div className="flex items-center justify-between px-5 py-2.5 border-t border-border">
+    <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
+      {/* Header Bar */}
+      <div className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+        <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 py-4 flex items-center justify-between">
           <button
             type="button"
-            onClick={() => setMobileFiltersOpen(true)}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-ink"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
           >
-            <SlidersHorizontal size={14} strokeWidth={1.5} />
-            Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
+            <ArrowLeft size={15} strokeWidth={2} />
+            Back to Home
           </button>
-          <div className="relative">
+
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
+            <Sparkles size={14} />
+            New Season Drops
+          </div>
+        </div>
+      </div>
+
+      {/* Hero Header */}
+      <div className="bg-[#111111] text-white py-12 px-5 md:px-8 lg:px-12 border-b border-[#E5E5E5]">
+        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <span className="text-[11px] font-bold tracking-[0.16em] uppercase text-[#B08D57] block mb-2">
+              EXCLUSIVES · FALL 2026
+            </span>
+            <h1 className="font-display text-[32px] md:text-[42px] font-bold leading-tight">
+              New Arrivals
+            </h1>
+            <p className="text-[13.5px] text-white/70 mt-1.5 max-w-lg leading-relaxed">
+              Explore the latest contemporary tailored drops, premium outerwear, and signature accessories added this week.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-[12px] font-bold uppercase tracking-[0.08em] bg-white/10 text-white px-4 py-2 rounded-full border border-white/20">
+              {filteredProducts.length} Items
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 pt-8">
+        {/* Controls Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-4 border-b border-[#E5E5E5]">
+          {/* Category Filter Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
             <button
-              type="button"
-              onClick={() => setSortOpen((o) => !o)}
-              className="flex items-center gap-1.5 text-[12px] font-medium text-ink-soft"
+              onClick={() => setSelectedCategory("all")}
+              className={`px-4 py-2 rounded-[6px] text-[12px] font-bold tracking-[0.04em] transition-all whitespace-nowrap ${
+                selectedCategory === "all"
+                  ? "bg-[#111111] text-white shadow-sm"
+                  : "bg-[#FAFAFA] text-[#666666] border border-[#E5E5E5] hover:border-[#111111]"
+              }`}
             >
-              {activeSortLabel}
-              <ChevronDown
-                size={13}
-                strokeWidth={1.5}
-                className={`transition-transform ${sortOpen ? "rotate-180" : ""}`}
-              />
+              All Drops
             </button>
+            {FILTER_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-4 py-2 rounded-[6px] text-[12px] font-bold tracking-[0.04em] transition-all whitespace-nowrap ${
+                  selectedCategory === cat.id
+                    ? "bg-[#111111] text-white shadow-sm"
+                    : "bg-[#FAFAFA] text-[#666666] border border-[#E5E5E5] hover:border-[#111111]"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setSortOpen(!sortOpen)}
+              className="flex items-center gap-2 px-4 py-2 rounded-[6px] border border-[#E5E5E5] bg-[#FAFAFA] text-[12px] font-bold text-[#111111]"
+            >
+              <span>Sort: {SORT_OPTIONS.find((s) => s.id === selectedSort)?.label}</span>
+              <ChevronDown size={14} />
+            </button>
+
             {sortOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 border border-border bg-surface shadow-lg rounded-[3px] overflow-hidden z-20">
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-[#E5E5E5] rounded-[6px] shadow-xl z-20 py-1">
                 {SORT_OPTIONS.map((opt) => (
                   <button
                     key={opt.id}
-                    type="button"
                     onClick={() => {
-                      setSortBy(opt.id);
+                      setSelectedSort(opt.id);
                       setSortOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2.5 text-[12.5px] transition-colors ${
-                      sortBy === opt.id
-                        ? "text-ink font-semibold bg-cream-dark"
-                        : "text-ink-soft hover:bg-cream-dark"
+                    className={`w-full text-left px-4 py-2 text-[12.5px] hover:bg-[#FAFAFA] transition-colors ${
+                      selectedSort === opt.id ? "font-bold text-[#B08D57]" : "text-[#555555]"
                     }`}
                   >
                     {opt.label}
@@ -411,140 +161,85 @@ const NewArrivals = () => {
             )}
           </div>
         </div>
-      </section>
 
-      {/* ================= Body: sidebar + grid ================= */}
-      <section className={`${SECTION_X} py-8 md:py-10`}>
-        <div className={`${CONTAINER} md:flex md:items-start md:gap-8`}>
-          {/* ---- Desktop sidebar (collapsible) ---- */}
-          <aside
-            className={`hidden md:block flex-shrink-0 transition-all duration-200 overflow-hidden ${
-              filtersOpen ? "w-[240px]" : "w-0"
-            }`}
-          >
-            <div className="w-[240px]">
-              <FilterPanelContent />
-            </div>
-          </aside>
-
-          <div className="flex-1 min-w-0">
-            {/* ---- Desktop top bar: filter toggle (left) + sort (right) ---- */}
-            <div className="hidden md:flex items-center justify-between mb-6">
-              <button
-                type="button"
-                onClick={() => setFiltersOpen((o) => !o)}
-                className="flex items-center gap-1.5 text-[12.5px] font-medium text-ink hover:text-gold transition-colors"
-              >
-                <SlidersHorizontal size={14} strokeWidth={1.5} />
-                {filtersOpen ? "Hide Filters" : "Show Filters"}
-                {activeFilterCount > 0 && (
-                  <span className="ml-1 text-[10px] bg-gold text-charcoal px-1.5 py-0.5 rounded-full font-semibold">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
-
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setSortOpen((o) => !o)}
-                  className="flex items-center gap-1.5 text-[12.5px] font-medium text-ink-soft hover:text-ink transition-colors"
+        {/* Product Grid */}
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="aspect-[3/4] bg-[#FAFAFA] rounded-[8px] border border-[#E5E5E5] animate-pulse" />
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="p-12 text-center bg-[#FAFAFA] rounded-[10px] border border-[#E5E5E5] my-6">
+            <Sparkle size={32} className="text-[#B08D57] mx-auto mb-2" />
+            <p className="font-display text-[20px] font-bold text-[#111111]">No New Arrivals Found</p>
+            <p className="text-[13px] text-[#666666] mt-1">Try selecting a different category filter.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {filteredProducts.map((p) => {
+              const coverImg = p.images?.[0]?.url || p.image;
+              return (
+                <div
+                  key={p._id || p.id}
+                  onClick={() => navigate(`/product/${p._id || p.id}`)}
+                  className="group cursor-pointer bg-white rounded-[8px] border border-[#E5E5E5] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
                 >
-                  Sort: <span className="text-ink">{activeSortLabel}</span>
-                  <ChevronDown
-                    size={13}
-                    strokeWidth={1.5}
-                    className={`transition-transform ${sortOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-                {sortOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 border border-border bg-surface shadow-lg rounded-[3px] overflow-hidden z-20">
-                    {SORT_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => {
-                          setSortBy(opt.id);
-                          setSortOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2.5 text-[12.5px] transition-colors ${
-                          sortBy === opt.id
-                            ? "text-ink font-semibold bg-cream-dark"
-                            : "text-ink-soft hover:bg-cream-dark"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                  <div className="relative aspect-[3/4] overflow-hidden bg-[#FAFAFA]">
+                    {coverImg ? (
+                      <img
+                        src={coverImg}
+                        alt={p.title || p.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#999]">
+                        <ShoppingBag size={24} />
+                      </div>
+                    )}
+
+                    <span className="absolute top-3 left-3 bg-[#B08D57] text-[#0e0e0e] text-[9.5px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow">
+                      NEW
+                    </span>
+
+                    <WishlistButton
+                      productId={p._id}
+                      variantSku={p.variants?.[0]?.sku}
+                      className="absolute top-3 right-3 z-10"
+                    />
                   </div>
-                )}
-              </div>
-            </div>
 
-            {/* ---- Grid ---- */}
-            {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <ProductCardSkeleton key={i} className="aspect-[3/4]" />
-                ))}
-              </div>
-            ) : filteredAndSorted.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-                {filteredAndSorted.map((product, idx) => (
-                  <ProductCard
-                    key={getProductKey(product, idx)}
-                    product={product}
-                    onClick={() => navigate(`/product/${product._id}`)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <p className="font-display text-[18px] text-ink mb-2">
-                  No new arrivals yet
-                </p>
-                <p className="text-[13px] text-ink-soft max-w-xs">
-                  Check back soon — fresh drops are added regularly.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+                  <div className="p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#B08D57] mb-1">
+                      {p.brand || "ZRIVE"}
+                    </p>
+                    <h3 className="font-display text-[14px] font-bold text-[#111111] truncate group-hover:text-[#B08D57] transition-colors">
+                      {p.title || p.name}
+                    </h3>
+                    <p className="text-[15px] font-bold text-[#111111] mt-1.5">{formatPrice(p.price)}</p>
 
-      {/* ================= Mobile filter bottom-sheet ================= */}
-      {mobileFiltersOpen && (
-        <div className="md:hidden fixed inset-0 z-40">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setMobileFiltersOpen(false)}
-          />
-          <div className="absolute bottom-0 left-0 right-0 bg-surface rounded-t-[12px] max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
-              <span className="font-display text-[16px] text-ink">Filters</span>
-              <button
-                type="button"
-                onClick={() => setMobileFiltersOpen(false)}
-                className="text-ink-soft hover:text-ink transition-colors"
-              >
-                <X size={18} strokeWidth={1.5} />
-              </button>
-            </div>
-            <div className="overflow-y-auto px-5">
-              <FilterPanelContent />
-            </div>
-            <div className="p-5 border-t border-border flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setMobileFiltersOpen(false)}
-                className="w-full bg-charcoal text-cream text-[12px] font-semibold tracking-[0.1em] uppercase py-3.5 rounded-[3px]"
-              >
-                Show {filteredAndSorted.length} Results
-              </button>
-            </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (p.variants?.[0]) {
+                          handleAddToCart(p._id, p.variants[0]._id);
+                        } else {
+                          navigate(`/product/${p._id}`);
+                        }
+                      }}
+                      className="w-full mt-3 py-2.5 rounded-[6px] bg-[#111111] text-white text-[11px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <ShoppingBag size={13} />
+                      Add to Cart
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

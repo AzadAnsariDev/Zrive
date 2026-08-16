@@ -14,6 +14,10 @@ import {
   X,
   Star,
   ArrowRight,
+  ArrowLeft,
+  Lock,
+  ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import useAddress from "../hook/useAddress";
 import useOrder from "../../order/hook/useOrder";
@@ -49,7 +53,7 @@ const Address = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const addresses = useSelector((state) => state.address.addresses);
+  const addresses = useSelector((state) => state.address.addresses || []);
   const selectedAddress = useSelector((state) => state.address.selectedAddress);
   const user = useSelector((state) => state.auth.user);
 
@@ -75,7 +79,6 @@ const Address = () => {
     handleGetAllAddresses();
   }, []);
 
-  // agar koi address selected nahi hai, to default wali ko auto-select kar do
   useEffect(() => {
     if (!selectedAddress && addresses.length > 0) {
       const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0];
@@ -99,547 +102,337 @@ const Address = () => {
       state: address.state,
       pincode: address.pincode,
       addressType: address.addressType || "Home",
-      isDefault: address.isDefault,
+      isDefault: address.isDefault || false,
     });
     setEditingId(address._id);
     setShowForm(true);
   };
 
-  const closeForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    reset(emptyDefaults);
-  };
-
-  const onSubmit = async (data) => {
+  const onSubmitForm = async (data) => {
     setSubmitting(true);
     try {
       if (editingId) {
         await handleUpdateAddress(editingId, data);
+        toast.success("Address updated successfully");
       } else {
         await handleCreateAddress(data);
+        toast.success("New address added successfully");
       }
-      closeForm();
+      setShowForm(false);
+      reset(emptyDefaults);
+      await handleGetAllAddresses();
+    } catch (err) {
+      toast.error(err.message || "Failed to save address");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const onDelete = async (addressId) => {
-    await handleDeleteAddress(addressId);
-    setConfirmDeleteId(null);
-  };
-
-  const onSetDefault = (address) => {
-    handleUpdateAddress(address._id, { isDefault: true });
-  };
-
-  const handleCheckout = async () => {
-    if (!selectedAddress?._id) return;
-
-    setCheckingOut(true);
+  const onDeleteConfirm = async (id) => {
     try {
-      const order = await handleCreateOrder(selectedAddress._id);
-      console.log(order);
-
-      const options = {
-        key: "rzp_test_TJOYSvdezHvcAX",
-        amount: order.amount, // Amount in paise
-        currency: order.currency,
-        name: "Zrive",
-        description: "Test Transaction",
-        order_id: order.id, // Generate order_id on server
-        handler: async (response) => {
-          const isPaymentDone = await handleVerifyOrder(response);
-          setCheckingOut(false);
-          if (isPaymentDone) {
-            navigate(`/order-success`);
-          }else {
-          toast.error("Payment verification failed");
-        }
-        },
-        modal: {
-          ondismiss: () => {
-            setCheckingOut(false);
-            toast.error("Payment cancelled");
-          },
-        },
-        prefill: {
-          name: user?.username,
-          email: user?.email,
-          contact: user?.contact,
-        },
-        theme: {
-          color: "#F37254",
-        },
-      };
-
-      const razorpayInstance = new window.Razorpay(options);
-      razorpayInstance.open();
+      await handleDeleteAddress(id);
+      toast.success("Address deleted");
+      setConfirmDeleteId(null);
+      await handleGetAllAddresses();
     } catch (err) {
-      console.error("Checkout failed:", err);
-      setCheckingOut(false);
-      toast.error("Something went wrong. Please try again.");
+      toast.error("Failed to delete address");
     }
   };
 
-  const inputBase =
-    "w-full bg-transparent border-b border-border pb-2 text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-gold transition-colors duration-200";
+  const handleProceedToPayment = async () => {
+    if (!selectedAddress) {
+      toast.error("Please select a delivery address");
+      return;
+    }
+    setCheckingOut(true);
+    try {
+      const response = await handleCreateOrder(selectedAddress._id);
+      if (response && response.order) {
+        const options = {
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+          amount: response.order.amount,
+          currency: response.order.currency,
+          name: "ZRIVE Marketplace",
+          description: "Escrow Order Payment",
+          order_id: response.order.id,
+          handler: async function (razorpayRes) {
+            const result = await handleVerifyOrder({
+              razorpay_order_id: razorpayRes.razorpay_order_id,
+              razorpay_payment_id: razorpayRes.razorpay_payment_id,
+              razorpay_signature: razorpayRes.razorpay_signature,
+            });
+
+            if (result && result.paymentGroup) {
+              toast.success("Payment Successful!");
+              navigate(`/orders/group/${result.paymentGroup._id}`);
+            } else if (result && result.order) {
+              toast.success("Payment Successful!");
+              navigate(`/orders/${result.order._id}`);
+            } else {
+              navigate("/orders");
+            }
+          },
+          prefill: {
+            name: selectedAddress.fullName || user?.fullName || user?.name || "",
+            email: user?.email || "",
+            contact: selectedAddress.phone || user?.phone || "",
+          },
+          theme: { color: "#111111" },
+        };
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to initiate payment");
+    } finally {
+      setCheckingOut(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-cream px-6 py-8 md:py-10">
-      <div className="mx-auto max-w-5xl">
-        {/* ── Header ─────────────────────────────────── */}
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
-          <div>
-            <p className="font-sans text-xs tracking-[0.2em] uppercase text-gold mb-2">
-              Delivery details
-            </p>
-            <h1 className="font-display text-3xl md:text-4xl text-ink leading-tight">
-              Your addresses
-            </h1>
+    <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
+      {/* Checkout Stepper */}
+      <div className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
+        <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-3.5 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => navigate("/cart")}
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
+          >
+            <ArrowLeft size={14} />
+            Back to Bag
+          </button>
+
+          <div className="flex items-center gap-2 sm:gap-3 text-[11.5px] font-semibold">
+            <span className="flex items-center gap-1 text-[#287A4B]">
+              <Check size={13} />
+              Bag
+            </span>
+            <span className="text-[#D2D2D2]">&rarr;</span>
+            <span className="flex items-center gap-1 text-[#B08D57]">
+              <span className="w-4 h-4 rounded-full bg-[#B08D57] text-white text-[9px] flex items-center justify-center font-bold">2</span>
+              Address
+            </span>
+            <span className="text-[#D2D2D2]">&rarr;</span>
+            <span className="flex items-center gap-1 text-[#999999]">
+              <span className="w-4 h-4 rounded-full bg-[#EAEAEA] text-[#777] text-[9px] flex items-center justify-center font-bold">3</span>
+              Payment
+            </span>
           </div>
 
-          {!showForm && (
-            <button
-              onClick={openCreateForm}
-              className="flex items-center gap-2 px-5 py-3 rounded-full bg-charcoal text-cream text-sm hover:scale-[1.02] transition-transform duration-200"
-            >
-              <Plus size={16} strokeWidth={2} />
-              Add new address
-            </button>
-          )}
+          <div className="flex items-center gap-1 text-[10.5px] font-bold text-[#287A4B] bg-[#EAF5EE] px-2.5 py-0.5 rounded-full">
+            <Lock size={11} />
+            Razorpay Secure
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 pt-6">
+        <div className="mb-6 border-b border-[#EAEAEA] pb-3 flex items-baseline justify-between">
+          <div>
+            <h1 className="font-display text-[24px] md:text-[28px] font-bold text-[#111111]">
+              Select Delivery Address
+            </h1>
+            <p className="text-[12.5px] text-[#666666] mt-0.5">
+              Choose where you want your order delivered.
+            </p>
+          </div>
+          <button
+            onClick={openCreateForm}
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#111111] text-white rounded text-[11.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
+          >
+            <Plus size={14} />
+            Add Address
+          </button>
         </div>
 
-        {/* ── Saved addresses list ─────────────────────── */}
-        {!showForm && (
-          <>
-            {addresses.length === 0 ? (
-              <div className="border border-dashed border-border rounded-lg py-16 text-center">
-                <p className="text-ink-soft mb-4">No saved addresses yet.</p>
-                <button
-                  onClick={openCreateForm}
-                  className="text-sm text-gold hover:text-gold-deep underline underline-offset-4"
-                >
-                  Add your first address
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {addresses.map((address) => {
-                    const TypeIcon =
-                      addressTypes.find((t) => t.key === address.addressType)
-                        ?.icon || Home;
-                    const confirming = confirmDeleteId === address._id;
-                    const isSelected = selectedAddress?._id === address._id;
-
-                    return (
-                      <div
-                        key={address._id}
-                        onClick={() => dispatch(setSelectedAddress(address))}
-                        className={`relative rounded-lg overflow-hidden flex flex-col cursor-pointer
-        transition-all duration-300 ease-out
-        ${isSelected
-                            ? "bg-surface border-2 border-gold shadow-[0_0_0_4px_rgba(156,138,92,0.12),0_8px_24px_-8px_rgba(122,107,69,0.35)] -translate-y-0.5"
-                            : "bg-surface border-2 border-transparent ring-1 ring-border hover:ring-gold/40 hover:-translate-y-0.5"
-                          }`}
-                      >
-                        {isSelected && (
-                          <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-gold/[0.06] via-transparent to-transparent" />
-                        )}
-
-                        {/* ── Default banner — own line, top of card ── */}
-                        {address.isDefault && (
-                          <div className="flex items-center gap-1.5 bg-gold px-4 py-2">
-                            <Star
-                              size={12}
-                              strokeWidth={2}
-                              fill="currentColor"
-                              className="text-charcoal"
-                            />
-                            <span className="text-[11px] font-semibold tracking-[0.15em] uppercase text-charcoal">
-                              Default address
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="p-6 flex flex-col gap-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              {/* radio button */}
-                              <span
-                                className={`relative w-[18px] h-[18px] rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 ${isSelected ? "border-gold" : "border-border"
-                                  }`}
-                              >
-                                <span
-                                  className={`w-[9px] h-[9px] rounded-full bg-gold transition-all duration-300 ease-out ${isSelected
-                                      ? "scale-100 opacity-100"
-                                      : "scale-0 opacity-0"
-                                    }`}
-                                />
-                              </span>
-
-                              <span className="flex items-center gap-1.5 text-xs text-ink-soft uppercase tracking-wide px-2.5 py-1 rounded-full border border-border">
-                                <TypeIcon size={12} strokeWidth={1.75} />
-                                {address.addressType || "Home"}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEditForm(address);
-                                }}
-                                className="p-2 rounded-full text-ink-soft hover:text-ink hover:bg-cream-dark transition-colors duration-200"
-                                aria-label="Edit address"
-                              >
-                                <Pencil size={15} strokeWidth={1.75} />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setConfirmDeleteId(address._id);
-                                }}
-                                className="p-2 rounded-full text-ink-soft hover:text-error hover:bg-cream-dark transition-colors duration-200"
-                                aria-label="Delete address"
-                              >
-                                <Trash2 size={15} strokeWidth={1.75} />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div>
-                            <p className="font-display text-lg text-ink">
-                              {address.fullName}
-                            </p>
-                            <p className="text-ink-soft text-sm">
-                              {address.phone}
-                            </p>
-                          </div>
-
-                          <p className="text-ink text-sm leading-relaxed">
-                            {address.addressLine1}
-                            {address.addressLine2
-                              ? `, ${address.addressLine2}`
-                              : ""}
-                            <br />
-                            {address.city}, {address.state} — {address.pincode}
-                          </p>
-
-                          {!address.isDefault && !confirming && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onSetDefault(address);
-                              }}
-                              className="mt-1 flex items-center gap-1.5 text-xs text-gold hover:text-gold-deep w-fit"
-                            >
-                              <Star size={12} strokeWidth={1.75} />
-                              Set as default
-                            </button>
-                          )}
-
-                          {confirming && (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              className="mt-1 flex items-center gap-3 pt-3 border-t border-border"
-                            >
-                              <span className="text-xs text-ink-soft">
-                                Delete this address?
-                              </span>
-                              <button
-                                onClick={() => onDelete(address._id)}
-                                className="text-xs text-error hover:text-ink"
-                              >
-                                Yes, delete
-                              </button>
-                              <button
-                                onClick={() => setConfirmDeleteId(null)}
-                                className="text-xs text-ink-soft hover:text-ink"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* ── Continue to payment ─────────────────────── */}
-                <div className="mt-10 flex justify-end">
-                  <button
-                    onClick={handleCheckout}
-                    disabled={!selectedAddress || checkingOut}
-                    className="flex items-center gap-2 px-8 py-4 rounded-full bg-charcoal text-cream text-sm tracking-wide transition-transform duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
-                  >
-                    {checkingOut ? "Processing..." : "Continue to payment"}
-                    {!checkingOut && <ArrowRight size={16} strokeWidth={2} />}
-                  </button>
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {/* ── Create / Edit form ────────────────────────── */}
-        {showForm && (
-          <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-10 lg:gap-16 items-start">
-            <div>
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="font-display text-2xl text-ink">
-                  {editingId ? "Edit address" : "Add a new address"}
-                </h2>
-                <button
-                  onClick={closeForm}
-                  className="p-2 rounded-full text-ink-soft hover:text-ink hover:bg-cream-dark transition-colors duration-200"
-                  aria-label="Close form"
-                >
-                  <X size={18} strokeWidth={1.75} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-9">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-7">
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs text-ink-soft mb-2">
-                      Full name
-                    </label>
-                    <input
-                      {...register("fullName", { required: "Required" })}
-                      className={inputBase}
-                      placeholder="Rahul Sharma"
-                    />
-                    {errors.fullName && (
-                      <p className="text-error text-xs mt-2">
-                        {errors.fullName.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs text-ink-soft mb-2">
-                      Phone number
-                    </label>
-                    <input
-                      {...register("phone", {
-                        required: "Required",
-                        pattern: {
-                          value: /^[6-9]\d{9}$/,
-                          message: "Enter a valid 10-digit number",
-                        },
-                      })}
-                      className={inputBase}
-                      placeholder="98765 43210"
-                      maxLength={10}
-                    />
-                    {errors.phone && (
-                      <p className="text-error text-xs mt-2">
-                        {errors.phone.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs text-ink-soft mb-2">
-                      Address line 1
-                    </label>
-                    <input
-                      {...register("addressLine1", { required: "Required" })}
-                      className={inputBase}
-                      placeholder="House no., building, street"
-                    />
-                    {errors.addressLine1 && (
-                      <p className="text-error text-xs mt-2">
-                        {errors.addressLine1.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs text-ink-soft mb-2">
-                      Address line 2{" "}
-                      <span className="text-ink-soft/60">(optional)</span>
-                    </label>
-                    <input
-                      {...register("addressLine2")}
-                      className={inputBase}
-                      placeholder="Landmark, area"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-ink-soft mb-2">
-                      City
-                    </label>
-                    <input
-                      {...register("city", { required: "Required" })}
-                      className={inputBase}
-                      placeholder="Kolhapur"
-                    />
-                    {errors.city && (
-                      <p className="text-error text-xs mt-2">
-                        {errors.city.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-ink-soft mb-2">
-                      State
-                    </label>
-                    <input
-                      {...register("state", { required: "Required" })}
-                      className={inputBase}
-                      placeholder="Maharashtra"
-                    />
-                    {errors.state && (
-                      <p className="text-error text-xs mt-2">
-                        {errors.state.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-ink-soft mb-2">
-                      Pincode
-                    </label>
-                    <input
-                      {...register("pincode", {
-                        required: "Required",
-                        pattern: {
-                          value: /^[1-9][0-9]{5}$/,
-                          message: "Enter a valid 6-digit pincode",
-                        },
-                      })}
-                      className={inputBase}
-                      placeholder="416001"
-                      maxLength={6}
-                    />
-                    {errors.pincode && (
-                      <p className="text-error text-xs mt-2">
-                        {errors.pincode.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-ink-soft mb-3">
-                    Address type
-                  </label>
-                  <div className="flex gap-3">
-                    {addressTypes.map(({ key, icon: Icon }) => {
-                      const active = addressType === key;
-                      return (
-                        <button
-                          type="button"
-                          key={key}
-                          onClick={() => setValue("addressType", key)}
-                          className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm transition-all duration-200 ${active
-                              ? "bg-charcoal border-charcoal text-cream"
-                              : "border-border text-ink-soft hover:border-gold hover:text-ink"
-                            }`}
-                        >
-                          <Icon size={14} strokeWidth={1.75} />
-                          {key}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <label className="flex items-center gap-3 cursor-pointer w-fit">
-                  <span
-                    className={`relative w-10 h-6 rounded-full transition-colors duration-200 ${isDefault
-                        ? "bg-gold"
-                        : "bg-cream-dark border border-border"
-                      }`}
-                    onClick={() => setValue("isDefault", !isDefault)}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface shadow-sm transition-transform duration-200 ${isDefault ? "translate-x-4" : "translate-x-0"
-                        }`}
-                    />
-                  </span>
-                  <span className="text-sm text-ink-soft">
-                    Set as default address
-                  </span>
-                </label>
-
-                <div className="flex items-center gap-4">
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="px-10 py-4 rounded-full bg-charcoal text-cream font-sans text-sm tracking-wide transition-transform duration-200 hover:scale-[1.02] disabled:opacity-60"
-                  >
-                    {submitting
-                      ? "Saving..."
-                      : editingId
-                        ? "Update address"
-                        : "Save address"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={closeForm}
-                    className="text-sm text-ink-soft hover:text-ink"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Live label preview — desktop only */}
-            <div className="hidden lg:block lg:sticky lg:top-10">
-              <div className="relative bg-surface border border-border rounded-lg p-8 pl-10">
-                <div className="absolute left-0 top-0 bottom-0 w-6 flex flex-col justify-evenly items-center">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <span
-                      key={i}
-                      className="w-1.5 h-1.5 rounded-full bg-cream border border-border"
-                    />
-                  ))}
-                </div>
-
-                <p className="text-xs tracking-[0.2em] uppercase text-gold mb-6">
-                  Shipping label
-                </p>
-
-                <p className="font-display italic text-2xl text-ink mb-1 min-h-[2rem]">
-                  {watch("fullName") || "Your name"}
-                </p>
-                <p className="text-ink-soft text-sm mb-6">
-                  {watch("phone") || "Phone number"}
-                </p>
-
-                <div className="text-ink text-sm leading-relaxed border-t border-dashed border-border pt-6">
-                  <p>{watch("addressLine1") || "Address line 1"}</p>
-                  {watch("addressLine2") && <p>{watch("addressLine2")}</p>}
-                  <p>
-                    {watch("city") || "City"}, {watch("state") || "State"} —{" "}
-                    {watch("pincode") || "000000"}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 mt-6 pt-6 border-t border-border">
-                  {isDefault && (
-                    <span className="flex items-center gap-1 text-xs text-success">
-                      <Check size={12} strokeWidth={2} /> Default
+        {/* Address Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {addresses.map((addr) => {
+            const isSelected = selectedAddress?._id === addr._id;
+            return (
+              <div
+                key={addr._id}
+                onClick={() => dispatch(setSelectedAddress(addr))}
+                className={`p-5 rounded-[8px] border transition-all cursor-pointer relative ${
+                  isSelected
+                    ? "bg-[#FAFAFA] border-[#B08D57] shadow-sm"
+                    : "bg-white border-[#EAEAEA] hover:border-[#111111]"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-full border-2 border-[#B08D57] flex items-center justify-center">
+                      {isSelected && <span className="w-2 h-2 rounded-full bg-[#B08D57]" />}
                     </span>
-                  )}
-                  <span className="ml-auto text-xs text-ink-soft uppercase tracking-wide">
-                    {addressType}
-                  </span>
+                    <span className="text-[11px] font-bold uppercase tracking-[0.08em] bg-[#111111] text-white px-2 py-0.5 rounded">
+                      {addr.addressType || "HOME"}
+                    </span>
+                    {addr.isDefault && (
+                      <span className="text-[10px] font-bold text-[#287A4B] bg-[#EAF5EE] px-2 py-0.5 rounded">
+                        DEFAULT
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditForm(addr);
+                      }}
+                      className="text-[#666666] hover:text-[#111111]"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteId(addr._id);
+                      }}
+                      className="text-[#666666] hover:text-[#C43D3D]"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <h3 className="font-display text-[15px] font-bold text-[#111111] mb-1">
+                  {addr.fullName} · {addr.phone}
+                </h3>
+                <p className="text-[12.5px] text-[#666666]">
+                  {addr.addressLine1}, {addr.addressLine2}
+                </p>
+                <p className="text-[12.5px] text-[#666666]">
+                  {addr.city}, {addr.state} - <strong className="text-[#111111]">{addr.pincode}</strong>
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Payment CTA Bar */}
+        <div className="p-5 bg-[#FAFAFA] border border-[#EAEAEA] rounded-[8px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#B08D57]">Selected Address</p>
+            <p className="text-[13px] font-bold text-[#111111]">
+              {selectedAddress ? `${selectedAddress.fullName} (${selectedAddress.pincode})` : "None Selected"}
+            </p>
+          </div>
+
+          <button
+            onClick={handleProceedToPayment}
+            disabled={!selectedAddress || checkingOut}
+            className="flex items-center justify-center gap-2 bg-[#111111] text-white px-8 py-3.5 rounded text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all disabled:opacity-50"
+          >
+            {checkingOut ? "Initiating Razorpay..." : "Proceed to Payment"}
+            <ArrowRight size={15} />
+          </button>
+        </div>
+      </div>
+
+      {/* Address Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[10px] border border-[#EAEAEA] p-6 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EAEAEA]">
+              <h3 className="font-display text-[18px] font-bold text-[#111]">
+                {editingId ? "Edit Address" : "Add Delivery Address"}
+              </h3>
+              <button onClick={() => setShowForm(false)} className="text-[#666] hover:text-[#111]">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded p-2.5 text-[13px] outline-none"
+                    {...register("fullName", { required: true })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">Phone Number *</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded p-2.5 text-[13px] outline-none"
+                    {...register("phone", { required: true })}
+                  />
                 </div>
               </div>
-            </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">Address Line 1 *</label>
+                <input
+                  type="text"
+                  placeholder="House / Flat No., Building Name"
+                  className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded p-2.5 text-[13px] outline-none"
+                  {...register("addressLine1", { required: true })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">Address Line 2</label>
+                <input
+                  type="text"
+                  placeholder="Street, Landmark, Area"
+                  className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded p-2.5 text-[13px] outline-none"
+                  {...register("addressLine2")}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">City *</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded p-2.5 text-[13px] outline-none"
+                    {...register("city", { required: true })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">State *</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded p-2.5 text-[13px] outline-none"
+                    {...register("state", { required: true })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#666] mb-1">Pincode *</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded p-2.5 text-[13px] outline-none"
+                    {...register("pincode", { required: true })}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3 border-t border-[#EAEAEA]">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 border rounded text-[12px] font-bold uppercase text-[#555]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2 bg-[#111111] text-white rounded text-[12px] font-bold uppercase hover:bg-[#B08D57]"
+                >
+                  {submitting ? "Saving..." : "Save Address"}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,34 +2,24 @@ import { NavLink, Outlet } from 'react-router'
 import {
   Search, Bell,
   LayoutGrid, ShoppingBag, Store, Users, Landmark, Megaphone, Settings,
-  Home, ClipboardList, Package, MoreHorizontal,
+  Home, ClipboardList, Package, MoreHorizontal, LogOut, ShieldCheck,
 } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { useSelector } from 'react-redux'
-import { LogOut } from 'lucide-react'
 import { useAdmin } from '../admin/hook/useAdmin'
 import { useState } from 'react'
 
 const SIDEBAR_LINKS = [
   { label: 'Overview', path: '/admin', icon: LayoutGrid, end: true },
-  { label: 'Sellers', path: '/admin/sellers', icon: Users },
-  { label: 'Commerce', path: '/admin/commerce', icon: ShoppingBag },
-  { label: 'Marketplace', path: '/admin/marketplace', icon: Store },
-  { label: 'Finance', path: '/admin/finance', icon: Landmark },
-  { label: 'Marketing', path: '/admin/marketing', icon: Megaphone },
-  { label: 'System', path: '/admin/system', icon: Settings },
-]
-
-const MOBILE_LINKS = [
-  { label: 'Home', path: '/admin', icon: Home, end: true },
-  { label: 'Orders', path: '/admin/commerce', icon: ClipboardList },
-  { label: 'Sellers', path: '/admin/sellers', icon: Users },
-  { label: 'Products', path: '/admin/marketplace', icon: Package },
-  { label: 'More', path: '/admin/system', icon: MoreHorizontal },
+  { label: 'Sellers Registry', path: '/admin/sellers', icon: Users },
+  { label: 'Commerce Orders', path: '/admin/commerce', icon: ShoppingBag },
+  { label: 'Marketplace Catalog', path: '/admin/marketplace', icon: Store },
+  { label: 'Escrow Finance', path: '/admin/finance', icon: Landmark },
+  { label: 'Marketing Banners', path: '/admin/marketing', icon: Megaphone },
+  { label: 'System Settings', path: '/admin/system', icon: Settings },
 ]
 
 const AdminLayout = () => {
-
   const [showMenu, setShowMenu] = useState(false)
   const { admin } = useSelector((state) => state.admin)
   const { handleAdminLogout } = useAdmin()
@@ -40,126 +30,85 @@ const AdminLayout = () => {
     navigate('/admin/login')
   }
 
-
-
   return (
-    <div className="min-h-screen bg-cream flex">
-      {/* ---------- Desktop Sidebar ---------- */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-[184px] lg:shrink-0 bg-charcoal min-h-screen sticky top-0">
-        <div className="px-4 pt-5 pb-3.5">
-          <h1 className="font-display text-[15px] font-semibold text-cream tracking-tight">ZRIVE</h1>
-          <p className="text-[8.5px] uppercase tracking-[0.1em] text-cream/40 mt-0.5">Admin Panel</p>
+    <div className="min-h-screen bg-[#0e0e0e] text-[#e5e2e1] flex">
+      {/* Sidebar */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-[220px] lg:shrink-0 bg-[#131313] border-r border-white/10 min-h-screen sticky top-0">
+        <div className="px-6 pt-6 pb-4 border-b border-white/10 flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-[18px] font-bold text-white tracking-wide">ZRIVE</h1>
+            <p className="text-[9px] uppercase tracking-[0.14em] text-[#B08D57] font-bold">Admin Console</p>
+          </div>
+          <span className="w-2 h-2 rounded-full bg-[#287A4B] animate-pulse" />
         </div>
 
-        <nav className="flex-1 px-2.5 space-y-0.5">
+        <nav className="flex-1 px-3 py-4 space-y-1">
           {SIDEBAR_LINKS.map(({ label, path, icon: Icon, end }) => (
             <NavLink
               key={path}
               to={path}
               end={end}
               className={({ isActive }) =>
-                `flex items-center gap-2 px-2.5 py-2 rounded-[3px] text-[11.5px] font-medium transition-colors ${isActive
-                  ? 'bg-cream/10 text-cream'
-                  : 'text-cream/55 hover:text-cream hover:bg-cream/5'
+                `flex items-center gap-3 px-3.5 py-2.5 rounded-[6px] text-[12.5px] font-bold transition-all ${
+                  isActive
+                    ? 'bg-[#B08D57] text-[#0e0e0e] shadow-md'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
                 }`
               }
             >
-              <Icon size={14} strokeWidth={1.75} />
+              <Icon size={16} strokeWidth={2} />
               {label}
             </NavLink>
           ))}
         </nav>
 
-        <div className="px-2.5 pb-3.5">
-          <button
-            type="button"
-            className="w-full rounded-[3px] bg-cream/10 px-2.5 py-2 text-[10px] font-semibold tracking-[0.04em] text-cream hover:bg-cream/15 transition-colors"
-          >
-            + Add Product
-          </button>
+        <div className="p-4 border-t border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-[#B08D57] text-[#0e0e0e] font-bold text-[10px] flex items-center justify-center">
+                AD
+              </div>
+              <span className="text-[12px] font-semibold text-white truncate max-w-[100px]">Admin</span>
+            </div>
+            <button
+              onClick={onLogout}
+              title="Logout"
+              className="text-white/50 hover:text-[#C43D3D] transition-colors"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* ---------- Right column ---------- */}
+      {/* Main Content Viewport */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* ---------- Topbar ---------- */}
-        <header className="sticky top-0 z-30 bg-cream/95 backdrop-blur-sm border-b border-border">
-          <div className="flex items-center justify-between gap-4 px-5 lg:px-6 py-4 lg:py-2.5">
-            <h1 className="font-display text-[19px] font-semibold text-ink lg:hidden">ZRIVE</h1>
+        {/* Topbar */}
+        <header className="sticky top-0 z-30 bg-[#131313]/90 backdrop-blur border-b border-white/10 px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-[18px] font-bold text-white lg:hidden">ZRIVE Admin</h1>
+            <span className="hidden lg:inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#B08D57] bg-[#B08D57]/10 px-3 py-1 rounded-full border border-[#B08D57]/20">
+              <ShieldCheck size={13} />
+              Secured Console Session
+            </span>
+          </div>
 
-            <div className="hidden lg:flex items-center gap-2 flex-1 max-w-[300px] rounded-[3px] border border-border bg-surface px-2.5 py-1.5">
-              <Search size={12} className="text-ink-soft shrink-0" />
-              <input
-                type="text"
-                placeholder="Search orders, sellers, products... ⌘K"
-                className="w-full bg-transparent outline-none text-[11.5px] text-ink placeholder:text-ink-soft"
-              />
-            </div>
-
-            <div className="flex items-center gap-3 lg:gap-3">
-              <button type="button" aria-label="Search" className="lg:hidden text-ink-soft hover:text-ink transition-colors">
-                <Search size={19} />
-              </button>
-              <button type="button" aria-label="Notifications" className="text-ink-soft hover:text-ink transition-colors">
-                <Bell size={17} className="lg:size-[15px]" />
-              </button>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowMenu((p) => !p)}
-                  className="w-8 h-8 lg:w-[26px] lg:h-[26px] rounded-full bg-cream-dark border border-border overflow-hidden shrink-0"
-                />
-                {showMenu && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-                    <div className="absolute right-0 top-full mt-2 w-44 rounded-[3px] border border-border bg-surface shadow-lg z-50 py-1.5">
-                      <p className="px-3.5 py-2 text-[11.5px] text-ink-soft truncate border-b border-border">
-                        {admin?.email}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={onLogout}
-                        className="w-full flex items-center gap-2 px-3.5 py-2.5 text-[12px] text-ink hover:bg-cream-dark transition-colors"
-                      >
-                        <LogOut size={14} /> Logout
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-              <button
-                type="button"
-                className="hidden lg:block rounded-[3px] bg-charcoal px-3 py-1.5 text-[10px] font-semibold tracking-[0.05em] uppercase text-cream hover:bg-ink transition-colors"
-              >
-                Add Product
-              </button>
-            </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 text-[11.5px] font-bold uppercase text-white/60 hover:text-[#C43D3D] transition-colors"
+            >
+              <LogOut size={14} />
+              Sign Out
+            </button>
           </div>
         </header>
 
-        {/* ---------- Page content ---------- */}
-        <main className="flex-1 px-5 py-6 lg:px-6 lg:py-5 pb-24 lg:pb-5">
+        {/* Page Content Outlet */}
+        <main className="flex-1 p-6">
           <Outlet />
         </main>
       </div>
-
-      {/* ---------- Mobile bottom nav ---------- */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface border-t border-border flex items-stretch">
-        {MOBILE_LINKS.map(({ label, path, icon: Icon, end }) => (
-          <NavLink
-            key={path}
-            to={path}
-            end={end}
-            className={({ isActive }) =>
-              `flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-[10.5px] font-medium transition-colors ${isActive ? 'text-gold-deep' : 'text-ink-soft'
-              }`
-            }
-          >
-            <Icon size={19} strokeWidth={1.75} />
-            {label}
-          </NavLink>
-        ))}
-      </nav>
     </div>
   )
 }
