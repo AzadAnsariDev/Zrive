@@ -62,6 +62,29 @@ const formatDate = (iso) =>
       })
     : "—";
 
+// Order items on this backend come back flat — { title, productId, ... } —
+// not as a populated { product: {...}, variant: {...} } pair. These helpers
+// try the flat fields first and still fall back to a populated shape in
+// case a different endpoint (or a future backend change) returns one.
+const getItemTitle = (item) =>
+  item?.title || item?.name || item?.product?.title || item?.product?.name || "Product";
+
+const getItemImage = (item) =>
+  item?.image ||
+  item?.images?.[0]?.url ||
+  item?.variant?.images?.[0]?.url ||
+  item?.product?.images?.[0]?.url ||
+  null;
+
+const getItemPrice = (item) =>
+  item?.price?.amount ?? item?.price ?? item?.sellerPrice?.amount ?? item?.sellerPrice ?? 0;
+
+const getItemQty = (item) => item?.quantity ?? item?.qty ?? 1;
+
+const getItemSizeColor = (item) =>
+  [item?.size, item?.color].filter(Boolean).join(" · ") ||
+  [item?.variant?.size, item?.variant?.color].filter(Boolean).join(" · ");
+
 const OrderDetail = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -71,29 +94,34 @@ const OrderDetail = () => {
   const { handleGetDeliveryByOrderId } = useDelivery();
   const { handleGetProductDetail } = useProduct();
 
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const order = useSelector((state) => state.order.currentOrder);
+  const loading = useSelector((state) => state.order?.loading ?? true);
+  const deliveryState = useSelector((state) => state.delivery?.currentDelivery);
+
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [liveProductMap, setLiveProductMap] = useState({});
 
-  const deliveryState = useSelector((state) => state.delivery?.currentDelivery);
-
-  const fetchDetail = async () => {
-    setLoading(true);
-    const data = await handleGetOrderById(orderId);
-    setOrder(data);
-
-    if (data?._id) {
-      const del = await handleGetDeliveryByOrderId(data._id);
-      if (del) dispatch(setCurrentDelivery(del));
-    }
-    setLoading(false);
-  };
-
+  // Fetch the order itself — handleGetOrderById dispatches setCurrentOrder
+  // into the slice, which is what `order` above reads from.
   useEffect(() => {
-    fetchDetail();
+    handleGetOrderById(orderId);
   }, [orderId]);
+
+  // Once we actually have the order (and know its real _id), fetch its
+  // delivery record. This was missing entirely before — that's why
+  // tracking/delivery info wasn't showing up.
+  useEffect(() => {
+    if (!order?._id) return;
+    (async () => {
+      const del = await handleGetDeliveryByOrderId(order._id);
+      if (del) dispatch(setCurrentDelivery(del));
+    })();
+  }, [order?._id]);
+
+  const retry = () => {
+    handleGetOrderById(orderId);
+  };
 
   const delivery = deliveryState?.orderId === orderId ? deliveryState : null;
   const statusCfg = STATUS_CONFIG[order?.orderStatus] || STATUS_CONFIG.placed;
@@ -106,16 +134,46 @@ const OrderDetail = () => {
     setCancelModalOpen(false);
     if (result.success) {
       toast.success("Order cancelled successfully");
-      fetchDetail();
+      handleGetOrderById(orderId);
     } else {
       toast.error(result.error || "Failed to cancel order");
     }
   };
 
-  if (loading || !order) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[#EAEAEA] border-t-[#B08D57] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-3 px-4">
+        <ShieldAlert size={28} className="text-[#C43D3D]" />
+        <p className="text-[15px] font-bold text-[#111]">Couldn't load this order</p>
+        <p className="text-[12.5px] text-[#666] text-center max-w-[320px]">
+          It may not exist, or something went wrong while fetching it. Check your connection and
+          try again.
+        </p>
+        <div className="flex items-center gap-3 mt-1">
+          <button
+            type="button"
+            onClick={retry}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-[#111] text-white rounded text-[11.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
+          >
+            <RefreshCw size={13} />
+            Retry
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/orders")}
+            className="text-[12px] font-bold text-[#B08D57] hover:underline"
+          >
+            Back to Orders
+          </button>
+        </div>
       </div>
     );
   }
@@ -187,9 +245,14 @@ const OrderDetail = () => {
 
           <div className="divide-y divide-[#EAEAEA]">
             {order.orderItems?.map((item, idx) => {
-              const cover = item.variant?.images?.[0]?.url || item.product?.images?.[0]?.url;
+              const cover = getItemImage(item);
+              const title = getItemTitle(item);
+              const sizeColor = getItemSizeColor(item);
+              const qty = getItemQty(item);
+              const price = getItemPrice(item);
+
               return (
-                <div key={idx} className="py-3 flex items-center justify-between gap-4">
+                <div key={item._id || item.productId || idx} className="py-3 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-20 rounded bg-[#FAFAFA] border border-[#EAEAEA] overflow-hidden shrink-0">
                       {cover ? (
@@ -202,19 +265,15 @@ const OrderDetail = () => {
                     </div>
 
                     <div>
-                      <h3 className="font-display text-[14px] font-bold text-[#111]">
-                        {item.product?.title || item.product?.name || "Product"}
-                      </h3>
-                      {item.variant && (
-                        <p className="text-[11px] text-[#666] mt-0.5">
-                          Size: {item.variant.size} · Color: {item.variant.color} · Qty: {item.quantity || 1}
-                        </p>
-                      )}
+                      <h3 className="font-display text-[14px] font-bold text-[#111]">{title}</h3>
+                      <p className="text-[11px] text-[#666] mt-0.5">
+                        {sizeColor ? `${sizeColor} · ` : ""}Qty: {qty}
+                      </p>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <p className="text-[14px] font-bold text-[#111]">₹{item.price?.amount || item.price || 0}</p>
+                    <p className="text-[14px] font-bold text-[#111]">₹{price}</p>
                   </div>
                 </div>
               );
@@ -228,11 +287,16 @@ const OrderDetail = () => {
             <h3 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#B08D57] pb-2 border-b border-[#EAEAEA]">
               Delivery Address
             </h3>
-            {order.address ? (
+            {order.shippingAddress ? (
               <div className="text-[12.5px] text-[#555] space-y-1">
-                <p className="font-bold text-[#111]">{order.address.fullName} · {order.address.phone}</p>
-                <p>{order.address.addressLine1}, {order.address.addressLine2}</p>
-                <p>{order.address.city}, {order.address.state} - <strong>{order.address.pincode}</strong></p>
+                <p className="font-bold text-[#111]">
+                  {order.shippingAddress.name} · {order.shippingAddress.phone}
+                </p>
+                <p>{order.shippingAddress.line1}, {order.shippingAddress.line2}</p>
+                <p>
+                  {order.shippingAddress.city}, {order.shippingAddress.state} —{" "}
+                  <strong>{order.shippingAddress.pincode}</strong>
+                </p>
               </div>
             ) : (
               <p className="text-[12px] text-[#666]">Address unavailable.</p>

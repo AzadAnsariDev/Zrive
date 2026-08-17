@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { useSelector } from "react-redux";
 import {
   CheckCircle2,
@@ -11,6 +11,7 @@ import {
   Copy,
   Search,
   ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 import useOrder from "../hook/useOrder";
 import useDelivery from "../../delivery/hook/useDelivery";
@@ -60,12 +61,6 @@ const STATUS_PRIORITY = {
 };
 
 // ── Delivery-model status → order-model status ─────────────────────────
-// Shiprocket / delivery doc ka `status` field, jab order ke against ek
-// delivery record ban chuka ho, hamesha zyada authoritative hota hai
-// order.orderStatus se — delivery hi actual tracking source of truth hai.
-// (Backend ab trackDelivery ke andar khud order.orderStatus sync kar
-// deta hai — ye map ab safety-net hai, agar kisi wajah se backend sync
-// abhi tak nahi chala to bhi UI sahi dikhega.)
 const DELIVERY_STATUS_MAP = {
   delivered: "delivered",
   out_for_delivery: "shipped",
@@ -85,7 +80,6 @@ const FILTERS = [
     label: "Ongoing",
     match: (s) =>
       [
-        "pending_payment",
         "placed",
         "confirmed",
         "packed",
@@ -176,8 +170,6 @@ const groupOrdersByPayment = (orders) => {
           : "initiated"
       : null;
 
-    // Readable "Shirt, Chinos +1 more" caption shown under the thumbnails,
-    // so it's clear at a glance what a search-by-item-name match is for.
     const itemNames = allItems.map((it) => it.title).filter(Boolean);
     const itemNamesLabel =
       itemNames.length > 2
@@ -198,8 +190,6 @@ const groupOrdersByPayment = (orders) => {
       status: getGroupStatus(group),
       statusUpdatedAt: group[0].updatedAt,
       createdAt: group[0].createdAt,
-      // Track Order button ke liye — group ke kisi bhi order ka AWB mil jaye kaafi hai,
-      // Shiprocket ke public tracking page pe seedha deep-link karne ke liye.
       trackingAwb: group.find((o) => o.awbCode)?.awbCode || null,
     };
   });
@@ -295,6 +285,7 @@ const FaqRow = ({ item, isOpen, onToggle }) => (
 
 const AllOrders = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { handleGetOrders } = useOrder();
   const { handleSyncOrderDeliveries } = useDelivery();
   const orders = useSelector((state) => state.order.orders);
@@ -306,14 +297,19 @@ const AllOrders = () => {
   const [openFaq, setOpenFaq] = useState(null);
   const hasTrackedRef = useRef(false);
 
+  // Refetch every time the user actually navigates to this screen, not just
+  // the very first time it ever mounts. This route sits behind a persistent
+  // bottom tab bar, so switching tabs and back doesn't remount the
+  // component — an empty-deps effect would only ever fire once, and the
+  // slice would keep showing stale data (e.g. orders you deleted directly
+  // in the DB) forever until a full page reload. `location.key` changes on
+  // every navigation entry, even revisiting the same route, so this effect
+  // reliably re-runs each visit.
   useEffect(() => {
     handleGetOrders();
-  }, []);
+    hasTrackedRef.current = false; // allow the delivery-sync effect below to run again for this fresh load
+  }, [location.key]);
 
-  // Page khulte hi, orders load hone ke baad, ek baar active (non-terminal)
-  // orders ki delivery live-track trigger karo — taaki delivered/shipped ho
-  // chuke orders ka status turant sahi dikhe, bina manual refresh ke.
-  // hasTrackedRef se guarantee: sirf ek baar chalega, dobara loop nahi banega.
   useEffect(() => {
     if (loading || hasTrackedRef.current || orders.length === 0) return;
     hasTrackedRef.current = true;
@@ -329,7 +325,6 @@ const AllOrders = () => {
     }
   }, [loading, orders]);
 
-  // delivery record ko order._id se lookup karne ke liye map
   const deliveryByOrderId = useMemo(() => {
     const map = new Map();
     for (const d of deliveries || []) {
@@ -339,11 +334,6 @@ const AllOrders = () => {
     return map;
   }, [deliveries]);
 
-  // orders ke saath live/authoritative status merge karo — agar delivery
-  // record ban chuka hai (shipment create ho chuki hai) to uska status
-  // order.orderStatus se zyada trust karo, kyunki wahi actual tracking truth hai.
-  // AWB bhi yahin se carry hota hai taaki "Track Order" button ke paas
-  // Shiprocket ke tracking page pe jaane ke liye AWB ready mile.
   const ordersWithLiveStatus = useMemo(() => {
     return orders.map((o) => {
       const delivery = deliveryByOrderId.get(o._id);
@@ -360,13 +350,19 @@ const AllOrders = () => {
     });
   }, [orders, deliveryByOrderId]);
 
-  const groupedOrders = useMemo(
-    () => groupOrdersByPayment(ordersWithLiveStatus),
+  // Filter out pending_payment orders before grouping — these are incomplete
+  // checkout sessions (payment never completed) and should never appear in
+  // the order history page.
+  const placedOrders = useMemo(
+    () => ordersWithLiveStatus.filter((o) => o.orderStatus !== "pending_payment"),
     [ordersWithLiveStatus],
   );
 
-  // Search by order ID (last 6 chars, same as what's shown on-screen) or by
-  // any item title inside the group.
+  const groupedOrders = useMemo(
+    () => groupOrdersByPayment(placedOrders),
+    [placedOrders],
+  );
+
   const searchedGroups = useMemo(() => {
     const q = searchQuery.trim().toLowerCase().replace(/^#/, "");
     if (!q) return groupedOrders;
@@ -417,9 +413,20 @@ const AllOrders = () => {
           {/* ================= Header + search ================= */}
           <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <h1 className="font-display text-[26px] md:text-[32px] font-medium text-ink mb-1">
-                All Orders
-              </h1>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="font-display text-[26px] md:text-[32px] font-medium text-ink">
+                  All Orders
+                </h1>
+                <button
+                  type="button"
+                  onClick={() => handleGetOrders()}
+                  disabled={loading}
+                  title="Refresh"
+                  className="p-1.5 rounded-full text-ink-soft hover:text-ink hover:bg-cream-dark transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+                </button>
+              </div>
               <p className="text-[13px] text-ink-soft">
                 Review your recent purchases and track shipments.
               </p>
@@ -496,9 +503,6 @@ const AllOrders = () => {
           {!loading && filteredGroups.length > 0 && (
             <div className="divide-y divide-border">
               {filteredGroups.map((g, i) => {
-                // Track Order sirf tab dikhao jab shipment actually "shipped"
-                // ho chuka hai (placed/awaiting-payment mein track karne layak
-                // kuch hota hi nahi) aur humare paas AWB ready ho.
                 const showTrackOrder = g.status === "shipped" && g.trackingAwb;
 
                 return (

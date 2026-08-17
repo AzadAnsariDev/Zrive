@@ -318,7 +318,7 @@ export const webhook = async (req, res) => {
 
 export const getOrders = async (req, res) => {
   const orders = await orderModel
-    .find({ user: req.user.id })
+    .find({ user: req.user.id, orderStatus: { $ne: "pending_payment" } })
     .sort({ createdAt: -1 });
 
   res.status(200).json({

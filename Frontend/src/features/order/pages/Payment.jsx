@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate, Link } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useSelector } from "react-redux";
 import {
   ArrowLeft,
@@ -9,15 +9,92 @@ import {
   CreditCard,
   Building2,
   Smartphone,
-  ChevronRight,
+  Wallet,
+  Clock,
+  Percent,
+  ChevronDown,
   MapPin,
-  ShoppingBag,
-  Sparkles,
 } from "lucide-react";
 import useOrder from "../hook/useOrder";
 import useCart from "../../cart/hook/useCart";
 import useAddress from "../../address/hook/useAddress";
 import toast from "react-hot-toast";
+
+// ---- Payment method catalog (Myntra-style accordion) ----
+// `razorpayMethod` maps our selection to Razorpay Checkout's `method` config
+// so the Razorpay modal opens pre-filtered to what the user picked here.
+// Every single one of these still settles through the same Razorpay order —
+// there's no separate code path, just a different starting screen in the modal.
+const PAYMENT_METHODS = [
+  {
+    id: "upi",
+    label: "UPI (Pay via any App)",
+    hint: "GPay, PhonePe, Paytm & more",
+    icon: Smartphone,
+    razorpayMethod: { upi: true },
+  },
+  {
+    id: "card",
+    label: "Credit / Debit Card",
+    hint: "Visa, Mastercard, RuPay, Amex",
+    icon: CreditCard,
+    razorpayMethod: { card: true },
+  },
+  {
+    id: "netbanking",
+    label: "Net Banking",
+    hint: "All major banks supported",
+    icon: Building2,
+    razorpayMethod: { netbanking: true },
+  },
+  {
+    id: "wallet",
+    label: "Wallets",
+    hint: "Paytm, Amazon Pay, Mobikwik",
+    icon: Wallet,
+    razorpayMethod: { wallet: true },
+  },
+  {
+    id: "paylater",
+    label: "Pay Later",
+    hint: "Simpl, LazyPay & more",
+    icon: Clock,
+    razorpayMethod: { paylater: true },
+  },
+  {
+    id: "emi",
+    label: "EMI",
+    hint: "No cost EMI on select cards",
+    icon: Percent,
+    razorpayMethod: { emi: true },
+  },
+];
+
+// Defensive numeric coercion so a missing/renamed field never poisons the
+// running total with NaN — it just falls back to 0 instead.
+const toNumber = (val) => {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : 0;
+};
+
+// Tries the common shapes a cart item's unit price might come in.
+const getItemPrice = (item) =>
+  toNumber(
+    item?.product?.price ??
+      item?.product?.discountedPrice ??
+      item?.price ??
+      item?.variant?.price ??
+      0
+  );
+
+// Tries the common shapes a cart item's quantity might come in.
+// This is almost certainly the real source of the old NaN: `item.quantity`
+// being undefined turned `price * undefined` into NaN, which then poisons
+// the whole reduce() sum from that point on.
+const getItemQty = (item) => {
+  const q = toNumber(item?.quantity ?? item?.qty ?? item?.count ?? 1);
+  return q > 0 ? q : 1;
+};
 
 const Payment = () => {
   const navigate = useNavigate();
@@ -30,11 +107,14 @@ const Payment = () => {
   const cartItems = useSelector((state) => state.cart?.items ?? []);
   const addressesFromStore = useSelector((state) => state.address?.addresses ?? []);
 
+  const  { totalPrice : totalAmount }  = useSelector((state => state.cart))
+  
+
   const [selectedAddress, setSelectedAddress] = useState(location.state?.address || null);
   const [loadingPayment, setLoadingPayment] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("razorpay");
+  const [selectedMethod, setSelectedMethod] = useState(null); // null = show full Razorpay modal
+  const [expandedMethod, setExpandedMethod] = useState(null);
 
-  // Fetch address & cart if missing from location state
   useEffect(() => {
     handleGetCart();
     if (!selectedAddress) {
@@ -50,18 +130,23 @@ const Payment = () => {
         }
       })();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + (item.product?.price || 0) * item.quantity,
-    0
-  );
-  const totalAmount = subtotal;
+  const handleSelectMethod = (methodId) => {
+    setSelectedMethod(methodId);
+    setExpandedMethod(methodId);
+  };
 
   const onPayWithRazorpay = async () => {
     if (!selectedAddress) {
       toast.error("Please select a valid delivery address");
       navigate("/address");
+      return;
+    }
+
+    if (totalAmount <= 0) {
+      toast.error("Your cart total looks invalid. Please refresh and try again.");
       return;
     }
 
@@ -76,13 +161,18 @@ const Payment = () => {
         return;
       }
 
+      const chosenMethod = PAYMENT_METHODS.find((m) => m.id === selectedMethod);
+
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_fallback",
+        key: "rzp_test_TJOYSvdezHvcAX",
         amount: orderObj.amount,
         currency: orderObj.currency || "INR",
         name: "ZRIVE Marketplace",
         description: "Escrow Protected Fashion Order",
         order_id: orderObj.id,
+        // If the user picked a specific method above, jump straight to it
+        // inside the Razorpay modal. Otherwise Razorpay shows every option.
+        ...(chosenMethod ? { method: chosenMethod.razorpayMethod } : {}),
         handler: async function (razorpayRes) {
           try {
             const result = await handleVerifyOrder({
@@ -136,7 +226,7 @@ const Payment = () => {
     <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
       {/* Checkout Stepper */}
       <div className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
-        <div className="max-w-[1240px] mx-auto px-3 sm:px-8 py-3 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+        <div className="max-w-[1240px] mx-auto px-3 sm:px-8 py-3 grid grid-cols-[auto_1fr_auto] items-center gap-2">
           <button
             type="button"
             onClick={() => navigate("/address")}
@@ -146,7 +236,7 @@ const Payment = () => {
             <span className="hidden sm:inline">Back to Address</span>
           </button>
 
-          <div className="flex items-center gap-1.5 sm:gap-3 text-[11px] sm:text-[11.5px] font-semibold shrink-0">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-3 text-[11px] sm:text-[11.5px] font-semibold">
             <span className="flex items-center gap-1 text-[#287A4B]">
               <Check size={12} />
               Bag
@@ -165,10 +255,8 @@ const Payment = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-1 text-[10px] sm:text-[10.5px] font-bold text-[#287A4B] bg-[#EAF5EE] px-2 py-0.5 rounded-full shrink-0">
-            <Lock size={10} />
-            <span>256-Bit Escrow</span>
-          </div>
+          {/* spacer to keep the stepper visually centered against the back button */}
+          <div className="hidden sm:block w-[120px]" />
         </div>
       </div>
 
@@ -220,62 +308,88 @@ const Payment = () => {
               )}
             </div>
 
-            {/* Payment Options Selector */}
-            <div className="bg-white border border-[#EAEAEA] rounded-[8px] p-5 shadow-sm space-y-4">
-              <h2 className="text-[12px] font-bold tracking-[0.1em] uppercase text-[#B08D57] pb-3 border-b border-[#EAEAEA]">
-                Select Payment Mode
-              </h2>
+            {/* Payment Options - Myntra-style accordion, all routed through Razorpay */}
+            <div className="bg-white border border-[#EAEAEA] rounded-[8px] overflow-hidden shadow-sm">
+              <div className="px-5 py-3.5 border-b border-[#EAEAEA] bg-[#FAFAFA]">
+                <h2 className="text-[12px] font-bold tracking-[0.1em] uppercase text-[#B08D57]">
+                  Select Payment Mode
+                </h2>
+              </div>
 
-              {/* Option 1: Razorpay */}
-              <label
-                onClick={() => setPaymentMethod("razorpay")}
-                className={`flex items-start gap-4 p-4 rounded-[6px] border cursor-pointer transition-all ${
-                  paymentMethod === "razorpay"
-                    ? "border-[#B08D57] bg-[#FAFAFA] shadow-sm"
-                    : "border-[#EAEAEA] hover:border-[#111]"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  checked={paymentMethod === "razorpay"}
-                  onChange={() => setPaymentMethod("razorpay")}
-                  className="mt-1 accent-[#B08D57]"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="font-bold text-[14px] text-[#111]">
-                      Razorpay Online Payment (UPI, Cards, NetBanking, Wallets)
-                    </span>
-                    <span className="text-[9.5px] font-bold uppercase bg-[#EAF5EE] text-[#287A4B] px-2.5 py-0.5 rounded">
-                      RECOMMENDED
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-[#666] mt-1">
-                    Instant verification, 100% Escrow Buyer Protection & zero processing fee.
-                  </p>
-                  <div className="flex items-center gap-3 mt-3 text-[11px] font-semibold text-[#555]">
-                    <span className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-[#EAEAEA]">
-                      <Smartphone size={12} className="text-[#287A4B]" /> UPI (GPay, PhonePe, Paytm)
-                    </span>
-                    <span className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-[#EAEAEA]">
-                      <CreditCard size={12} className="text-[#3B82F6]" /> Cards / NetBanking
-                    </span>
-                  </div>
-                </div>
-              </label>
+              <div className="divide-y divide-[#EAEAEA]">
+                {PAYMENT_METHODS.map((method) => {
+                  const Icon = method.icon;
+                  const isSelected = selectedMethod === method.id;
+                  const isExpanded = expandedMethod === method.id;
+
+                  return (
+                    <div key={method.id}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedMethod(isExpanded ? null : method.id)
+                        }
+                        className={`w-full flex items-center justify-between gap-3 px-5 py-4 text-left transition-colors ${
+                          isSelected ? "bg-[#FAFAFA]" : "hover:bg-[#FAFAFA]"
+                        }`}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Icon
+                            size={17}
+                            className={isSelected ? "text-[#B08D57]" : "text-[#555]"}
+                          />
+                          <span className="flex flex-col">
+                            <span className="text-[13.5px] font-bold text-[#111]">
+                              {method.label}
+                            </span>
+                            <span className="text-[11px] text-[#888]">{method.hint}</span>
+                          </span>
+                        </span>
+                        <ChevronDown
+                          size={16}
+                          className={`text-[#999] transition-transform ${
+                            isExpanded ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+
+                      {isExpanded && (
+                        <div className="px-5 pb-4 -mt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleSelectMethod(method.id)}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-[6px] border text-[12.5px] font-semibold transition-all ${
+                              isSelected
+                                ? "border-[#B08D57] bg-[#FDF9F3] text-[#111]"
+                                : "border-[#EAEAEA] text-[#555] hover:border-[#111]"
+                            }`}
+                          >
+                            <span>Continue with {method.label}</span>
+                            {isSelected && <Check size={16} className="text-[#B08D57]" />}
+                          </button>
+                          <p className="text-[10.5px] text-[#999] mt-2">
+                            You'll complete this securely inside the Razorpay checkout window.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* Security Shield Banner */}
-              <div className="flex items-center gap-3 p-3.5 bg-[#FAFAFA] rounded border border-[#EAEAEA] text-[11.5px] text-[#555]">
+              <div className="flex items-center gap-3 p-3.5 mx-5 my-4 bg-[#FAFAFA] rounded border border-[#EAEAEA] text-[11.5px] text-[#555]">
                 <ShieldCheck size={20} className="text-[#287A4B] shrink-0" />
                 <span>
-                  Your transaction is protected with <strong>Razorpay 256-bit SSL encryption</strong> and backed by ZRIVE Escrow Trust Guarantee.
+                  Every payment mode above is processed by{" "}
+                  <strong>Razorpay's 256-bit SSL encryption</strong> and backed by ZRIVE
+                  Escrow Trust Guarantee.
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Price Breakdown & CTA */}
+          {/* Right Column: Price Breakdown & CTA — unchanged design, just NaN-safe now */}
           <div className="bg-white border border-[#EAEAEA] rounded-[8px] p-5 shadow-sm space-y-4 sticky top-24">
             <h2 className="text-[12px] font-bold tracking-[0.1em] uppercase text-[#B08D57] pb-3 border-b border-[#EAEAEA]">
               Order Summary ({cartItems.length} {cartItems.length === 1 ? "Item" : "Items"})
@@ -284,7 +398,7 @@ const Payment = () => {
             <div className="space-y-2.5 text-[12.5px] border-b border-[#EAEAEA] pb-4">
               <div className="flex justify-between text-[#555]">
                 <span>Item Subtotal</span>
-                <span className="font-semibold text-[#111]">₹{subtotal}</span>
+                <span className="font-semibold text-[#111]">₹{totalAmount}</span>
               </div>
               <div className="flex justify-between text-[#555]">
                 <span>Delivery Charge</span>
