@@ -4,12 +4,13 @@ import { useNavigate, Link } from 'react-router'
 import { useSelector } from 'react-redux'
 import { Eye, EyeOff, Lock, Mail, X, Shield, ArrowLeft } from 'lucide-react'
 import { useAdmin } from '../hook/useAdmin'
+import { notify } from '../../../utils/toast'
 
 const ForgotPasswordModal = ({ onClose }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
     <div className="relative w-full max-w-[420px] rounded-[10px] bg-[#111111] border border-[#B08D57]/40 shadow-2xl p-7 text-white">
-      <button type="button" onClick={onClose} aria-label="Close" className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+      <button type="button" onClick={onClose} aria-label="Close" className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors cursor-pointer">
         <X size={18} />
       </button>
       <h3 className="font-display text-[20px] font-bold text-white mb-2">Reset Admin Credentials</h3>
@@ -39,7 +40,12 @@ const AdminLogin = () => {
 
   const onSubmit = async (data) => {
     const success = await handleAdminLogin(data)
-    if (success) navigate('/admin')
+    if (success) {
+      notify.success('Welcome back, Administrator!')
+      navigate('/admin')
+    } else {
+      notify.error(error || 'Invalid admin credentials.')
+    }
   }
 
   return (
@@ -86,7 +92,7 @@ const AdminLogin = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword((p) => !p)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -94,12 +100,10 @@ const AdminLogin = () => {
             {errors.password && <p className="text-[11px] text-[#C43D3D] mt-1">{errors.password.message}</p>}
           </div>
 
-          {error && <p className="text-[12px] text-[#C43D3D] bg-[#C43D3D]/10 p-2.5 rounded border border-[#C43D3D]/30">{error}</p>}
-
           <button
             type="submit"
             disabled={loading?.create}
-            className="w-full rounded-[6px] bg-[#B08D57] py-3.5 text-[12px] font-bold tracking-[0.08em] uppercase text-[#0e0e0e] hover:bg-[#D4B982] transition-colors disabled:opacity-60 shadow-lg"
+            className="w-full rounded-[6px] bg-[#B08D57] py-3.5 text-[12px] font-bold tracking-[0.08em] uppercase text-[#0e0e0e] hover:bg-[#D4B982] transition-colors disabled:opacity-60 shadow-lg cursor-pointer"
           >
             {loading?.create ? 'Authenticating...' : 'Sign In to Console'}
           </button>
@@ -108,7 +112,7 @@ const AdminLogin = () => {
             <button
               type="button"
               onClick={() => setShowForgot(true)}
-              className="text-[11px] text-white/50 hover:text-[#B08D57] transition-colors"
+              className="text-[11px] text-white/50 hover:text-[#B08D57] transition-colors cursor-pointer"
             >
               Forgotten admin password?
             </button>

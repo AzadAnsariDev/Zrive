@@ -22,7 +22,7 @@ import {
   Store,
   ArrowUpRight,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { notify } from "../../../utils/toast";
 import { useAuth } from "../../auth/hook/useAuth";
 import useAddress from "../../address/hook/useAddress";
 
@@ -75,10 +75,10 @@ const Profile = () => {
       if (handleUpdateProfile) {
         await handleUpdateProfile(formData);
       }
-      toast.success("Profile updated successfully");
+      notify.success("Profile updated successfully");
       setEditing(false);
     } catch (err) {
-      toast.error(err.message || "Failed to update profile");
+      notify.error(err, "Failed to update profile");
     } finally {
       setLoading(false);
     }
@@ -86,6 +86,7 @@ const Profile = () => {
 
   const onLogout = async () => {
     await handleLogout();
+    notify.success("Signed out successfully");
     navigate("/login");
   };
 
@@ -97,7 +98,7 @@ const Profile = () => {
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors cursor-pointer"
           >
             <ArrowLeft size={14} />
             Back to Home
@@ -141,7 +142,7 @@ const Profile = () => {
             </Link>
             <button
               onClick={() => setConfirmLogout(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 border border-[#EAEAEA] bg-white text-[#C43D3D] rounded text-[11.5px] font-bold uppercase hover:bg-[#FCECEC] transition-all"
+              className="flex items-center gap-1.5 px-4 py-2.5 border border-[#EAEAEA] bg-white text-[#C43D3D] rounded text-[11.5px] font-bold uppercase hover:bg-[#FCECEC] transition-all cursor-pointer"
             >
               <LogOut size={14} />
               Sign Out
@@ -161,7 +162,7 @@ const Profile = () => {
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded text-[12.5px] font-bold transition-all text-left ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded text-[12.5px] font-bold transition-all text-left cursor-pointer ${
                   activeTab === id
                     ? "bg-[#111111] text-white"
                     : "text-[#666666] hover:text-[#111111] hover:bg-white"
@@ -225,7 +226,7 @@ const Profile = () => {
                     <button
                       type="button"
                       onClick={() => setEditing(!editing)}
-                      className="flex items-center gap-1 text-[11.5px] font-bold text-[#111] hover:text-[#B08D57]"
+                      className="flex items-center gap-1 text-[11.5px] font-bold text-[#111] hover:text-[#B08D57] cursor-pointer"
                     >
                       <Pencil size={13} />
                       {editing ? "Cancel" : "Edit Profile"}
@@ -261,7 +262,7 @@ const Profile = () => {
                         <button
                           type="submit"
                           disabled={loading}
-                          className="px-6 py-2.5 bg-[#111111] text-white rounded text-[12px] font-bold uppercase hover:bg-[#B08D57] transition-all"
+                          className="px-6 py-2.5 bg-[#111111] text-white rounded text-[12px] font-bold uppercase hover:bg-[#B08D57] transition-all cursor-pointer disabled:opacity-50"
                         >
                           {loading ? "Saving..." : "Save Changes"}
                         </button>
@@ -320,14 +321,14 @@ const Profile = () => {
                       if (isDarkNow) {
                         document.documentElement.classList.remove('dark')
                         localStorage.setItem('zrive_theme', 'light')
-                        toast.success("Switched to Light Theme")
+                        notify.success("Switched to Light Theme")
                       } else {
                         document.documentElement.classList.add('dark')
                         localStorage.setItem('zrive_theme', 'dark')
-                        toast.success("Switched to Dark Theme")
+                        notify.success("Switched to Dark Theme")
                       }
                     }}
-                    className="px-4 py-1.5 rounded bg-[#111] text-white text-[11px] font-bold uppercase hover:bg-[#B08D57] transition-all"
+                    className="px-4 py-1.5 rounded bg-[#111] text-white text-[11px] font-bold uppercase hover:bg-[#B08D57] transition-all cursor-pointer"
                   >
                     Toggle Theme
                   </button>
@@ -355,13 +356,13 @@ const Profile = () => {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setConfirmLogout(false)}
-                className="flex-1 py-2.5 border border-[#EAEAEA] rounded text-[12px] font-bold uppercase text-[#555]"
+                className="flex-1 py-2.5 border border-[#EAEAEA] rounded text-[12px] font-bold uppercase text-[#555] cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={onLogout}
-                className="flex-1 py-2.5 bg-[#C43D3D] text-white rounded text-[12px] font-bold uppercase hover:bg-[#9F2E2E]"
+                className="flex-1 py-2.5 bg-[#C43D3D] text-white rounded text-[12px] font-bold uppercase hover:bg-[#9F2E2E] cursor-pointer"
               >
                 Sign Out
               </button>

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { useSelector } from "react-redux";
 import { ArrowRight, ArrowLeft, ShieldCheck, Zap, TrendingUp, Store, Check, Sparkles } from "lucide-react";
 import useSeller from "../hook/useSeller";
+import { notify } from "../../../utils/toast";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[6-9]\d{9}$/;
@@ -22,13 +23,21 @@ const BecomeSeller = () => {
 
   const onSubmit = async (data) => {
     setSubmitting(true);
-    const ok = await handleCreateBasicApplication({
-      brandName: data.brandName,
-      businessEmail: data.businessEmail,
-      businessPhone: data.businessPhone,
-    });
-    setSubmitting(false);
-    if (ok) navigate("/seller");
+    try {
+      const ok = await handleCreateBasicApplication({
+        brandName: data.brandName,
+        businessEmail: data.businessEmail,
+        businessPhone: data.businessPhone,
+      });
+      if (ok) {
+        notify.success("Merchant registered! Complete your KYC to start selling.");
+        navigate("/seller");
+      }
+    } catch (err) {
+      notify.error(err, "Failed to register merchant account.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -39,7 +48,7 @@ const BecomeSeller = () => {
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111]"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] cursor-pointer"
           >
             <ArrowLeft size={14} />
             Back to Marketplace
@@ -149,12 +158,10 @@ const BecomeSeller = () => {
                 {errors.businessPhone && <p className="text-[11px] text-[#C43D3D] mt-1">{errors.businessPhone.message}</p>}
               </div>
 
-              {error && <p className="text-[11.5px] text-[#C43D3D] bg-[#FCECEC] p-2.5 rounded border border-[#C43D3D]/30">{error}</p>}
-
               <button
                 type="submit"
                 disabled={submitting || loading?.create}
-                className="w-full flex items-center justify-center gap-2 bg-[#111111] text-white py-3.5 rounded text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 bg-[#111111] text-white py-3.5 rounded text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all disabled:opacity-60 cursor-pointer"
               >
                 {submitting ? "Registering Merchant..." : "Continue to Merchant Dashboard"}
                 <ArrowRight size={15} />

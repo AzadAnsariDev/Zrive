@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { ArrowLeft, Plus, Pencil, X, ImageIcon, Layers, Check } from 'lucide-react'
 import { useProduct } from '../hook/useProduct'
-import toast from 'react-hot-toast'
+import { notify } from '../../../utils/toast'
 
 const InfoRow = ({ label, value }) => (
   <div className="flex justify-between py-2.5 border-b border-[#EAEAEA] text-[13px]">
@@ -73,14 +73,14 @@ const VariantEditForm = ({ variant, onCancel, onSave }) => {
         <button
           type="button"
           onClick={onCancel}
-          className="px-3.5 py-1.5 border rounded text-[11px] font-bold uppercase text-[#555]"
+          className="px-3.5 py-1.5 border rounded text-[11px] font-bold uppercase text-[#555] cursor-pointer"
         >
           Cancel
         </button>
         <button
           type="button"
           onClick={() => onSave({ size, color, sku, stock: Number(stock), priceOverride: price ? Number(price) : null })}
-          className="px-4 py-1.5 bg-[#B08D57] text-[#0e0e0e] rounded text-[11px] font-bold uppercase hover:bg-[#D4B982]"
+          className="px-4 py-1.5 bg-[#B08D57] text-[#0e0e0e] rounded text-[11px] font-bold uppercase hover:bg-[#D4B982] cursor-pointer"
         >
           Save Changes
         </button>
@@ -134,7 +134,7 @@ const VariantCard = ({ variant, basePrice, currency, isEditing, onToggleEdit, on
           <button
             type="button"
             onClick={onToggleEdit}
-            className="flex items-center gap-1 text-[11px] font-bold uppercase text-[#B08D57] hover:underline"
+            className="flex items-center gap-1 text-[11px] font-bold uppercase text-[#B08D57] hover:underline cursor-pointer"
           >
             <Pencil size={12} />
             {isEditing ? 'Close' : 'Edit'}
@@ -165,9 +165,14 @@ const SellerProductDetail = () => {
 
   async function fetchProductDetail() {
     setLoading(true)
-    const data = await handleGetProductDetail(productId)
-    setProduct(data)
-    setLoading(false)
+    try {
+      const data = await handleGetProductDetail(productId)
+      setProduct(data)
+    } catch (err) {
+      notify.error(err, "Failed to load product details.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -189,16 +194,21 @@ const SellerProductDetail = () => {
       priceOverride: data.price ? Number(data.price) : undefined,
     }
 
-    const ok = await handleAddVariant(productId, payload)
-    if (ok) {
-      setShowAddForm(false)
-      resetAdd()
-      fetchProductDetail()
+    try {
+      const ok = await handleAddVariant(productId, payload)
+      if (ok) {
+        notify.success("Variant added successfully!")
+        setShowAddForm(false)
+        resetAdd()
+        fetchProductDetail()
+      }
+    } catch (err) {
+      notify.error(err, "Failed to add variant.")
     }
   }
 
   const handleSaveVariantEdit = async (variantId, data) => {
-    toast.success("Variant details saved locally")
+    notify.success("Variant details updated!")
     setEditingVariantId(null)
   }
 
@@ -218,7 +228,7 @@ const SellerProductDetail = () => {
           <button
             type="button"
             onClick={() => navigate('/seller/inventory')}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors cursor-pointer"
           >
             <ArrowLeft size={14} />
             Back to Inventory
@@ -239,7 +249,7 @@ const SellerProductDetail = () => {
 
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-1.5 bg-[#111111] text-white px-4 py-2.5 rounded text-[11.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all shrink-0"
+            className="flex items-center gap-1.5 bg-[#111111] text-white px-4 py-2.5 rounded text-[11.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all shrink-0 cursor-pointer"
           >
             <Plus size={15} />
             Add New Variant
@@ -297,13 +307,13 @@ const SellerProductDetail = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 border rounded text-[11px] font-bold uppercase text-[#555555]"
+                  className="px-4 py-2 border rounded text-[11px] font-bold uppercase text-[#555555] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#B08D57] text-[#0e0e0e] rounded text-[11px] font-bold uppercase hover:bg-[#D4B982]"
+                  className="px-5 py-2 bg-[#B08D57] text-[#0e0e0e] rounded text-[11px] font-bold uppercase hover:bg-[#D4B982] cursor-pointer"
                 >
                   Save Variant
                 </button>

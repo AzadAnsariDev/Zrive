@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { useSelector } from "react-redux";
 import { ArrowRight, ArrowLeft, Upload, Check, ShieldCheck, MapPin, CreditCard, FileText } from "lucide-react";
 import useSeller from "../hook/useSeller";
+import { notify } from "../../../utils/toast";
 
 const PINCODE_REGEX = /^[1-9][0-9]{5}$/;
 const MOBILE_REGEX = /^[6-9]\d{9}$/;
@@ -43,7 +44,10 @@ const SellerKYC = () => {
   const goNext = async () => {
     const fields = STEP_FIELDS[STEPS[step].key];
     const valid = await trigger(fields);
-    if (!valid) return;
+    if (!valid) {
+      notify.error("Please fill in the required fields to continue.");
+      return;
+    }
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
 
@@ -55,42 +59,54 @@ const SellerKYC = () => {
 
     if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
       setPhotoError("Upload a JPG or PNG image");
+      notify.error("Please upload a JPG or PNG image.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
       setPhotoError("File must be under 5MB");
+      notify.error("File size must be under 5MB.");
       return;
     }
 
     setPhotoError("");
     setPanPhoto(file);
     setPanPreview(URL.createObjectURL(file));
+    notify.success("PAN photo selected");
   };
 
   const onSubmit = async (data) => {
     if (!panPhoto) {
       setPhotoError("PAN photo is required");
+      notify.error("Please upload your PAN card document photo.");
       return;
     }
 
     setSubmitting(true);
-    const ok = await handleSubmitVerification({
-      panNumber: data.panNumber.toUpperCase(),
-      panPhoto,
-      pickupAddress: {
-        addressLine1: data.addressLine1,
-        addressLine2: data.addressLine2 || "",
-        city: data.city,
-        state: data.state,
-        pincode: data.pincode,
-      },
-      payout: {
-        upiId: data.upiId || undefined,
-        upiMobile: data.upiMobile || undefined,
-      },
-    });
-    setSubmitting(false);
-    if (ok) navigate("/seller/");
+    try {
+      const ok = await handleSubmitVerification({
+        panNumber: data.panNumber.toUpperCase(),
+        panPhoto,
+        pickupAddress: {
+          addressLine1: data.addressLine1,
+          addressLine2: data.addressLine2 || "",
+          city: data.city,
+          state: data.state,
+          pincode: data.pincode,
+        },
+        payout: {
+          upiId: data.upiId || undefined,
+          upiMobile: data.upiMobile || undefined,
+        },
+      });
+      if (ok) {
+        notify.success("KYC application submitted successfully!");
+        navigate("/seller/");
+      }
+    } catch (err) {
+      notify.error(err, "Failed to submit KYC application.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -101,7 +117,7 @@ const SellerKYC = () => {
           <button
             type="button"
             onClick={() => navigate("/seller/")}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111]"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] cursor-pointer"
           >
             <ArrowLeft size={14} />
             Back to Dashboard
@@ -288,14 +304,12 @@ const SellerKYC = () => {
             </div>
           )}
 
-          {error && <p className="text-[11.5px] text-[#C43D3D] bg-[#FCECEC] p-2.5 rounded border border-[#C43D3D]/30">{error}</p>}
-
           <div className="flex justify-between pt-4 border-t border-[#EAEAEA]">
             {step > 0 ? (
               <button
                 type="button"
                 onClick={goBack}
-                className="px-4 py-2 border rounded text-[12px] font-bold uppercase text-[#555]"
+                className="px-4 py-2 border rounded text-[12px] font-bold uppercase text-[#555] cursor-pointer"
               >
                 Back
               </button>
@@ -305,7 +319,7 @@ const SellerKYC = () => {
               <button
                 type="button"
                 onClick={goNext}
-                className="px-6 py-2 bg-[#111111] text-white rounded text-[12px] font-bold uppercase hover:bg-[#B08D57]"
+                className="px-6 py-2 bg-[#111111] text-white rounded text-[12px] font-bold uppercase hover:bg-[#B08D57] cursor-pointer"
               >
                 Next Step
               </button>
@@ -313,7 +327,7 @@ const SellerKYC = () => {
               <button
                 type="submit"
                 disabled={submitting || loading?.submitVerification}
-                className="px-8 py-2.5 bg-[#287A4B] text-white rounded text-[12px] font-bold uppercase hover:bg-[#1E6039]"
+                className="px-8 py-2.5 bg-[#287A4B] text-white rounded text-[12px] font-bold uppercase hover:bg-[#1E6039] cursor-pointer disabled:opacity-50"
               >
                 {submitting ? "Submitting..." : "Submit KYC Application"}
               </button>

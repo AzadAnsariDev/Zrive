@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react'
+import { useNavigate, useParams } from 'react-router'
 import { useSelector } from 'react-redux'
 import {
     ArrowLeft, Building2, CreditCard, MapPin, Wallet,
     CheckCircle2, XCircle, AlertTriangle, X, ImageIcon, ShieldCheck, Check,
 } from 'lucide-react'
 import { useAdmin } from '../hook/useAdmin'
+import { notify } from '../../../utils/toast'
 
 const RejectModal = ({ onClose, onConfirm, submitting }) => {
     const [reason, setReason] = useState('')
@@ -15,13 +16,13 @@ const RejectModal = ({ onClose, onConfirm, submitting }) => {
             <div className="relative w-full max-w-[420px] rounded-[10px] bg-[#131313] border border-white/15 p-6 text-white shadow-2xl space-y-4">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <h3 className="font-display text-[18px] font-bold text-white">Reject Merchant Application</h3>
-                    <button type="button" onClick={onClose} className="text-white/50 hover:text-white">
+                    <button type="button" onClick={onClose} className="text-white/50 hover:text-white cursor-pointer">
                         <X size={18} />
                     </button>
                 </div>
 
                 <p className="text-[12.5px] text-white/70 leading-relaxed">
-                    Specify the rejection reason below. The merchant will receive an email and can re-submit after fixing errors.
+                    Specify the rejection reason below. The merchant will receive notification and can re-submit after fixing errors.
                 </p>
 
                 <div>
@@ -39,7 +40,7 @@ const RejectModal = ({ onClose, onConfirm, submitting }) => {
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 border border-white/20 rounded-[6px] text-[12px] font-bold uppercase text-white/70"
+                        className="px-4 py-2 border border-white/20 rounded-[6px] text-[12px] font-bold uppercase text-white/70 cursor-pointer"
                     >
                         Cancel
                     </button>
@@ -47,7 +48,7 @@ const RejectModal = ({ onClose, onConfirm, submitting }) => {
                         type="button"
                         disabled={!reason.trim() || submitting}
                         onClick={() => onConfirm(reason.trim())}
-                        className="px-5 py-2 bg-[#C43D3D] text-white rounded-[6px] text-[12px] font-bold uppercase disabled:opacity-50"
+                        className="px-5 py-2 bg-[#C43D3D] text-white rounded-[6px] text-[12px] font-bold uppercase disabled:opacity-50 cursor-pointer"
                     >
                         {submitting ? 'Rejecting...' : 'Confirm Reject'}
                     </button>
@@ -64,7 +65,6 @@ const AdminSellerDetail = () => {
     const { selectedSeller: seller, loading } = useSelector((state) => state.admin)
 
     const [showRejectModal, setShowRejectModal] = useState(false)
-    const [actionError, setActionError] = useState(null)
     const [submitting, setSubmitting] = useState(false)
 
     useEffect(() => {
@@ -72,22 +72,25 @@ const AdminSellerDetail = () => {
     }, [sellerId])
 
     const onApprove = async () => {
-        setActionError(null)
         setSubmitting(true)
         const res = await handleApproveSeller(sellerId)
         setSubmitting(false)
-        if (!res.success) setActionError(res.error)
+        if (res.success) {
+            notify.success('Merchant application approved successfully!')
+        } else {
+            notify.error(res.error, 'Failed to approve merchant application.')
+        }
     }
 
     const onReject = async (reason) => {
-        setActionError(null)
         setSubmitting(true)
         const res = await handleRejectSeller(sellerId, reason)
         setSubmitting(false)
         if (res.success) {
             setShowRejectModal(false)
+            notify.success('Merchant application rejected.')
         } else {
-            setActionError(res.error)
+            notify.error(res.error, 'Failed to reject application.')
         }
     }
 
@@ -101,7 +104,6 @@ const AdminSellerDetail = () => {
 
     const isApproved = seller.applicationStatus === 'approved'
     const isRejected = seller.applicationStatus === 'rejected'
-    const isPending = seller.applicationStatus === 'pending_verification'
 
     return (
         <div className="space-y-8">
@@ -109,7 +111,7 @@ const AdminSellerDetail = () => {
             <button
                 type="button"
                 onClick={() => navigate('/admin/sellers')}
-                className="flex items-center gap-2 text-[12px] font-bold text-white/60 hover:text-white transition-colors"
+                className="flex items-center gap-2 text-[12px] font-bold text-white/60 hover:text-white transition-colors cursor-pointer"
             >
                 <ArrowLeft size={16} />
                 Back to Sellers Registry
@@ -134,7 +136,7 @@ const AdminSellerDetail = () => {
                         <button
                             onClick={onApprove}
                             disabled={submitting}
-                            className="flex items-center gap-2 bg-[#287A4B] text-white px-6 py-3 rounded-[6px] text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#1E6039] transition-all disabled:opacity-50"
+                            className="flex items-center gap-2 bg-[#287A4B] text-white px-6 py-3 rounded-[6px] text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#1E6039] transition-all disabled:opacity-50 cursor-pointer"
                         >
                             <Check size={16} strokeWidth={3} />
                             Approve Merchant
@@ -145,7 +147,7 @@ const AdminSellerDetail = () => {
                         <button
                             onClick={() => setShowRejectModal(true)}
                             disabled={submitting}
-                            className="flex items-center gap-2 border border-[#C43D3D] text-[#C43D3D] px-5 py-3 rounded-[6px] text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#C43D3D]/10 transition-all disabled:opacity-50"
+                            className="flex items-center gap-2 border border-[#C43D3D] text-[#C43D3D] px-5 py-3 rounded-[6px] text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#C43D3D]/10 transition-all disabled:opacity-50 cursor-pointer"
                         >
                             <X size={16} />
                             Reject Application
@@ -153,12 +155,6 @@ const AdminSellerDetail = () => {
                     )}
                 </div>
             </div>
-
-            {actionError && (
-                <div className="p-4 rounded-[6px] bg-[#C43D3D]/15 border border-[#C43D3D]/40 text-[#C43D3D] text-[13px]">
-                    {actionError}
-                </div>
-            )}
 
             {/* Application Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -12,7 +12,7 @@ import {
   ChevronRight,
   ImageIcon,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { notify } from "../../../utils/toast";
 import useWishlist from "../hook/useWishlist";
 import useCart from "../../cart/hook/useCart";
 
@@ -49,8 +49,12 @@ const Wishlist = () => {
   }, []);
 
   const onRemoveItem = async (sku) => {
-    await handleRemoveFromWishlist(sku);
-    toast.success("Item removed from wishlist");
+    try {
+      await handleRemoveFromWishlist(sku);
+      notify.success("Removed from wishlist");
+    } catch (err) {
+      notify.error(err, "Could not remove item from wishlist");
+    }
   };
 
   const onMoveToBag = async (item) => {
@@ -60,10 +64,12 @@ const Wishlist = () => {
       if (item.product?._id && variant?._id) {
         await handleAddToCart(item.product._id, variant._id);
         await handleRemoveFromWishlist(item.variantSku);
-        toast.success("Moved to Shopping Bag!");
+        notify.success("Moved to Shopping Bag!");
       } else {
-        toast.error("Unable to add item to bag");
+        notify.error("Unable to add item to bag. Please select a size.");
       }
+    } catch (err) {
+      notify.error(err, "Could not move item to bag.");
     } finally {
       setMovingSku(null);
     }
@@ -77,7 +83,7 @@ const Wishlist = () => {
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors cursor-pointer"
           >
             <ArrowLeft size={14} />
             Back to Home
@@ -143,7 +149,7 @@ const Wishlist = () => {
                   <button
                     type="button"
                     onClick={() => onRemoveItem(item.variantSku)}
-                    className="absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full bg-white/90 text-[#111] flex items-center justify-center shadow hover:bg-[#C43D3D] hover:text-white transition-colors"
+                    className="absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full bg-white/90 text-[#111] flex items-center justify-center shadow hover:bg-[#C43D3D] hover:text-white transition-colors cursor-pointer"
                   >
                     <X size={14} />
                   </button>
@@ -182,7 +188,7 @@ const Wishlist = () => {
                       type="button"
                       disabled={movingSku === item.variantSku}
                       onClick={() => onMoveToBag(item)}
-                      className="w-full py-2 bg-[#111111] text-white rounded text-[11px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all flex items-center justify-center gap-1.5"
+                      className="w-full py-2 bg-[#111111] text-white rounded text-[11px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       <ShoppingBag size={13} />
                       {movingSku === item.variantSku ? "Moving..." : "Move to Bag"}

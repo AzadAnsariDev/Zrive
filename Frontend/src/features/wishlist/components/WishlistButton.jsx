@@ -2,6 +2,7 @@ import React from "react";
 import { Heart } from "lucide-react";
 import { useSelector } from "react-redux";
 import useWishlist from "../hook/useWishlist";
+import { notify } from "../../../utils/toast";
 
 const WishlistButton = ({ productId, variantSku, className = "" }) => {
   const { handleToggleWishlist } = useWishlist();
@@ -19,10 +20,20 @@ const WishlistButton = ({ productId, variantSku, className = "" }) => {
     );
   });
 
-  const onClick = (e) => {
+  const onClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    handleToggleWishlist(productId, variantSku);
+    const wasWishlisted = isWishlisted;
+    try {
+      await handleToggleWishlist(productId, variantSku);
+      if (wasWishlisted) {
+        notify.success("Removed from wishlist");
+      } else {
+        notify.success("Added to wishlist");
+      }
+    } catch (err) {
+      notify.error(err, "Could not update wishlist");
+    }
   };
 
   return (
@@ -31,7 +42,7 @@ const WishlistButton = ({ productId, variantSku, className = "" }) => {
       onClick={onClick}
       aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
       aria-pressed={isWishlisted}
-      className={`w-8 h-8 rounded-full flex items-center justify-center bg-white/90 backdrop-blur border border-[#EAEAEA] shadow-sm hover:bg-white transition-all ${className}`}
+      className={`w-8 h-8 rounded-full flex items-center justify-center bg-white/90 backdrop-blur border border-[#EAEAEA] shadow-sm hover:bg-white transition-all cursor-pointer ${className}`}
     >
       <Heart
         size={15}

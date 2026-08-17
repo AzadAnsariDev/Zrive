@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Heart,
   ChevronDown,
-  Check,
   Image as ImageIcon,
   Share2,
   Shield,
@@ -16,11 +15,17 @@ import {
   Star,
   ShoppingBag,
   Zap,
+  Ruler,
 } from 'lucide-react'
 import { useProduct } from '../hook/useProduct'
 import { formatPrice } from '../../home/pages/Home'
 import useCart from '../../cart/hook/useCart'
 import WishlistButton from '../../wishlist/components/WishlistButton'
+import SizeChartModal, {
+  isCategoryWithoutSizeChart,
+  isFootwearCategory,
+} from '../components/SizeChartModal'
+import { notify } from '../../../utils/toast'
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
@@ -43,7 +48,7 @@ const AccordionRow = ({ title, children, defaultOpen = false }) => {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between py-3.5 text-left"
+        className="w-full flex items-center justify-between py-3.5 text-left cursor-pointer"
       >
         <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#B08D57]">{title}</span>
         <ChevronDown size={14} className={`text-[#666] transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
@@ -58,28 +63,15 @@ const AccordionRow = ({ title, children, defaultOpen = false }) => {
 const StockStatus = ({ variant, fallbackStatus }) => {
   if (!variant) {
     return fallbackStatus === 'In-Stock'
-      ? <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#287A4B]"><span className="w-1.5 h-1.5 rounded-full bg-[#287A4B]" />Select size & color</span>
+      ? <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-[#287A4B]"><span className="w-2 h-2 rounded-full bg-[#287A4B]" />Select size & color</span>
       : null
   }
   if (variant.stock === 0)
-    return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#C43D3D]"><span className="w-1.5 h-1.5 rounded-full bg-[#C43D3D]" />Out of Stock</span>
+    return <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-[#C43D3D]"><span className="w-2 h-2 rounded-full bg-[#C43D3D]" />Out of Stock</span>
   if (variant.stock < 5)
-    return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#A56A16]"><span className="w-1.5 h-1.5 rounded-full bg-[#A56A16] animate-pulse" />Only {variant.stock} left in stock</span>
-  return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#287A4B]"><span className="w-1.5 h-1.5 rounded-full bg-[#287A4B]" />In Stock</span>
+    return <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-[#A56A16]"><span className="w-2 h-2 rounded-full bg-[#A56A16] animate-pulse" />Only {variant.stock} left in stock</span>
+  return <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-[#287A4B]"><span className="w-2 h-2 rounded-full bg-[#287A4B]" />In Stock</span>
 }
-
-const AddedToCartToast = ({ productName, visible }) => (
-  <div className={`fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}`}>
-    <div className="flex items-center gap-3 bg-[#111111] text-white pl-4 pr-6 py-3 rounded-[6px] shadow-2xl whitespace-nowrap">
-      <div className="w-4 h-4 rounded-full bg-[#287A4B] flex items-center justify-center shrink-0">
-        <Check size={10} strokeWidth={3} />
-      </div>
-      <span className="text-[12.5px] font-medium">
-        <span className="font-semibold">{productName}</span> added to bag
-      </span>
-    </div>
-  </div>
-)
 
 const RelatedProductCard = ({ product }) => {
   const navigate = useNavigate()
@@ -107,154 +99,94 @@ const RelatedProductCard = ({ product }) => {
   )
 }
 
-const SizeChartModal = ({ onClose }) => {
-  const [unit, setUnit] = useState('in')
+const VariantSelector = ({
+  colors,
+  sizesForColor,
+  selectedColor,
+  selectedSize,
+  onSelectColor,
+  onSelectSize,
+  shakeSize,
+  sizeError,
+  category,
+  onOpenSizeChart,
+}) => {
+  const isSizeChartHidden = isCategoryWithoutSizeChart(category)
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-[8px] border border-[#EAEAEA] max-w-lg w-full p-6 shadow-2xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-[#EAEAEA]">
-          <div>
-            <h3 className="font-display text-[18px] font-bold text-[#111111]">Men's Size Guide</h3>
-            <p className="text-[11.5px] text-[#666666]">Standard garment measurement chart</p>
-          </div>
-          <button onClick={onClose} className="p-1 text-[#666] hover:text-[#111]">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#B08D57]">Tops & Outerwear</span>
-          <div className="flex items-center gap-1 border border-[#EAEAEA] rounded bg-[#FAFAFA] p-0.5 text-[11px] font-bold">
-            <button
-              onClick={() => setUnit('in')}
-              className={`px-3 py-1 rounded transition-colors ${unit === 'in' ? 'bg-[#111] text-white' : 'text-[#666]'}`}
-            >
-              Inches (in)
-            </button>
-            <button
-              onClick={() => setUnit('cm')}
-              className={`px-3 py-1 rounded transition-colors ${unit === 'cm' ? 'bg-[#111] text-white' : 'text-[#666]'}`}
-            >
-              CM (cm)
-            </button>
+    <div className="mt-5 space-y-4">
+      {colors.length > 0 && (
+        <div>
+          <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase text-[#B08D57] mb-2">
+            Color{selectedColor ? ` · ${selectedColor}` : ''}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {colors.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => onSelectColor(color)}
+                className={`px-3.5 py-1.5 text-[12px] font-medium rounded border transition-all cursor-pointer ${
+                  color === selectedColor
+                    ? 'bg-[#111111] text-white border-[#111111]'
+                    : 'border-[#EAEAEA] text-[#111111] hover:border-[#111111]'
+                }`}
+              >
+                {color}
+              </button>
+            ))}
           </div>
         </div>
+      )}
 
-        <div className="overflow-x-auto border border-[#EAEAEA] rounded">
-          <table className="w-full text-left text-[12px] border-collapse">
-            <thead>
-              <tr className="bg-[#FAFAFA] border-b border-[#EAEAEA] text-[10px] font-bold uppercase tracking-[0.08em] text-[#666]">
-                <th className="py-2.5 px-3">Size</th>
-                <th className="py-2.5 px-3">Chest</th>
-                <th className="py-2.5 px-3">Front Length</th>
-                <th className="py-2.5 px-3">Shoulder</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#EAEAEA] text-[#111]">
-              <tr>
-                <td className="py-2.5 px-3 font-bold">S</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '38 in' : '96.5 cm'}</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '27.5 in' : '70 cm'}</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '17 in' : '43 cm'}</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-bold">M</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '40 in' : '101.5 cm'}</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '28 in' : '71 cm'}</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '17.5 in' : '44.5 cm'}</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-bold">L</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '42 in' : '106.5 cm'}</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '28.5 in' : '72.5 cm'}</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '18 in' : '45.5 cm'}</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-bold">XL</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '44 in' : '111.5 cm'}</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '29 in' : '73.5 cm'}</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '18.5 in' : '47 cm'}</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-bold">XXL</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '46 in' : '117 cm'}</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '29.5 in' : '75 cm'}</td>
-                <td className="py-2.5 px-3">{unit === 'in' ? '19 in' : '48.5 cm'}</td>
-              </tr>
-            </tbody>
-          </table>
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase text-[#B08D57]">
+            Select Size{selectedSize ? ` · ${selectedSize}` : ''}
+          </p>
+          {isSizeChartHidden ? (
+            <span className="text-[11px] font-medium text-[#999999] opacity-40 cursor-not-allowed select-none">
+              Size Chart (N/A)
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenSizeChart}
+              className="text-[11.5px] font-bold text-[#111111] underline hover:text-[#B08D57] transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <Ruler size={13} className="text-[#B08D57]" />
+              Size Chart
+            </button>
+          )}
         </div>
-
-        <div className="p-3 bg-[#FAFAFA] rounded border border-[#EAEAEA] text-[11px] text-[#666] leading-relaxed">
-          <strong className="text-[#111]">How to measure:</strong> Measure under arms around the fullest part of the chest. Keep tape level across back.
+        <div className={`flex flex-wrap gap-2 ${shakeSize ? 'shake-once' : ''}`}>
+          {sizesForColor.map(({ size, stock }) => (
+            <button
+              key={size}
+              type="button"
+              disabled={stock === 0}
+              onClick={() => onSelectSize(size)}
+              className={`min-w-[44px] h-10 px-3.5 text-[12px] font-semibold rounded border transition-all cursor-pointer ${
+                size === selectedSize
+                  ? sizeError
+                    ? 'bg-[#C43D3D] text-white border-[#C43D3D]'
+                    : 'bg-[#111111] text-white border-[#111111]'
+                  : stock === 0
+                  ? 'border-[#EAEAEA] text-[#ccc] line-through cursor-not-allowed'
+                  : 'border-[#EAEAEA] text-[#111111] hover:border-[#111111]'
+              }`}
+            >
+              {size}
+            </button>
+          ))}
         </div>
+        {sizeError && (
+          <p className="mt-1.5 text-[11.5px] text-[#C43D3D]">Please select a size to continue.</p>
+        )}
       </div>
     </div>
   )
 }
-
-const VariantSelector = ({ colors, sizesForColor, selectedColor, selectedSize, onSelectColor, onSelectSize, shakeSize, sizeError, onOpenSizeChart }) => (
-  <div className="mt-5 space-y-4">
-    {colors.length > 0 && (
-      <div>
-        <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase text-[#B08D57] mb-2">
-          Color{selectedColor ? ` · ${selectedColor}` : ''}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {colors.map((color) => (
-            <button
-              key={color}
-              type="button"
-              onClick={() => onSelectColor(color)}
-              className={`px-3.5 py-1.5 text-[12px] font-medium rounded border transition-all ${
-                color === selectedColor
-                  ? 'bg-[#111111] text-white border-[#111111]'
-                  : 'border-[#EAEAEA] text-[#111111] hover:border-[#111111]'
-              }`}
-            >
-              {color}
-            </button>
-          ))}
-        </div>
-      </div>
-    )}
-
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase text-[#B08D57]">
-          Select Size{selectedSize ? ` · ${selectedSize}` : ''}
-        </p>
-        <button type="button" onClick={onOpenSizeChart} className="text-[11px] font-bold text-[#111111] underline hover:text-[#B08D57]">
-          Size Chart
-        </button>
-      </div>
-      <div className={`flex flex-wrap gap-2 ${shakeSize ? 'shake-once' : ''}`}>
-        {sizesForColor.map(({ size, stock }) => (
-          <button
-            key={size}
-            type="button"
-            disabled={stock === 0}
-            onClick={() => onSelectSize(size)}
-            className={`min-w-[44px] h-10 px-3 text-[12px] font-semibold rounded border transition-all ${
-              size === selectedSize
-                ? sizeError
-                  ? 'bg-[#C43D3D] text-white border-[#C43D3D]'
-                  : 'bg-[#111111] text-white border-[#111111]'
-                : stock === 0
-                ? 'border-[#EAEAEA] text-[#ccc] line-through cursor-not-allowed'
-                : 'border-[#EAEAEA] text-[#111111] hover:border-[#111111]'
-            }`}
-          >
-            {size}
-          </button>
-        ))}
-      </div>
-      {sizeError && (
-        <p className="mt-1.5 text-[11.5px] text-[#C43D3D]">Please select a size to continue.</p>
-      )}
-    </div>
-  </div>
-)
 
 const SingleProduct = () => {
   const { productId } = useParams()
@@ -263,21 +195,27 @@ const SingleProduct = () => {
 
   const [product, setProduct] = useState(null)
   const [activeImage, setActiveImage] = useState(0)
-  const [toastVisible, setToastVisible] = useState(false)
   const [sizeChartOpen, setSizeChartOpen] = useState(false)
-  const toastTimeoutRef = useRef(null)
   const [selectedColor, setSelectedColor] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
   const [sizeError, setSizeError] = useState(false)
   const [shakeSize, setShakeSize] = useState(false)
+  const [isBuyingNow, setIsBuyingNow] = useState(false)
+
+  const addresses = useSelector((state) => state.address?.addresses ?? [])
+  const selectedAddress = useSelector((state) => state.address?.selectedAddress)
 
   async function fetchProductDetail() {
-    const p = await handleGetProductDetail(productId)
-    setProduct(p)
+    try {
+      const p = await handleGetProductDetail(productId)
+      setProduct(p)
+    } catch (err) {
+      notify.error(err, "Could not load product details.")
+    }
   }
 
   useEffect(() => { fetchProductDetail() }, [productId])
-  useEffect(() => () => clearTimeout(toastTimeoutRef.current), [])
+
   useEffect(() => {
     if (product?.variants?.length) {
       setSelectedColor(product.variants[0].color)
@@ -311,12 +249,40 @@ const SingleProduct = () => {
   useEffect(() => { if (canAddToCart) setSizeError(false) }, [canAddToCart])
 
   const { handleAddToCart } = useCart()
-  const handleAddToBag = () => {
-    if (!canAddToCart) { setSizeError(true); setShakeSize(true); return }
-    handleAddToCart(product._id, selectedVariant._id)
-    clearTimeout(toastTimeoutRef.current)
-    setToastVisible(true)
-    toastTimeoutRef.current = setTimeout(() => setToastVisible(false), 2200)
+
+  const handleAddToBag = async () => {
+    if (!canAddToCart) {
+      setSizeError(true)
+      setShakeSize(true)
+      notify.error("Please select a size to continue.")
+      return
+    }
+    try {
+      await handleAddToCart(product._id, selectedVariant?._id)
+      notify.success("Added to bag")
+    } catch (err) {
+      notify.error(err, "Could not add product to bag.")
+    }
+  }
+
+  const handleBuyNow = async () => {
+    if (!canAddToCart) {
+      setSizeError(true)
+      setShakeSize(true)
+      notify.error("Please select a size to continue.")
+      return
+    }
+    setIsBuyingNow(true)
+    try {
+      await handleAddToCart(product._id, selectedVariant?._id)
+      const hasAddress = selectedAddress || (addresses && addresses.length > 0)
+      navigate(hasAddress ? '/order-summary' : '/address')
+    } catch (err) {
+      notify.error(err, "Something went wrong. Redirecting to cart.")
+      navigate('/cart')
+    } finally {
+      setIsBuyingNow(false)
+    }
   }
 
   if (!product) {
@@ -338,10 +304,16 @@ const SingleProduct = () => {
   }
 
   return (
-    <div className="bg-white text-[#111111] min-h-screen pb-20 md:pb-12">
+    <div className="bg-white text-[#111111] min-h-screen pb-24 md:pb-12">
       <ShakeKeyframes />
-      <AddedToCartToast productName={product.name || product.title} visible={toastVisible} />
-      {sizeChartOpen && <SizeChartModal onClose={() => setSizeChartOpen(false)} />}
+      
+      {sizeChartOpen && (
+        <SizeChartModal
+          onClose={() => setSizeChartOpen(false)}
+          category={product.category}
+          selectedSize={selectedSize}
+        />
+      )}
 
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-4 md:py-8">
         {/* Responsive Breadcrumb */}
@@ -349,7 +321,7 @@ const SingleProduct = () => {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="flex items-center gap-1 font-semibold text-[#111111] hover:text-[#B08D57] transition-colors"
+            className="flex items-center gap-1 font-semibold text-[#111111] hover:text-[#B08D57] transition-colors cursor-pointer"
           >
             <ArrowLeft size={16} />
             <span>Back</span>
@@ -369,7 +341,7 @@ const SingleProduct = () => {
                 key={i}
                 type="button"
                 onClick={() => setActiveImage(i)}
-                className={`aspect-[3/4] rounded overflow-hidden border-2 transition-all ${
+                className={`aspect-[3/4] rounded overflow-hidden border-2 transition-all cursor-pointer ${
                   i === activeImage ? 'border-[#B08D57]' : 'border-transparent opacity-60 hover:opacity-100'
                 }`}
               >
@@ -398,14 +370,14 @@ const SingleProduct = () => {
                   <button
                     type="button"
                     onClick={handlePrevImage}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-white"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-white cursor-pointer"
                   >
                     <ChevronLeft size={16} />
                   </button>
                   <button
                     type="button"
                     onClick={handleNextImage}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-white cursor-pointer"
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -421,7 +393,7 @@ const SingleProduct = () => {
                     key={i}
                     type="button"
                     onClick={() => setActiveImage(i)}
-                    className={`w-14 h-18 rounded overflow-hidden border-2 shrink-0 ${
+                    className={`w-14 h-18 rounded overflow-hidden border-2 shrink-0 cursor-pointer ${
                       i === activeImage ? 'border-[#B08D57]' : 'border-transparent opacity-60'
                     }`}
                   >
@@ -472,18 +444,30 @@ const SingleProduct = () => {
                 onSelectSize={setSelectedSize}
                 shakeSize={shakeSize}
                 sizeError={sizeError}
+                category={product.category}
+                onOpenSizeChart={() => setSizeChartOpen(true)}
               />
             )}
 
             {/* CTAs (Desktop) */}
-            <div className="hidden md:flex flex-col gap-2.5 pt-4">
+            <div className="hidden md:grid grid-cols-2 gap-3 pt-4">
               <button
                 type="button"
                 onClick={handleAddToBag}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded bg-[#111111] text-white text-[12.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
+                className="flex items-center justify-center gap-2 py-3.5 rounded-lg border-2 border-[#111111] bg-white text-[#111111] text-[12.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#F9F9F9] active:scale-[0.99] transition-all cursor-pointer"
               >
                 <ShoppingBag size={16} />
                 Add to Bag
+              </button>
+
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={isBuyingNow}
+                className="flex items-center justify-center gap-2 py-3.5 rounded-lg bg-[#111111] text-white text-[12.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] active:scale-[0.99] transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                <Zap size={16} className="fill-current" />
+                {isBuyingNow ? 'Processing...' : 'Buy Now'}
               </button>
             </div>
 
@@ -513,19 +497,28 @@ const SingleProduct = () => {
       </div>
 
       {/* Mobile Sticky Bottom CTA Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#EAEAEA] p-3 flex items-center gap-3 shadow-2xl">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#EAEAEA] px-3.5 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] flex items-center gap-2.5 shadow-[0_-4px_25px_rgba(0,0,0,0.08)]">
         <WishlistButton
           productId={product._id}
           variantSku={selectedVariant?.sku || product.variants?.[0]?.sku}
-          className="w-12 h-12 rounded border border-[#EAEAEA] flex items-center justify-center shrink-0"
+          className="w-11 h-11 rounded-lg border border-[#EAEAEA] bg-white flex items-center justify-center shrink-0 shadow-sm active:scale-95 transition-all text-[#111]"
         />
         <button
           type="button"
           onClick={handleAddToBag}
-          className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#111111] text-white rounded text-[12px] font-bold uppercase tracking-[0.06em]"
+          className="flex-1 h-11 flex items-center justify-center gap-1.5 rounded-lg border-2 border-[#111111] bg-white text-[#111111] text-[12px] font-bold uppercase tracking-[0.04em] active:scale-[0.98] transition-all hover:bg-[#FAFAFA] cursor-pointer"
         >
           <ShoppingBag size={15} />
           Add to Bag
+        </button>
+        <button
+          type="button"
+          onClick={handleBuyNow}
+          disabled={isBuyingNow}
+          className="flex-1 h-11 flex items-center justify-center gap-1.5 rounded-lg bg-[#111111] text-white text-[12px] font-bold uppercase tracking-[0.04em] active:scale-[0.98] transition-all hover:bg-[#B08D57] shadow-sm disabled:opacity-50 cursor-pointer"
+        >
+          <Zap size={15} className="fill-current" />
+          {isBuyingNow ? 'Buying...' : 'Buy Now'}
         </button>
       </div>
     </div>

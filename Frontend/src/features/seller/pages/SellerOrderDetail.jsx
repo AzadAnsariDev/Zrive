@@ -20,6 +20,7 @@ import {
 import useSeller from "../hook/useSeller";
 import useDelivery from "../../delivery/hook/useDelivery.js";
 import { setCurrentDelivery } from "../../delivery/state/deliverySlice.js";
+import { notify } from "../../../utils/toast";
 
 const formatMoney = (amount) => `₹${(Number(amount) || 0).toLocaleString("en-IN")}`;
 
@@ -63,6 +64,8 @@ const SellerOrderDetail = () => {
           const del = await trackDeliveryByOrderId(orderId);
           if (del) dispatch(setCurrentDelivery(del));
         }
+      } catch (err) {
+        notify.error(err, "Failed to load order details.");
       } finally {
         setLoading(false);
       }
@@ -84,17 +87,29 @@ const SellerOrderDetail = () => {
 
   const onAccept = async () => {
     setSubmitting(true);
-    await handleAcceptOrder(order._id);
-    await handleGetOrderById(order._id);
-    setSubmitting(false);
+    try {
+      await handleAcceptOrder(order._id);
+      notify.success("Order accepted for fulfillment!");
+      await handleGetOrderById(order._id);
+    } catch (err) {
+      notify.error(err, "Failed to accept order.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const onReject = async () => {
     setSubmitting(true);
-    await handleRejectOrder(order._id, rejectReason);
-    await handleGetOrderById(order._id);
-    setSubmitting(false);
-    setShowRejectModal(false);
+    try {
+      await handleRejectOrder(order._id, rejectReason);
+      notify.success("Order rejected");
+      await handleGetOrderById(order._id);
+      setShowRejectModal(false);
+    } catch (err) {
+      notify.error(err, "Failed to reject order.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -105,7 +120,7 @@ const SellerOrderDetail = () => {
           <button
             type="button"
             onClick={() => navigate("/seller/orders")}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111]"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] cursor-pointer"
           >
             <ArrowLeft size={14} />
             Back to Orders List
@@ -140,14 +155,14 @@ const SellerOrderDetail = () => {
                 <button
                   onClick={onAccept}
                   disabled={submitting}
-                  className="px-5 py-2.5 bg-[#287A4B] text-white rounded text-[11.5px] font-bold uppercase hover:bg-[#1E6039]"
+                  className="px-5 py-2.5 bg-[#287A4B] text-white rounded text-[11.5px] font-bold uppercase hover:bg-[#1E6039] cursor-pointer disabled:opacity-50"
                 >
                   Accept Order
                 </button>
                 <button
                   onClick={() => setShowRejectModal(true)}
                   disabled={submitting}
-                  className="px-5 py-2.5 border border-[#C43D3D] text-[#C43D3D] rounded text-[11.5px] font-bold uppercase hover:bg-[#FCECEC]"
+                  className="px-5 py-2.5 border border-[#C43D3D] text-[#C43D3D] rounded text-[11.5px] font-bold uppercase hover:bg-[#FCECEC] cursor-pointer disabled:opacity-50"
                 >
                   Reject Order
                 </button>
@@ -159,7 +174,7 @@ const SellerOrderDetail = () => {
                 href={currentDelivery.shiprocketTrackingUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-[#111] text-white rounded text-[11.5px] font-bold uppercase hover:bg-[#B08D57]"
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-[#111] text-white rounded text-[11.5px] font-bold uppercase hover:bg-[#B08D57] cursor-pointer"
               >
                 Track Shipment
                 <ExternalLink size={14} />
@@ -245,8 +260,8 @@ const SellerOrderDetail = () => {
               <option value="other">Other</option>
             </select>
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setShowRejectModal(false)} className="px-4 py-2 border rounded text-[11px] font-bold uppercase">Cancel</button>
-              <button onClick={onReject} className="px-5 py-2 bg-[#C43D3D] text-white rounded text-[11px] font-bold uppercase">Confirm Reject</button>
+              <button onClick={() => setShowRejectModal(false)} className="px-4 py-2 border rounded text-[11px] font-bold uppercase cursor-pointer">Cancel</button>
+              <button onClick={onReject} className="px-5 py-2 bg-[#C43D3D] text-white rounded text-[11px] font-bold uppercase cursor-pointer">Confirm Reject</button>
             </div>
           </div>
         </div>

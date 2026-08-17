@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { Minus, Plus, Trash2, ShoppingBag, ShieldCheck, Truck, RefreshCw, Tag, ArrowRight, Lock } from 'lucide-react'
 import useCart from '../hook/useCart'
 import { formatPrice } from '../../home/pages/Home'
+import { notify } from '../../../utils/toast'
 
 const CartItemRow = ({ item, index, onIncrement, onDecrement, onRemove }) => {
   const variant = item.product?.variants
@@ -60,7 +61,7 @@ const CartItemRow = ({ item, index, onIncrement, onDecrement, onRemove }) => {
               type="button"
               onClick={() => onRemove(item)}
               aria-label="Remove item"
-              className="p-1 text-[#999999] hover:text-[#C43D3D] transition-colors shrink-0"
+              className="p-1 text-[#999999] hover:text-[#C43D3D] transition-colors shrink-0 cursor-pointer"
             >
               <Trash2 size={15} strokeWidth={1.5} />
             </button>
@@ -74,7 +75,7 @@ const CartItemRow = ({ item, index, onIncrement, onDecrement, onRemove }) => {
               type="button"
               onClick={() => onDecrement(item)}
               disabled={item.quantity <= 1}
-              className="w-7 h-7 flex items-center justify-center text-[#111111] hover:bg-[#EAEAEA] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-7 h-7 flex items-center justify-center text-[#111111] hover:bg-[#EAEAEA] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             >
               <Minus size={11} strokeWidth={2} />
             </button>
@@ -84,7 +85,7 @@ const CartItemRow = ({ item, index, onIncrement, onDecrement, onRemove }) => {
             <button
               type="button"
               onClick={() => onIncrement(item)}
-              className="w-7 h-7 flex items-center justify-center text-[#111111] hover:bg-[#EAEAEA] transition-colors"
+              className="w-7 h-7 flex items-center justify-center text-[#111111] hover:bg-[#EAEAEA] transition-colors cursor-pointer"
             >
               <Plus size={11} strokeWidth={2} />
             </button>
@@ -140,15 +141,23 @@ const Cart = () => {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  // Smart checkout: if user already has an address saved, skip to order summary
   const handleProceedToCheckout = () => {
+    if (!items || items.length === 0) {
+      notify.error("Your shopping bag is empty.")
+      return
+    }
     const hasAddress = selectedAddress || addresses.length > 0
     navigate(hasAddress ? '/order-summary' : '/address')
   }
 
   const fetchCartItems = async () => {
-    await handleGetCart()
-    setLoading(false)
+    try {
+      await handleGetCart()
+    } catch (err) {
+      notify.error(err, "Failed to load shopping bag.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -156,18 +165,31 @@ const Cart = () => {
   }, [])
 
   const handleIncrement = async (item) => {
-    await handleAddToCart(item.product._id, item.variant)
-    await fetchCartItems()
+    try {
+      await handleAddToCart(item.product._id, item.variant)
+      await fetchCartItems()
+    } catch (err) {
+      notify.error(err, "Could not update item quantity.")
+    }
   }
 
   const handleDecrement = async (item) => {
-    await handleRemoveCartItem(item.product._id, item.variant, "decrement")
-    await fetchCartItems()
+    try {
+      await handleRemoveCartItem(item.product._id, item.variant, "decrement")
+      await fetchCartItems()
+    } catch (err) {
+      notify.error(err, "Could not update item quantity.")
+    }
   }
 
   const handleRemove = async (item) => {
-    await handleRemoveCartItem(item.product._id, item.variant, "remove")
-    await fetchCartItems()
+    try {
+      await handleRemoveCartItem(item.product._id, item.variant, "remove")
+      notify.success("Removed from bag")
+      await fetchCartItems()
+    } catch (err) {
+      notify.error(err, "Could not remove item from bag.")
+    }
   }
 
   const isFreeShipping = subtotal >= 999
@@ -183,8 +205,6 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#111111]">
-
-      {/* Main Container */}
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-6">
         <div className="mb-6 flex items-baseline justify-between border-b border-[#EAEAEA] pb-3">
           <h1 className="text-[24px] md:text-[28px] font-bold text-[#111111] leading-tight">
@@ -290,7 +310,7 @@ const Cart = () => {
               <button
                 type="button"
                 onClick={handleProceedToCheckout}
-                className="w-full flex items-center justify-center gap-2 bg-[#111111] text-white rounded py-3.5 text-[12px] font-bold tracking-[0.06em] uppercase hover:bg-[#B08D57] transition-all shadow-sm"
+                className="w-full flex items-center justify-center gap-2 bg-[#111111] text-white rounded py-3.5 text-[12px] font-bold tracking-[0.06em] uppercase hover:bg-[#B08D57] transition-all shadow-sm cursor-pointer"
               >
                 Proceed to Checkout
                 <ArrowRight size={15} />

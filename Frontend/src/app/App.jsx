@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { useAuth } from '../features/auth/hook/useAuth'
 import { RouterProvider } from 'react-router'
 import router from '../router/routes'
-import { Toaster } from "react-hot-toast";
+import { Toaster } from 'sonner'
 
 const App = () => {
   const { handleGetMe } = useAuth()
@@ -21,8 +21,16 @@ const App = () => {
     <>
       <Toaster
         position="top-center"
+        richColors
+        closeButton
+        duration={2500}
+        theme="light"
         toastOptions={{
-          duration: 2000,
+          style: {
+            fontFamily: 'inherit',
+            fontSize: '13px',
+            borderRadius: '8px',
+          },
         }}
       />
       <RouterProvider router={router} />

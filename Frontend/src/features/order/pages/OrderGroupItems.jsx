@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   Package,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { notify } from "../../../utils/toast";
 import useOrder from "../hook/useOrder";
 import CancelOrderModal from "../components/CancelOrderModal";
 
@@ -58,8 +58,8 @@ const OrderGroupItems = () => {
     const result = await handleCancelOrder(cancelTarget);
     setCancelling(false);
     setCancelTarget(null);
-    if (result.success) toast.success("Order cancelled");
-    else toast.error(result.error || "Could not cancel order");
+    if (result.success) notify.success("Order cancelled successfully");
+    else notify.error(result.error, "Could not cancel order");
   };
 
   if (loading && groupOrders.length === 0) {
@@ -77,7 +77,7 @@ const OrderGroupItems = () => {
           <button
             type="button"
             onClick={() => navigate("/orders")}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111]"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] cursor-pointer"
           >
             <ArrowLeft size={14} />
             Back to Orders
@@ -127,7 +127,7 @@ const OrderGroupItems = () => {
                 </div>
                 <button
                   onClick={() => navigate(`/orders/${order._id}`)}
-                  className="px-4 py-2 bg-[#111111] text-white rounded text-[11px] font-bold uppercase hover:bg-[#B08D57] transition-all"
+                  className="px-4 py-2 bg-[#111111] text-white rounded text-[11px] font-bold uppercase hover:bg-[#B08D57] transition-all cursor-pointer"
                 >
                   View Details & Track
                 </button>

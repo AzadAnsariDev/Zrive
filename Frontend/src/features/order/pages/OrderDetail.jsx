@@ -24,7 +24,7 @@ import {
   Calendar,
   Sparkles,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { notify } from "../../../utils/toast";
 import useOrder from "../hook/useOrder.js";
 import useDelivery from "../../delivery/hook/useDelivery.js";
 import { setCurrentDelivery } from "../../delivery/state/deliverySlice.js";
@@ -129,11 +129,9 @@ const getItemSizeColor = (item) =>
   [item?.size, item?.color].filter(Boolean).join(" · ") ||
   [item?.variant?.size, item?.variant?.color].filter(Boolean).join(" · ");
 
-// ─── Tracking Stage Stepper (Meesho / Myntra style) ───────────────────────────
 const OrderTrackingTimeline = ({ order, delivery }) => {
   const isCancelled = ["cancelled", "failed"].includes(order?.orderStatus);
 
-  // Compute stage index: 0 = Placed, 1 = Packed, 2 = Shipped, 3 = Out for Delivery, 4 = Delivered
   const currentStageIndex = useMemo(() => {
     if (isCancelled) return -1;
     const ordStatus = order?.orderStatus?.toLowerCase();
@@ -143,7 +141,7 @@ const OrderTrackingTimeline = ({ order, delivery }) => {
     if (delStatus === "out_for_delivery") return 3;
     if (ordStatus === "shipped" || ["in_transit", "picked_up"].includes(delStatus)) return 2;
     if (["confirmed", "packed"].includes(ordStatus) || ["pickup_scheduled", "awb_assigned", "order_created"].includes(delStatus)) return 1;
-    return 0; // placed
+    return 0;
   }, [order?.orderStatus, delivery?.status, isCancelled]);
 
   const stages = [
@@ -245,10 +243,8 @@ const OrderTrackingTimeline = ({ order, delivery }) => {
       {/* Desktop Horizontal Stepper */}
       <div className="hidden md:block py-4">
         <div className="relative flex items-center justify-between">
-          {/* Background gray line */}
           <div className="absolute left-6 right-6 top-5 h-[3px] bg-[#EAEAEA] -z-0" />
 
-          {/* Active progress line with shimmer animation */}
           <div
             className="absolute left-6 top-5 h-[3px] -z-0 transition-all duration-700 ease-out shimmer-active"
             style={{
@@ -305,7 +301,6 @@ const OrderTrackingTimeline = ({ order, delivery }) => {
 
           return (
             <div key={stage.id} className="flex items-start gap-3.5 relative">
-              {/* Vertical connector line */}
               {!isLast && (
                 <div
                   className={`absolute left-4 top-8 bottom-0 w-[2px] -ml-[1px] ${
@@ -314,7 +309,6 @@ const OrderTrackingTimeline = ({ order, delivery }) => {
                 />
               )}
 
-              {/* Node Icon */}
               <div className="relative shrink-0 z-10">
                 {isCurrent && isCompleted && (
                   <span className="pulse-active absolute -inset-1 rounded-full bg-[#287A4B]/30" />
@@ -330,7 +324,6 @@ const OrderTrackingTimeline = ({ order, delivery }) => {
                 </div>
               </div>
 
-              {/* Node details */}
               <div className="pb-4">
                 <p className={`text-[13px] font-bold ${isCompleted ? "text-[#111]" : "text-[#999]"}`}>
                   {stage.title}
@@ -345,7 +338,6 @@ const OrderTrackingTimeline = ({ order, delivery }) => {
   );
 };
 
-// ─── Courier & AWB Details Card with Shiprocket link ─────────────────────────
 const CourierTrackingCard = ({ delivery, order, onRefresh, refreshing }) => {
   const [copied, setCopied] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
@@ -360,7 +352,7 @@ const CourierTrackingCard = ({ delivery, order, onRefresh, refreshing }) => {
     if (!awbCode) return;
     navigator.clipboard?.writeText(awbCode);
     setCopied(true);
-    toast.success("AWB Tracking ID copied!");
+    notify.success("AWB Tracking ID copied!");
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -401,7 +393,7 @@ const CourierTrackingCard = ({ delivery, order, onRefresh, refreshing }) => {
                 <button
                   type="button"
                   onClick={handleCopyAwb}
-                  className="p-1 text-[#888] hover:text-[#111] transition-colors"
+                  className="p-1 text-[#888] hover:text-[#111] transition-colors cursor-pointer"
                   title="Copy Tracking ID"
                 >
                   {copied ? <Check size={13} className="text-[#287A4B]" /> : <Copy size={13} />}
@@ -416,7 +408,7 @@ const CourierTrackingCard = ({ delivery, order, onRefresh, refreshing }) => {
             type="button"
             onClick={onRefresh}
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 py-2 border border-[#EAEAEA] rounded-[6px] text-[11px] font-bold text-[#555] hover:bg-[#FAFAFA] transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 border border-[#EAEAEA] rounded-[6px] text-[11px] font-bold text-[#555] hover:bg-[#FAFAFA] transition-all disabled:opacity-50 cursor-pointer"
             title="Refresh Live Tracking Status"
           >
             <RefreshCw size={12} className={refreshing ? "animate-spin text-[#B08D57]" : ""} />
@@ -428,7 +420,7 @@ const CourierTrackingCard = ({ delivery, order, onRefresh, refreshing }) => {
               href={trackingUrl}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#111111] text-white rounded-[6px] text-[11px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#111111] text-white rounded-[6px] text-[11px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all cursor-pointer"
             >
               <span>Track on Courier</span>
               <ExternalLink size={12} />
@@ -437,13 +429,12 @@ const CourierTrackingCard = ({ delivery, order, onRefresh, refreshing }) => {
         </div>
       </div>
 
-      {/* Accordion: Status History Logs */}
       {logs.length > 0 && (
         <div className="pt-1">
           <button
             type="button"
             onClick={() => setShowLogs((s) => !s)}
-            className="w-full flex items-center justify-between py-2 text-[12px] font-bold text-[#B08D57] hover:underline text-left"
+            className="w-full flex items-center justify-between py-2 text-[12px] font-bold text-[#B08D57] hover:underline text-left cursor-pointer"
           >
             <span className="flex items-center gap-1.5">
               <Sparkles size={14} />
@@ -484,7 +475,6 @@ const CourierTrackingCard = ({ delivery, order, onRefresh, refreshing }) => {
   );
 };
 
-// ─── Main Component ────────────────────────────────────────────────────────────
 const OrderDetail = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -501,12 +491,10 @@ const OrderDetail = () => {
   const [cancelling, setCancelling] = useState(false);
   const [refreshingDelivery, setRefreshingDelivery] = useState(false);
 
-  // Fetch the order itself
   useEffect(() => {
     handleGetOrderById(orderId);
   }, [orderId]);
 
-  // Fetch delivery details using the buyer endpoint
   useEffect(() => {
     if (!order?._id) return;
     (async () => {
@@ -520,7 +508,7 @@ const OrderDetail = () => {
         setRefreshingDelivery(true);
         await handleGetDeliveryByOrderBuyer(order._id);
         setRefreshingDelivery(false);
-        toast.success("Order status refreshed");
+        notify.success("Order status refreshed");
       }
       return;
     }
@@ -528,7 +516,7 @@ const OrderDetail = () => {
     try {
       const updated = await handleTrackDeliveryBuyer(deliveryState._id);
       if (updated) {
-        toast.success("Tracking information updated!");
+        notify.success("Tracking information updated!");
       }
     } finally {
       setRefreshingDelivery(false);
@@ -549,10 +537,10 @@ const OrderDetail = () => {
     setCancelling(false);
     setCancelModalOpen(false);
     if (result.success) {
-      toast.success("Order cancelled successfully");
+      notify.success("Order cancelled successfully");
       handleGetOrderById(orderId);
     } else {
-      toast.error(result.error || "Failed to cancel order");
+      notify.error(result.error, "Failed to cancel order");
     }
   };
 
@@ -576,7 +564,7 @@ const OrderDetail = () => {
           <button
             type="button"
             onClick={retry}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-[#111] text-white rounded text-[11.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-[#111] text-white rounded text-[11.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all cursor-pointer"
           >
             <RefreshCw size={13} />
             Retry
@@ -584,7 +572,7 @@ const OrderDetail = () => {
           <button
             type="button"
             onClick={() => navigate("/orders")}
-            className="text-[12px] font-bold text-[#B08D57] hover:underline"
+            className="text-[12px] font-bold text-[#B08D57] hover:underline cursor-pointer"
           >
             Back to Orders
           </button>
@@ -601,7 +589,7 @@ const OrderDetail = () => {
           <button
             type="button"
             onClick={() => navigate("/orders")}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors cursor-pointer"
           >
             <ArrowLeft size={16} />
             <span>Back to All Orders</span>
@@ -635,7 +623,7 @@ const OrderDetail = () => {
               <button
                 type="button"
                 onClick={() => setCancelModalOpen(true)}
-                className="px-4 py-2.5 border border-[#C43D3D] text-[#C43D3D] rounded-[6px] text-[11.5px] font-bold uppercase hover:bg-[#FCECEC] transition-all"
+                className="px-4 py-2.5 border border-[#C43D3D] text-[#C43D3D] rounded-[6px] text-[11.5px] font-bold uppercase hover:bg-[#FCECEC] transition-all cursor-pointer"
               >
                 Cancel Order
               </button>
@@ -643,10 +631,10 @@ const OrderDetail = () => {
           </div>
         </div>
 
-        {/* ── 1. Live Animated Order Progress Timeline (Meesho/Myntra style) ── */}
+        {/* Live Animated Order Progress Timeline */}
         <OrderTrackingTimeline order={order} delivery={delivery} />
 
-        {/* ── 2. Courier AWB Tracking Card with detailed activity log ── */}
+        {/* Courier AWB Tracking Card */}
         <CourierTrackingCard
           delivery={delivery}
           order={order}

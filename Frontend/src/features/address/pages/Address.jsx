@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router";
-import toast from "react-hot-toast";
+import { notify } from "../../../utils/toast";
 import {
   Home,
   Briefcase,
@@ -117,16 +117,16 @@ const Address = () => {
     try {
       if (editingId) {
         await handleUpdateAddress(editingId, data);
-        toast.success("Address updated successfully");
+        notify.success("Address updated successfully");
       } else {
         await handleCreateAddress(data);
-        toast.success("New address added successfully");
+        notify.success("New address added successfully");
       }
       setShowForm(false);
       reset(emptyDefaults);
       await handleGetAllAddresses();
     } catch (err) {
-      toast.error(err.message || "Failed to save address");
+      notify.error(err, "Failed to save address");
     } finally {
       setSubmitting(false);
     }
@@ -135,17 +135,17 @@ const Address = () => {
   const onDeleteConfirm = async (id) => {
     try {
       await handleDeleteAddress(id);
-      toast.success("Address deleted");
+      notify.success("Address deleted");
       setConfirmDeleteId(null);
       await handleGetAllAddresses();
     } catch (err) {
-      toast.error("Failed to delete address");
+      notify.error(err, "Failed to delete address");
     }
   };
 
   const handleProceedToOrderSummary = () => {
     if (!selectedAddress) {
-      toast.error("Please select a delivery address to proceed");
+      notify.error("Please select a delivery address to proceed");
       return;
     }
     // Go back to order-summary if we came from there; otherwise go fresh
@@ -161,7 +161,7 @@ const Address = () => {
             type="button"
             onClick={() => navigate(returnTo ? returnTo : -1)}
             aria-label="Back"
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors shrink-0"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors shrink-0 cursor-pointer"
           >
             <ArrowLeft size={16} />
             <span className="hidden sm:inline">{returnTo ? "Back to Summary" : "Back"}</span>
@@ -203,7 +203,7 @@ const Address = () => {
           </div>
           <button
             onClick={openCreateForm}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#111111] text-white rounded text-[11.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#111111] text-white rounded text-[11.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all cursor-pointer"
           >
             <Plus size={14} />
             Add Address
@@ -246,7 +246,7 @@ const Address = () => {
                         e.stopPropagation();
                         openEditForm(addr);
                       }}
-                      className="text-[#666666] hover:text-[#111111]"
+                      className="text-[#666666] hover:text-[#111111] cursor-pointer"
                     >
                       <Pencil size={14} />
                     </button>
@@ -256,7 +256,7 @@ const Address = () => {
                         e.stopPropagation();
                         setConfirmDeleteId(addr._id);
                       }}
-                      className="text-[#666666] hover:text-[#C43D3D]"
+                      className="text-[#666666] hover:text-[#C43D3D] cursor-pointer"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -289,7 +289,7 @@ const Address = () => {
           <button
             onClick={handleProceedToOrderSummary}
             disabled={!selectedAddress || checkingOut}
-            className="flex items-center justify-center gap-2 bg-[#111111] text-white px-8 py-3.5 rounded text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all disabled:opacity-50"
+            className="flex items-center justify-center gap-2 bg-[#111111] text-white px-8 py-3.5 rounded text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all disabled:opacity-50 cursor-pointer"
           >
             {checkingOut ? "Please wait..." : returnTo ? "Confirm Address" : "Continue to Order Summary"}
             <ArrowRight size={15} />
@@ -305,7 +305,7 @@ const Address = () => {
               <h3 className="font-display text-[18px] font-bold text-[#111]">
                 {editingId ? "Edit Address" : "Add Delivery Address"}
               </h3>
-              <button onClick={() => setShowForm(false)} className="text-[#666] hover:text-[#111]">
+              <button onClick={() => setShowForm(false)} className="text-[#666] hover:text-[#111] cursor-pointer">
                 <X size={18} />
               </button>
             </div>
@@ -381,19 +381,33 @@ const Address = () => {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="px-4 py-2 border rounded text-[12px] font-bold uppercase text-[#555]"
+                  className="px-4 py-2 border rounded text-[12px] font-bold uppercase text-[#555] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2 bg-[#111111] text-white rounded text-[12px] font-bold uppercase hover:bg-[#B08D57]"
+                  className="px-6 py-2 bg-[#111111] text-white rounded text-[12px] font-bold uppercase hover:bg-[#B08D57] cursor-pointer disabled:opacity-50"
                 >
                   {submitting ? "Saving..." : "Save Address"}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[10px] border border-[#EAEAEA] p-6 max-w-sm w-full space-y-4">
+            <h3 className="font-display text-[16px] font-bold text-[#111]">Delete Address</h3>
+            <p className="text-[12.5px] text-[#666]">Are you sure you want to delete this delivery address?</p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 border rounded text-[11px] font-bold uppercase cursor-pointer">Cancel</button>
+              <button onClick={() => onDeleteConfirm(confirmDeleteId)} className="px-5 py-2 bg-[#C43D3D] text-white rounded text-[11px] font-bold uppercase cursor-pointer">Delete</button>
+            </div>
           </div>
         </div>
       )}

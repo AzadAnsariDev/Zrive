@@ -7,6 +7,7 @@ import { useAuth } from "../hook/useAuth";
 import { useNavigate, Link } from "react-router";
 import ZriveLogo from "../components/ZriveLogo";
 import loginHero from "../../../assets/images/register-hero.png";
+import { notify } from "../../../utils/toast";
 
 const EmailOrPhoneRegex = /^([^\s@]+@[^\s@]+\.[^\s@]+|[6-9]\d{9})$/;
 
@@ -37,9 +38,11 @@ const Login = () => {
     const { identifier, password } = data;
     try {
       const user = await handleLogin(identifier, password);
-      user.role == "seller" ? navigate("/seller") : navigate("/");
+      notify.success("Welcome back!");
+      user.role === "seller" ? navigate("/seller") : navigate("/");
     } catch (err) {
       dispatch(setError(err.message));
+      notify.error(err, "Invalid email/phone or password. Please try again.");
     } finally {
       dispatch(setLoading(false));
     }
@@ -47,7 +50,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen w-full bg-cream md:grid md:grid-cols-2">
-      {/* Local styles for the entrance animation only — keeps it self-contained */}
       <style>{`
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(10px); }
@@ -58,7 +60,7 @@ const Login = () => {
         }
       `}</style>
 
-      {/* Left: brand / image panel — hidden on mobile, visible from tablet up */}
+      {/* Left: brand / image panel */}
       <div className="relative hidden md:block">
         <img
           src={loginHero}
@@ -77,7 +79,7 @@ const Login = () => {
       {/* Right: form panel */}
       <div className="flex items-center justify-center px-6 py-12 md:px-10 md:py-16 lg:px-16">
         <div className="w-full max-w-[420px] animate-fade-in-up">
-          {/* Logo — shown only when the image panel is hidden (mobile) */}
+          {/* Logo mobile */}
           <div className="mb-10 flex justify-center md:hidden">
             <div className="flex flex-col items-center">
               <div className="text-ink">
@@ -92,7 +94,6 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Heading */}
           <h1 className="mb-2 text-center font-display text-[32px] font-medium leading-[1.1] tracking-tight text-ink md:text-left">
             Welcome Back
           </h1>
@@ -156,7 +157,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="px-4 text-ink-soft transition-colors hover:text-ink"
+                  className="px-4 text-ink-soft transition-colors hover:text-ink cursor-pointer"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
@@ -170,33 +171,30 @@ const Login = () => {
             {/* Submit */}
             <button
               type="submit"
-              className="group mt-2 flex w-full items-center justify-center gap-2 rounded-[3px] bg-charcoal py-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-cream transition-all duration-200 hover:-translate-y-0.5 hover:bg-ink hover:shadow-lg hover:shadow-black/15 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+              className="group mt-2 flex w-full items-center justify-center gap-2 rounded-[3px] bg-charcoal py-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-cream transition-all duration-200 hover:-translate-y-0.5 hover:bg-ink hover:shadow-lg hover:shadow-black/15 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
               Sign In
               <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
             </button>
           </form>
 
-          {/* Divider */}
           <div className="mb-6 mt-8 flex items-center gap-3">
             <span className="h-px flex-1 bg-border" />
             <span className="text-[10px] font-semibold tracking-[0.2em] text-ink-soft">OR</span>
             <span className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Social login — Google only */}
           <button
             type="button"
             onClick={() => {
               window.location.href = "/api/auth/google";
             }}
-            className="flex w-full items-center justify-center gap-3 rounded-[3px] border border-border bg-cream py-3.5 text-[13px] font-semibold text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-ink-soft hover:bg-cream-dark hover:shadow-sm active:translate-y-0"
+            className="flex w-full items-center justify-center gap-3 rounded-[3px] border border-border bg-cream py-3.5 text-[13px] font-semibold text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-ink-soft hover:bg-cream-dark hover:shadow-sm active:translate-y-0 cursor-pointer"
           >
             <GoogleIcon />
             Continue with Google
           </button>
 
-          {/* Footer */}
           <p className="mt-8 text-center text-[13px] text-ink-soft">
             Don&apos;t have an account?{" "}
             <Link to="/register" className="font-semibold text-ink transition-colors hover:text-gold">

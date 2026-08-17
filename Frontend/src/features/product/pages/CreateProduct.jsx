@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { setError, setLoading } from '../../auth/state/authSlice'
 import KycRequiredModal from '../../seller/components/KycRequiredModal'
+import { notify } from '../../../utils/toast'
 
 const MAX_IMAGES = 6
 const MAX_VARIANT_IMAGES = 4
@@ -36,6 +37,7 @@ const CreateProduct = () => {
   const [variantFieldErrors, setVariantFieldErrors] = useState({})
   const variantFileInputRef = useRef(null)
   const [showKycModal, setShowKycModal] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const user = useSelector((state) => state.auth.user)
   const application = useSelector((state) => state.seller.application)
 
@@ -69,6 +71,7 @@ const CreateProduct = () => {
       const remainingSlots = MAX_IMAGES - images.length
       if (remainingSlots <= 0) {
         setImageError(`You can only add up to ${MAX_IMAGES} photos.`)
+        notify.warning(`Maximum ${MAX_IMAGES} photos allowed.`)
         return
       }
       const accepted = []
@@ -96,35 +99,6 @@ const CreateProduct = () => {
     })
   }
 
-  const addVariantFiles = (fileList) => {
-    const incoming = Array.from(fileList)
-    const currentCount = variantForm.images.length
-    const remainingSlots = MAX_VARIANT_IMAGES - currentCount
-    if (remainingSlots <= 0) return
-    const accepted = []
-    incoming.forEach((file) => {
-      if (!file.type.startsWith('image/')) return
-      if (file.size > MAX_SIZE_BYTES) return
-      if (accepted.length >= remainingSlots) return
-      accepted.push({
-        id: `${file.name}-${Math.random().toString(36).slice(2, 8)}`,
-        file,
-        preview: URL.createObjectURL(file),
-      })
-    })
-    if (accepted.length) {
-      setVariantForm((prev) => ({ ...prev, images: [...prev.images, ...accepted] }))
-    }
-  }
-
-  const removeVariantFormImage = (id) => {
-    setVariantForm((prev) => {
-      const target = prev.images.find((i) => i.id === id)
-      if (target) URL.revokeObjectURL(target.preview)
-      return { ...prev, images: prev.images.filter((i) => i.id !== id) }
-    })
-  }
-
   const handleAddVariant = () => {
     const errs = {}
     if (!variantForm.size.trim()) errs.size = 'Required'
@@ -133,6 +107,7 @@ const CreateProduct = () => {
     if (!variantForm.stock || Number(variantForm.stock) < 0) errs.stock = 'Invalid stock'
     if (Object.keys(errs).length > 0) {
       setVariantFieldErrors(errs)
+      notify.error('Please fill in all required variant fields.')
       return
     }
 
@@ -151,6 +126,7 @@ const CreateProduct = () => {
     setVariantFieldErrors({})
     setShowVariantForm(false)
     setVariantsError('')
+    notify.success('Variant added to list')
   }
 
   const removeVariant = (id) => {
@@ -159,6 +135,7 @@ const CreateProduct = () => {
       if (target) target.images.forEach((img) => URL.revokeObjectURL(img.preview))
       return prev.filter((v) => v.id !== id)
     })
+    notify.success('Variant removed')
   }
 
   const onSubmit = async (data) => {
@@ -169,6 +146,7 @@ const CreateProduct = () => {
 
     if (images.length === 0) {
       setImageError('Please upload at least 1 main product image.')
+      notify.error('Please upload at least 1 main product photo.')
       return
     }
 
@@ -197,8 +175,18 @@ const CreateProduct = () => {
       })),
     }
 
-    const ok = await handleCreateProduct(payload)
-    if (ok) navigate('/seller/inventory')
+    setSubmitting(true)
+    try {
+      const ok = await handleCreateProduct(payload)
+      if (ok) {
+        notify.success('Product created and published successfully!')
+        navigate('/seller/inventory')
+      }
+    } catch (err) {
+      notify.error(err, 'Failed to create product listing.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -209,7 +197,7 @@ const CreateProduct = () => {
           <button
             type="button"
             onClick={() => navigate('/seller/inventory')}
-            className="flex items-center gap-2 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
+            className="flex items-center gap-2 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors cursor-pointer"
           >
             <ArrowLeft size={15} strokeWidth={2} />
             Back to Inventory
@@ -327,7 +315,7 @@ const CreateProduct = () => {
                     <button
                       type="button"
                       onClick={() => removeImage(img.id)}
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     >
                       <X size={13} />
                     </button>
@@ -396,7 +384,7 @@ const CreateProduct = () => {
               <button
                 type="button"
                 onClick={() => setShowVariantForm(!showVariantForm)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-[6px] bg-[#111111] text-white text-[11px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-[6px] bg-[#111111] text-white text-[11px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all cursor-pointer"
               >
                 <Plus size={14} />
                 Add Variant
@@ -452,14 +440,14 @@ const CreateProduct = () => {
                   <button
                     type="button"
                     onClick={() => setShowVariantForm(false)}
-                    className="px-4 py-2 border rounded text-[11px] font-bold uppercase"
+                    className="px-4 py-2 border rounded text-[11px] font-bold uppercase cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={handleAddVariant}
-                    className="px-5 py-2 bg-[#B08D57] text-[#0e0e0e] rounded text-[11px] font-bold uppercase"
+                    className="px-5 py-2 bg-[#B08D57] text-[#0e0e0e] rounded text-[11px] font-bold uppercase cursor-pointer"
                   >
                     Save Variant
                   </button>
@@ -476,7 +464,7 @@ const CreateProduct = () => {
                       <span className="text-[#666666]">Size: {v.size} · Color: {v.color}</span>
                       <span className="text-[#287A4B] font-bold">Stock: {v.stock}</span>
                     </div>
-                    <button type="button" onClick={() => removeVariant(v.id)} className="text-[#C43D3D]">
+                    <button type="button" onClick={() => removeVariant(v.id)} className="text-[#C43D3D] cursor-pointer">
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -488,9 +476,10 @@ const CreateProduct = () => {
           <div className="flex justify-end pt-4">
             <button
               type="submit"
-              className="flex items-center gap-2 bg-[#111111] text-white px-10 py-4 rounded-[6px] text-[13px] font-bold uppercase tracking-[0.08em] hover:bg-[#B08D57] transition-all shadow-lg"
+              disabled={submitting}
+              className="flex items-center gap-2 bg-[#111111] text-white px-10 py-4 rounded-[6px] text-[13px] font-bold uppercase tracking-[0.08em] hover:bg-[#B08D57] transition-all shadow-lg cursor-pointer disabled:opacity-50"
             >
-              Publish Product to Storefront
+              {submitting ? 'Publishing...' : 'Publish Product to Storefront'}
               <Check size={16} strokeWidth={3} />
             </button>
           </div>

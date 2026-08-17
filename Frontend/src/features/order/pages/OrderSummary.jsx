@@ -16,9 +16,8 @@ import useOrder from "../hook/useOrder";
 import useCart from "../../cart/hook/useCart";
 import useAddress from "../../address/hook/useAddress";
 import { setSelectedAddress } from "../../address/state/addressSlice";
-import toast from "react-hot-toast";
+import { notify } from "../../../utils/toast";
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
 const toNum = (v) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
@@ -33,14 +32,13 @@ const getUnitPrice = (item) => {
   return toNum(item.price?.amount ?? item.product?.price?.amount ?? 0);
 };
 
-// ─── Stepper ─────────────────────────────────────────────────────────────────
 const Stepper = ({ onBack }) => (
   <div className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
     <div className="max-w-[1100px] mx-auto px-3 sm:px-8 py-3 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
       <button
         type="button"
         onClick={onBack}
-        className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors shrink-0"
+        className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors shrink-0 cursor-pointer"
       >
         <ArrowLeft size={16} />
         <span className="hidden sm:inline">Back to Cart</span>
@@ -75,14 +73,13 @@ const Stepper = ({ onBack }) => (
   </div>
 );
 
-// ─── Address Card ─────────────────────────────────────────────────────────────
 const AddressCard = ({ address, onChangeClick }) => {
   if (!address) {
     return (
       <button
         type="button"
         onClick={onChangeClick}
-        className="w-full flex items-center gap-3 p-5 border-2 border-dashed border-[#EAEAEA] rounded-[10px] hover:border-[#B08D57] transition-colors group"
+        className="w-full flex items-center gap-3 p-5 border-2 border-dashed border-[#EAEAEA] rounded-[10px] hover:border-[#B08D57] transition-colors group cursor-pointer"
       >
         <div className="w-10 h-10 rounded-full bg-[#F5EFE5] flex items-center justify-center shrink-0 group-hover:bg-[#EBE0D0] transition-colors">
           <MapPin size={18} className="text-[#B08D57]" />
@@ -131,7 +128,7 @@ const AddressCard = ({ address, onChangeClick }) => {
         <button
           type="button"
           onClick={onChangeClick}
-          className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-[#B08D57] hover:text-[#8A6D40] border border-[#B08D57]/30 hover:border-[#B08D57] px-3 py-1.5 rounded transition-all whitespace-nowrap shrink-0"
+          className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-[#B08D57] hover:text-[#8A6D40] border border-[#B08D57]/30 hover:border-[#B08D57] px-3 py-1.5 rounded transition-all whitespace-nowrap shrink-0 cursor-pointer"
         >
           Change
         </button>
@@ -140,7 +137,6 @@ const AddressCard = ({ address, onChangeClick }) => {
   );
 };
 
-// ─── Order Item Row ────────────────────────────────────────────────────────────
 const OrderItemRow = ({ item }) => {
   const variant = item.product?.variants;
   const cover = variant?.images?.[0]?.url ?? item.product?.images?.[0]?.url;
@@ -194,7 +190,6 @@ const OrderItemRow = ({ item }) => {
   );
 };
 
-// ─── Main Component ────────────────────────────────────────────────────────────
 const OrderSummary = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -223,11 +218,9 @@ const OrderSummary = () => {
   useEffect(() => {
     handleGetCart();
     resolveAddress();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resolveAddress = async () => {
-    // If we already have one coming from navigation state or redux, keep it
     if (location.state?.address || selectedInStore) return;
     setLoadingAddr(true);
     try {
@@ -249,12 +242,12 @@ const OrderSummary = () => {
 
   const handlePay = async () => {
     if (!selectedAddress) {
-      toast.error("Please select a delivery address first.");
+      notify.error("Please select a delivery address first.");
       handleChangeAddress();
       return;
     }
     if (!cartItems.length) {
-      toast.error("Your cart is empty.");
+      notify.error("Your cart is empty.");
       return;
     }
 
@@ -264,7 +257,7 @@ const OrderSummary = () => {
       const orderObj = orderData?.order || orderData;
 
       if (!orderObj?.id) {
-        toast.error("Could not generate order ID. Please try again.");
+        notify.error("Could not generate order ID. Please try again.");
         setPaying(false);
         return;
       }
@@ -283,7 +276,7 @@ const OrderSummary = () => {
               razorpay_payment_id: rzpRes.razorpay_payment_id,
               razorpay_signature: rzpRes.razorpay_signature,
             });
-            toast.success("Payment successful! Order confirmed 🎉");
+            notify.success("Payment successful! Order confirmed.");
             if (result?.paymentGroup) {
               navigate(`/orders/group/${result.paymentGroup._id}`);
             } else if (result?.order) {
@@ -291,8 +284,8 @@ const OrderSummary = () => {
             } else {
               navigate("/order-success");
             }
-          } catch {
-            toast.error("Payment verification failed. Please contact support.");
+          } catch (err) {
+            notify.error(err, "Payment verification failed. Please contact support.");
           }
         },
         prefill: {
@@ -304,13 +297,13 @@ const OrderSummary = () => {
         modal: {
           ondismiss: () => {
             setPaying(false);
-            toast("Payment cancelled", { icon: "ℹ️" });
+            notify.info("Payment cancelled");
           },
         },
       };
 
       if (typeof window.Razorpay === "undefined") {
-        toast.error("Razorpay not loaded. Please refresh the page.");
+        notify.error("Razorpay not loaded. Please refresh the page.");
         setPaying(false);
         return;
       }
@@ -318,7 +311,7 @@ const OrderSummary = () => {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      toast.error(err.message || "Failed to initiate payment.");
+      notify.error(err, "Failed to initiate payment.");
       setPaying(false);
     }
   };
@@ -337,7 +330,7 @@ const OrderSummary = () => {
         <button
           type="button"
           onClick={() => navigate("/all-products")}
-          className="bg-[#111] text-white px-8 py-3 rounded text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all"
+          className="bg-[#111] text-white px-8 py-3 rounded text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all cursor-pointer"
         >
           Browse Products
         </button>
@@ -355,7 +348,7 @@ const OrderSummary = () => {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="p-2 rounded-full hover:bg-[#EAEAEA] transition-colors"
+            className="p-2 rounded-full hover:bg-[#EAEAEA] transition-colors cursor-pointer"
             aria-label="Go back"
           >
             <ArrowLeft size={18} className="text-[#555]" />
@@ -418,7 +411,7 @@ const OrderSummary = () => {
                 <button
                   type="button"
                   onClick={() => navigate("/cart")}
-                  className="text-[11.5px] font-bold text-[#B08D57] hover:underline uppercase tracking-[0.06em]"
+                  className="text-[11.5px] font-bold text-[#B08D57] hover:underline uppercase tracking-[0.06em] cursor-pointer"
                 >
                   ← Edit Cart
                 </button>
@@ -518,7 +511,7 @@ const OrderSummary = () => {
                 type="button"
                 onClick={handlePay}
                 disabled={paying || !selectedAddress || loadingAddr}
-                className="w-full flex items-center justify-center gap-2.5 bg-[#111111] text-white py-4 rounded-[8px] text-[13.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                className="w-full flex items-center justify-center gap-2.5 bg-[#111111] text-white py-4 rounded-[8px] text-[13.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer"
               >
                 {paying ? (
                   <>

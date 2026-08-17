@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router";
 import {
   Shield,
@@ -11,6 +11,7 @@ import {
   FaYoutube,
   FaTwitter,
 } from "react-icons/fa";
+import { notify } from "../../../utils/toast";
 
 const FOOTER_LINKS = [
   {
@@ -70,6 +71,18 @@ const TRUST_BADGES = [
 ];
 
 const Footer = () => {
+  const [email, setEmail] = useState("");
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) {
+      notify.error("Please enter a valid email address.");
+      return;
+    }
+    notify.success("Thank you for subscribing to ZRIVE!");
+    setEmail("");
+  };
+
   return (
     <footer className="bg-[#111111] text-white">
       {/* Trust Badges */}
@@ -120,20 +133,22 @@ const Footer = () => {
                 Stay in the loop
               </p>
 
-              <div className="flex gap-2">
+              <form onSubmit={handleSubscribe} className="flex gap-2">
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   className="flex-1 bg-white/8 border border-white/15 rounded-[6px] px-3 py-2.5 text-[13px] text-white placeholder:text-white/35 outline-none focus:border-[#B08D57] transition-colors min-w-0"
                 />
 
                 <button
-                  type="button"
-                  className="px-4 py-2.5 bg-[#B08D57] text-[#0e0e0e] text-[12px] font-semibold rounded-[6px] hover:bg-[#D4B982] transition-colors flex-shrink-0"
+                  type="submit"
+                  className="px-4 py-2.5 bg-[#B08D57] text-[#0e0e0e] text-[12px] font-semibold rounded-[6px] hover:bg-[#D4B982] transition-colors flex-shrink-0 cursor-pointer"
                 >
                   Join
                 </button>
-              </div>
+              </form>
             </div>
           </div>
 
@@ -188,7 +203,7 @@ const Footer = () => {
                 key={label}
                 type="button"
                 aria-label={label}
-                className="w-8 h-8 rounded-full bg-white/8 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 transition-all"
+                className="w-8 h-8 rounded-full bg-white/8 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 transition-all cursor-pointer"
               >
                 <Icon
                   size={14}

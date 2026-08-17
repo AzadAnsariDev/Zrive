@@ -7,6 +7,7 @@ import { useAuth } from "../hook/useAuth";
 import { useNavigate, Link } from "react-router";
 import ZriveLogo from "../components/ZriveLogo";
 import registerHero from "../../../assets/images/register-hero.png";
+import { notify } from "../../../utils/toast";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[6-9]\d{9}$/;
@@ -24,7 +25,6 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const { handleRegister } = useAuth();
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -38,12 +38,14 @@ const Register = () => {
     dispatch(setLoading(true));
     const { email, phone, fullName, password } = data;
     try {
-      // Every new account is a buyer. Becoming a seller happens later,
-      // through the separate "Become a Seller" flow — not at signup.
-      await handleRegister(email, phone, fullName, password);
-      navigate("/");
+      const user = await handleRegister(email, phone, fullName, password);
+      if (user) {
+        notify.success("Account created successfully! Welcome to ZRIVE.");
+        navigate("/");
+      }
     } catch (err) {
       dispatch(setError(err.message));
+      notify.error(err, "Registration failed. Please check your details and try again.");
     } finally {
       dispatch(setLoading(false));
     }
@@ -51,7 +53,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen w-full bg-cream md:grid md:grid-cols-2">
-      {/* Left: brand / image panel — hidden on mobile, visible from tablet up */}
+      {/* Left: brand panel */}
       <div className="relative hidden md:block">
         <img
           src={registerHero}
@@ -70,7 +72,6 @@ const Register = () => {
       {/* Right: form panel */}
       <div className="flex items-center justify-center px-6 py-12 md:px-10 md:py-16 lg:px-16">
         <div className="w-full max-w-[420px]">
-          {/* Logo — shown only when the image panel is hidden (mobile) */}
           <div className="mb-10 flex justify-center md:hidden">
             <div className="flex flex-col items-center">
               <div className="text-ink">
@@ -85,7 +86,6 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Heading */}
           <h1 className="mb-2 text-center font-display text-[32px] font-medium leading-[1.1] tracking-tight text-ink md:text-left">
             Create Account
           </h1>
@@ -195,7 +195,7 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="px-4 text-ink-soft transition-colors hover:text-ink"
+                  className="px-4 text-ink-soft transition-colors hover:text-ink cursor-pointer"
                 >
                   {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
                 </button>
@@ -208,50 +208,34 @@ const Register = () => {
             {/* Submit */}
             <button
               type="submit"
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-[3px] bg-charcoal py-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-cream transition-colors hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-[3px] bg-charcoal py-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-cream transition-colors hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
               Submit
             </button>
           </form>
 
-          {/* Divider */}
           <div className="mb-6 mt-8 flex items-center gap-3">
             <span className="h-px flex-1 bg-border" />
             <span className="text-[10px] font-semibold tracking-[0.2em] text-ink-soft">OR</span>
             <span className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Social login — Google only */}
           <button
             type="button"
             onClick={() => {
               window.location.href = "/api/auth/google";
             }}
-            className="flex w-full items-center justify-center gap-2 rounded-[3px] border border-border bg-cream py-3.5 text-[13px] font-semibold text-ink transition-colors hover:bg-cream-dark"
+            className="flex w-full items-center justify-center gap-2 rounded-[3px] border border-border bg-cream py-3.5 text-[13px] font-semibold text-ink transition-colors hover:bg-cream-dark cursor-pointer"
           >
             <GoogleIcon />
             Continue with Google
           </button>
 
-          {/* Already have an account -> Login */}
           <p className="mt-8 text-center text-[13px] text-ink-soft">
             Already have an account?{" "}
             <Link to="/login" className="font-semibold text-ink transition-colors hover:text-gold">
               Login
             </Link>
-          </p>
-
-          {/* Footer */}
-          <p className="mt-6 text-center text-[11px] leading-relaxed text-ink-soft">
-            Secure processing by ZRIVE Trust System.
-            <br />
-            <a href="/privacy" className="underline underline-offset-2 hover:text-ink">
-              Privacy Policy
-            </a>{" "}
-            &{" "}
-            <a href="/terms" className="underline underline-offset-2 hover:text-ink">
-              Terms of Service
-            </a>
           </p>
         </div>
       </div>

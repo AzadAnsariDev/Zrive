@@ -18,13 +18,8 @@ import {
 import useOrder from "../hook/useOrder";
 import useCart from "../../cart/hook/useCart";
 import useAddress from "../../address/hook/useAddress";
-import toast from "react-hot-toast";
+import { notify } from "../../../utils/toast";
 
-// ---- Payment method catalog (Myntra-style accordion) ----
-// `razorpayMethod` maps our selection to Razorpay Checkout's `method` config
-// so the Razorpay modal opens pre-filtered to what the user picked here.
-// Every single one of these still settles through the same Razorpay order —
-// there's no separate code path, just a different starting screen in the modal.
 const PAYMENT_METHODS = [
   {
     id: "upi",
@@ -70,30 +65,9 @@ const PAYMENT_METHODS = [
   },
 ];
 
-// Defensive numeric coercion so a missing/renamed field never poisons the
-// running total with NaN — it just falls back to 0 instead.
 const toNumber = (val) => {
   const n = Number(val);
   return Number.isFinite(n) ? n : 0;
-};
-
-// Tries the common shapes a cart item's unit price might come in.
-const getItemPrice = (item) =>
-  toNumber(
-    item?.product?.price ??
-      item?.product?.discountedPrice ??
-      item?.price ??
-      item?.variant?.price ??
-      0
-  );
-
-// Tries the common shapes a cart item's quantity might come in.
-// This is almost certainly the real source of the old NaN: `item.quantity`
-// being undefined turned `price * undefined` into NaN, which then poisons
-// the whole reduce() sum from that point on.
-const getItemQty = (item) => {
-  const q = toNumber(item?.quantity ?? item?.qty ?? item?.count ?? 1);
-  return q > 0 ? q : 1;
 };
 
 const Payment = () => {
@@ -107,12 +81,11 @@ const Payment = () => {
   const cartItems = useSelector((state) => state.cart?.items ?? []);
   const addressesFromStore = useSelector((state) => state.address?.addresses ?? []);
 
-  const  { totalPrice : totalAmount }  = useSelector((state => state.cart))
-  
+  const { totalPrice: totalAmount } = useSelector((state) => state.cart);
 
   const [selectedAddress, setSelectedAddress] = useState(location.state?.address || null);
   const [loadingPayment, setLoadingPayment] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState(null); // null = show full Razorpay modal
+  const [selectedMethod, setSelectedMethod] = useState(null);
   const [expandedMethod, setExpandedMethod] = useState(null);
 
   useEffect(() => {
@@ -125,12 +98,11 @@ const Payment = () => {
           const defaultAddr = list.find((a) => a.isDefault) || list[0];
           setSelectedAddress(defaultAddr);
         } else {
-          toast.error("Please select a delivery address first");
+          notify.error("Please select a delivery address first");
           navigate("/address");
         }
       })();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSelectMethod = (methodId) => {
@@ -140,13 +112,13 @@ const Payment = () => {
 
   const onPayWithRazorpay = async () => {
     if (!selectedAddress) {
-      toast.error("Please select a valid delivery address");
+      notify.error("Please select a valid delivery address");
       navigate("/address");
       return;
     }
 
     if (totalAmount <= 0) {
-      toast.error("Your cart total looks invalid. Please refresh and try again.");
+      notify.error("Your cart total looks invalid. Please refresh and try again.");
       return;
     }
 
@@ -156,7 +128,7 @@ const Payment = () => {
       const orderObj = orderData?.order || orderData;
 
       if (!orderObj || !orderObj.id) {
-        toast.error("Failed to generate order ID");
+        notify.error("Failed to generate order ID");
         setLoadingPayment(false);
         return;
       }
@@ -170,8 +142,6 @@ const Payment = () => {
         name: "ZRIVE Marketplace",
         description: "Escrow Protected Fashion Order",
         order_id: orderObj.id,
-        // If the user picked a specific method above, jump straight to it
-        // inside the Razorpay modal. Otherwise Razorpay shows every option.
         ...(chosenMethod ? { method: chosenMethod.razorpayMethod } : {}),
         handler: async function (razorpayRes) {
           try {
@@ -181,7 +151,7 @@ const Payment = () => {
               razorpay_signature: razorpayRes.razorpay_signature,
             });
 
-            toast.success("Payment Successful! Order Confirmed.");
+            notify.success("Payment successful! Order confirmed.");
             if (result && result.paymentGroup) {
               navigate(`/orders/group/${result.paymentGroup._id}`);
             } else if (result && result.order) {
@@ -190,7 +160,7 @@ const Payment = () => {
               navigate("/orders");
             }
           } catch (err) {
-            toast.error("Payment verification failed. Please contact support.");
+            notify.error(err, "Payment verification failed. Please contact support.");
           }
         },
         prefill: {
@@ -202,13 +172,13 @@ const Payment = () => {
         modal: {
           ondismiss: function () {
             setLoadingPayment(false);
-            toast("Payment cancelled", { icon: "ℹ️" });
+            notify.info("Payment cancelled");
           },
         },
       };
 
       if (typeof window.Razorpay === "undefined") {
-        toast.error("Razorpay SDK not loaded. Please refresh the page.");
+        notify.error("Razorpay SDK not loaded. Please refresh the page.");
         setLoadingPayment(false);
         return;
       }
@@ -216,7 +186,7 @@ const Payment = () => {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      toast.error(err.message || "Failed to launch Razorpay payment");
+      notify.error(err, "Failed to launch payment.");
     } finally {
       setLoadingPayment(false);
     }
@@ -230,7 +200,7 @@ const Payment = () => {
           <button
             type="button"
             onClick={() => navigate("/address")}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors shrink-0"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors shrink-0 cursor-pointer"
           >
             <ArrowLeft size={16} />
             <span className="hidden sm:inline">Back to Address</span>
@@ -255,7 +225,6 @@ const Payment = () => {
             </span>
           </div>
 
-          {/* spacer to keep the stepper visually centered against the back button */}
           <div className="hidden sm:block w-[120px]" />
         </div>
       </div>
@@ -280,7 +249,7 @@ const Payment = () => {
                 <button
                   type="button"
                   onClick={() => navigate("/address")}
-                  className="text-[11px] font-bold uppercase text-[#B08D57] hover:underline"
+                  className="text-[11px] font-bold uppercase text-[#B08D57] hover:underline cursor-pointer"
                 >
                   Change
                 </button>
@@ -294,7 +263,7 @@ const Payment = () => {
                       {selectedAddress.addressType || "HOME"}
                     </span>
                   </div>
-                  <p>{selectedAddress.streetAddress}</p>
+                  <p>{selectedAddress.addressLine1}, {selectedAddress.addressLine2}</p>
                   <p>
                     {selectedAddress.city}, {selectedAddress.state} —{" "}
                     <strong className="text-[#111]">{selectedAddress.pincode}</strong>
@@ -308,7 +277,7 @@ const Payment = () => {
               )}
             </div>
 
-            {/* Payment Options - Myntra-style accordion, all routed through Razorpay */}
+            {/* Payment Options - Myntra-style accordion */}
             <div className="bg-white border border-[#EAEAEA] rounded-[8px] overflow-hidden shadow-sm">
               <div className="px-5 py-3.5 border-b border-[#EAEAEA] bg-[#FAFAFA]">
                 <h2 className="text-[12px] font-bold tracking-[0.1em] uppercase text-[#B08D57]">
@@ -329,7 +298,7 @@ const Payment = () => {
                         onClick={() =>
                           setExpandedMethod(isExpanded ? null : method.id)
                         }
-                        className={`w-full flex items-center justify-between gap-3 px-5 py-4 text-left transition-colors ${
+                        className={`w-full flex items-center justify-between gap-3 px-5 py-4 text-left transition-colors cursor-pointer ${
                           isSelected ? "bg-[#FAFAFA]" : "hover:bg-[#FAFAFA]"
                         }`}
                       >
@@ -358,7 +327,7 @@ const Payment = () => {
                           <button
                             type="button"
                             onClick={() => handleSelectMethod(method.id)}
-                            className={`w-full flex items-center justify-between px-4 py-3 rounded-[6px] border text-[12.5px] font-semibold transition-all ${
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-[6px] border text-[12.5px] font-semibold transition-all cursor-pointer ${
                               isSelected
                                 ? "border-[#B08D57] bg-[#FDF9F3] text-[#111]"
                                 : "border-[#EAEAEA] text-[#555] hover:border-[#111]"
@@ -389,7 +358,7 @@ const Payment = () => {
             </div>
           </div>
 
-          {/* Right Column: Price Breakdown & CTA — unchanged design, just NaN-safe now */}
+          {/* Right Column: Price Breakdown & CTA */}
           <div className="bg-white border border-[#EAEAEA] rounded-[8px] p-5 shadow-sm space-y-4 sticky top-24">
             <h2 className="text-[12px] font-bold tracking-[0.1em] uppercase text-[#B08D57] pb-3 border-b border-[#EAEAEA]">
               Order Summary ({cartItems.length} {cartItems.length === 1 ? "Item" : "Items"})
@@ -419,7 +388,7 @@ const Payment = () => {
               type="button"
               disabled={loadingPayment}
               onClick={onPayWithRazorpay}
-              className="w-full py-3.5 bg-[#111111] text-white rounded-[6px] text-[13px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] hover:text-[#0e0e0e] transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3.5 bg-[#111111] text-white rounded-[6px] text-[13px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] hover:text-[#0e0e0e] transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {loadingPayment ? (
                 <>
