@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useSelector } from 'react-redux'
-import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, ShieldCheck, Truck, RefreshCw, Tag, ArrowRight, Lock, Check } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, ShieldCheck, Truck, RefreshCw, Tag, ArrowRight, Lock } from 'lucide-react'
 import useCart from '../hook/useCart'
 import { formatPrice } from '../../home/pages/Home'
 
@@ -135,8 +135,16 @@ const EmptyCart = () => (
 const Cart = () => {
   const { handleGetCart, handleAddToCart, handleRemoveCartItem } = useCart()
   const { items, totalPrice: subtotal, currency } = useSelector((state) => state.cart)
+  const addresses = useSelector((state) => state.address?.addresses ?? [])
+  const selectedAddress = useSelector((state) => state.address?.selectedAddress)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+
+  // Smart checkout: if user already has an address saved, skip to order summary
+  const handleProceedToCheckout = () => {
+    const hasAddress = selectedAddress || addresses.length > 0
+    navigate(hasAddress ? '/order-summary' : '/address')
+  }
 
   const fetchCartItems = async () => {
     await handleGetCart()
@@ -175,41 +183,6 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#111111]">
-      {/* Checkout Stepper */}
-      <div className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
-        <div className="max-w-[1240px] mx-auto px-3 sm:px-8 py-3 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-          <button
-            type="button"
-            onClick={() => navigate('/all-products')}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors shrink-0"
-          >
-            <ArrowLeft size={16} />
-            <span className="hidden sm:inline">Continue Shopping</span>
-          </button>
-
-          <div className="flex items-center gap-1.5 sm:gap-3 text-[11px] sm:text-[11.5px] font-semibold shrink-0">
-            <span className="flex items-center gap-1 text-[#B08D57]">
-              <span className="w-4 h-4 rounded-full bg-[#B08D57] text-white text-[9px] flex items-center justify-center font-bold">1</span>
-              Bag
-            </span>
-            <span className="text-[#D2D2D2]">&rarr;</span>
-            <span className="flex items-center gap-1 text-[#999999]">
-              <span className="w-4 h-4 rounded-full bg-[#EAEAEA] text-[#777] text-[9px] flex items-center justify-center font-bold">2</span>
-              Address
-            </span>
-            <span className="text-[#D2D2D2]">&rarr;</span>
-            <span className="flex items-center gap-1 text-[#999999]">
-              <span className="w-4 h-4 rounded-full bg-[#EAEAEA] text-[#777] text-[9px] flex items-center justify-center font-bold">3</span>
-              Payment
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1 text-[10px] sm:text-[10.5px] font-bold text-[#287A4B] bg-[#EAF5EE] px-2 py-0.5 rounded-full shrink-0">
-            <Lock size={10} />
-            <span className="hidden xs:inline">Razorpay Escrow</span>
-          </div>
-        </div>
-      </div>
 
       {/* Main Container */}
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-6">
@@ -316,10 +289,10 @@ const Cart = () => {
 
               <button
                 type="button"
-                onClick={() => navigate('/address')}
+                onClick={handleProceedToCheckout}
                 className="w-full flex items-center justify-center gap-2 bg-[#111111] text-white rounded py-3.5 text-[12px] font-bold tracking-[0.06em] uppercase hover:bg-[#B08D57] transition-all shadow-sm"
               >
-                Proceed to Select Address
+                Proceed to Checkout
                 <ArrowRight size={15} />
               </button>
 

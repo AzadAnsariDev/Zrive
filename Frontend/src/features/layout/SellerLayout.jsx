@@ -65,6 +65,7 @@ const SellerLayout = () => {
                 <NavLink
                   key={to}
                   to={to}
+                  end={to === '/seller'}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3.5 py-2.5 rounded-[3px] text-[13px] font-medium tracking-[0.04em] transition-colors border-l-2 ${
                       isActive

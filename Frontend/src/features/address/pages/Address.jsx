@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import toast from "react-hot-toast";
 import {
   Home,
@@ -53,9 +53,13 @@ const Address = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const addresses = useSelector((state) => state.address.addresses || []);
   const selectedAddress = useSelector((state) => state.address.selectedAddress);
   const user = useSelector((state) => state.auth.user);
+
+  // If we came from order-summary (e.g. "Change Address"), go back there after selection
+  const returnTo = location.state?.returnTo || null;
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -139,12 +143,13 @@ const Address = () => {
     }
   };
 
-  const handleProceedToPayment = () => {
+  const handleProceedToOrderSummary = () => {
     if (!selectedAddress) {
       toast.error("Please select a delivery address to proceed");
       return;
     }
-    navigate("/payment", { state: { address: selectedAddress } });
+    // Go back to order-summary if we came from there; otherwise go fresh
+    navigate(returnTo || "/order-summary", { state: { address: selectedAddress } });
   };
 
   return (
@@ -154,28 +159,28 @@ const Address = () => {
         <div className="max-w-[1240px] mx-auto px-3 sm:px-8 py-3 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(returnTo ? returnTo : -1)}
             aria-label="Back"
             className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors shrink-0"
           >
             <ArrowLeft size={16} />
-            <span className="hidden sm:inline">Back to Bag</span>
+            <span className="hidden sm:inline">{returnTo ? "Back to Summary" : "Back"}</span>
           </button>
 
           <div className="flex items-center gap-1.5 sm:gap-3 text-[11px] sm:text-[11.5px] font-semibold shrink-0">
-            <span className="flex items-center gap-1 text-[#287A4B]">
-              <Check size={12} />
-              Bag
-            </span>
-            <span className="text-[#D2D2D2]">&rarr;</span>
             <span className="flex items-center gap-1 text-[#B08D57]">
-              <span className="w-4 h-4 rounded-full bg-[#B08D57] text-white text-[9px] flex items-center justify-center font-bold">2</span>
+              <span className="w-4 h-4 rounded-full bg-[#B08D57] text-white text-[9px] flex items-center justify-center font-bold">1</span>
               Address
             </span>
             <span className="text-[#D2D2D2]">&rarr;</span>
             <span className="flex items-center gap-1 text-[#999999]">
+              <span className="w-4 h-4 rounded-full bg-[#EAEAEA] text-[#777] text-[9px] flex items-center justify-center font-bold">2</span>
+              Order Summary
+            </span>
+            <span className="text-[#D2D2D2]">&rarr;</span>
+            <span className="flex items-center gap-1 text-[#999999]">
               <span className="w-4 h-4 rounded-full bg-[#EAEAEA] text-[#777] text-[9px] flex items-center justify-center font-bold">3</span>
-              Payment
+              Pay
             </span>
           </div>
 
@@ -282,11 +287,11 @@ const Address = () => {
           </div>
 
           <button
-            onClick={handleProceedToPayment}
+            onClick={handleProceedToOrderSummary}
             disabled={!selectedAddress || checkingOut}
             className="flex items-center justify-center gap-2 bg-[#111111] text-white px-8 py-3.5 rounded text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all disabled:opacity-50"
           >
-            {checkingOut ? "Initiating Razorpay..." : "Proceed to Payment"}
+            {checkingOut ? "Please wait..." : returnTo ? "Confirm Address" : "Continue to Order Summary"}
             <ArrowRight size={15} />
           </button>
         </div>

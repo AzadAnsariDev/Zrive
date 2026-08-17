@@ -31,6 +31,7 @@ import NewArrivals from "../features/home/pages/NewArrivals";
 import Collections from "../features/home/pages/Collections";
 import Wishlist from "../features/wishlist/pages/Wishlist";
 import Profile from "../features/home/pages/Profile";
+import OrderSummary from "../features/order/pages/OrderSummary";
 
 const router = createBrowserRouter([
   {
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
       { path: "collections", element: <Collections /> }, // ← add
       { path: "profile", element: <Protected>  <Profile /> </Protected> },
       { path: "payment", element: <Protected>  <Payment /> </Protected> },
+      { path: "order-summary", element: <Protected>  <OrderSummary /> </Protected> },
       { path: "wishlist", element: <Wishlist /> },
       { path: "all-products", element: <AllProducts /> },
       { path: "product/:productId", element: <SingleProduct /> },
