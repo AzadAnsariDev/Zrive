@@ -34,10 +34,19 @@ const getUnitPrice = (item) => {
 };
 
 // ─── Stepper ─────────────────────────────────────────────────────────────────
-const Stepper = () => (
+const Stepper = ({ onBack }) => (
   <div className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
-    <div className="max-w-[1100px] mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-2">
-      <div className="flex items-center gap-1.5 sm:gap-3 text-[11px] sm:text-[11.5px] font-semibold">
+    <div className="max-w-[1100px] mx-auto px-3 sm:px-8 py-3 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex items-center gap-1.5 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors shrink-0"
+      >
+        <ArrowLeft size={16} />
+        <span className="hidden sm:inline">Back to Cart</span>
+      </button>
+
+      <div className="flex items-center gap-1.5 sm:gap-3 text-[11px] sm:text-[11.5px] font-semibold shrink-0">
         <span className="flex items-center gap-1 text-[#287A4B]">
           <Check size={12} strokeWidth={2.5} />
           Address
@@ -57,7 +66,8 @@ const Stepper = () => (
           Pay
         </span>
       </div>
-      <div className="flex items-center gap-1 text-[10px] sm:text-[10.5px] font-bold text-[#287A4B] bg-[#EAF5EE] px-2.5 py-1 rounded-full">
+
+      <div className="flex items-center gap-1 text-[10px] sm:text-[10.5px] font-bold text-[#287A4B] bg-[#EAF5EE] px-2.5 py-1 rounded-full shrink-0">
         <Lock size={10} />
         <span className="hidden sm:inline">Razorpay Secure</span>
       </div>
@@ -337,7 +347,7 @@ const OrderSummary = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#111111] pb-20">
-      <Stepper />
+      <Stepper onBack={() => navigate("/cart")} />
 
       <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-6">
         {/* Page header */}
