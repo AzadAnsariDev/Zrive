@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ShoppingBag,
   Sparkles,
+  Check,
 } from "lucide-react";
 import { useProduct } from "../../product/hook/useProduct";
 import { formatPrice } from "./Home";
@@ -23,10 +24,111 @@ const SORT_OPTIONS = [
   { id: "price-desc", label: "Price: High to Low" },
 ];
 
+/* ── Product Card with hover Add-to-Cart slide-up (same as Home) ── */
+const NewArrivalCard = ({ product, onClick }) => {
+  const { handleAddToCart } = useCart();
+  const [added, setAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
+
+  const coverImg =
+    product.images?.[0]?.url ||
+    product.images?.[0] ||
+    product.image ||
+    "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=500&auto=format&fit=crop";
+
+  const onAddToCart = async (e) => {
+    e.stopPropagation();
+    if (adding || added) return;
+    setAdding(true);
+    try {
+      const variantId = product.variants?.[0]?._id || product.variants?.[0]?.sku;
+      await handleAddToCart(product._id, variantId);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    } catch (err) {
+      console.error("Failed to add to cart:", err);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <div
+      className="group cursor-pointer"
+      onClick={onClick}
+    >
+      {/* Image container */}
+      <div className="relative aspect-[3/4] overflow-hidden bg-[#F7F7F5] mb-2 rounded-sm border border-[#E5E5E5] group-hover:border-[#111111] transition-all duration-300">
+        {coverImg ? (
+          <img
+            src={coverImg}
+            alt={product.title || product.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[#999]">
+            <ShoppingBag size={24} />
+          </div>
+        )}
+
+        {/* NEW Badge */}
+        <span className="absolute top-2 left-2 bg-[#B08D57] text-[#0e0e0e] text-[9px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded-sm shadow">
+          NEW
+        </span>
+
+        {/* Wishlist */}
+        <WishlistButton
+          productId={product._id}
+          variantSku={product.variants?.[0]?.sku}
+          className="absolute top-2 right-2 z-10"
+        />
+
+        {/* Add to Cart — slide up on hover */}
+        <button
+          type="button"
+          onClick={onAddToCart}
+          className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-250 bg-[#111111] hover:bg-[#B08D57] py-2.5 flex items-center justify-center gap-1.5 z-10 transition-colors duration-200"
+        >
+          {adding ? (
+            <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-white animate-pulse">
+              Adding...
+            </span>
+          ) : added ? (
+            <>
+              <Check size={12} className="text-emerald-400" />
+              <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-emerald-400">
+                Added ✓
+              </span>
+            </>
+          ) : (
+            <>
+              <ShoppingBag size={12} className="text-white" />
+              <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-white">
+                Add to Cart
+              </span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Product Info */}
+      <p className="text-[9px] font-semibold tracking-[0.14em] uppercase text-[#B08D57] mb-0.5 truncate">
+        {product.brand || "ZRIVE"}
+      </p>
+      <h3 className="text-[13px] font-medium text-[#111111] truncate leading-snug mb-1">
+        {product.title || product.name}
+      </h3>
+      <p className="text-[13px] font-semibold text-[#111111]">
+        {formatPrice(product.price)}
+      </p>
+    </div>
+  );
+};
+
 const NewArrivals = () => {
   const navigate = useNavigate();
   const { handleGetProducts } = useProduct();
-  const { handleAddToCart } = useCart();
 
   const productsFromStore = useSelector((state) => state.product.products || []);
   const loading = useSelector((state) => state.product.loading?.products);
@@ -164,9 +266,14 @@ const NewArrivals = () => {
 
         {/* Product Grid */}
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="aspect-[3/4] bg-[#FAFAFA] rounded-[8px] border border-[#E5E5E5] animate-pulse" />
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-[3/4] bg-[#FAFAFA] rounded-sm border border-[#E5E5E5] mb-2" />
+                <div className="h-2 bg-[#EAEAEA] w-1/3 mb-1.5 rounded" />
+                <div className="h-3 bg-[#EAEAEA] w-3/4 mb-1.5 rounded" />
+                <div className="h-3 bg-[#EAEAEA] w-1/4 rounded" />
+              </div>
             ))}
           </div>
         ) : filteredProducts.length === 0 ? (
@@ -176,67 +283,14 @@ const NewArrivals = () => {
             <p className="text-[13px] text-[#666666] mt-1">Try selecting a different category filter.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {filteredProducts.map((p) => {
-              const coverImg = p.images?.[0]?.url || p.image;
-              return (
-                <div
-                  key={p._id || p.id}
-                  onClick={() => navigate(`/product/${p._id || p.id}`)}
-                  className="group cursor-pointer bg-white rounded-[3px] border border-[#E5E5E5] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
-                >
-                  <div className="relative aspect-[3/4] overflow-hidden bg-[#FAFAFA]">
-                    {coverImg ? (
-                      <img
-                        src={coverImg}
-                        alt={p.title || p.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[#999]">
-                        <ShoppingBag size={24} />
-                      </div>
-                    )}
-
-                    <span className="absolute top-3 left-3 bg-[#B08D57] text-[#0e0e0e] text-[9.5px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow">
-                      NEW
-                    </span>
-
-                    <WishlistButton
-                      productId={p._id}
-                      variantSku={p.variants?.[0]?.sku}
-                      className="absolute top-3 right-3 z-10"
-                    />
-                  </div>
-
-                  <div className="p-4">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#B08D57] mb-1">
-                      {p.brand || "ZRIVE"}
-                    </p>
-                    <h3 className="font-display text-[14px] font-bold text-[#111111] truncate group-hover:text-[#B08D57] transition-colors">
-                      {p.title || p.name}
-                    </h3>
-                    <p className="text-[15px] font-bold text-[#111111] mt-1.5">{formatPrice(p.price)}</p>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (p.variants?.[0]) {
-                          handleAddToCart(p._id, p.variants[0]._id);
-                        } else {
-                          navigate(`/product/${p._id}`);
-                        }
-                      }}
-                      className="w-full mt-3 py-2.5 rounded-[6px] bg-[#111111] text-white text-[11px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <ShoppingBag size={13} />
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
+            {filteredProducts.map((p) => (
+              <NewArrivalCard
+                key={p._id || p.id}
+                product={p}
+                onClick={() => navigate(`/product/${p._id || p.id}`)}
+              />
+            ))}
           </div>
         )}
       </div>

@@ -9,7 +9,12 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import useSeller from "../hook/useSeller";
+import SellerAlarmToggle from "../components/SellerAlarmToggle";
 import KycRequiredModal from "../components/KycRequiredModal";
+import {
+  registerServiceWorker,
+  subscribeToPushNotifications,
+} from "../services/push-notification.service.js";
 
 const formatINR = (n) =>
   `₹${(Number(n) || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
@@ -107,12 +112,22 @@ const SellerDashboard = () => {
 
   const { application, stats } = useSelector((state) => state.seller);
   const orders = useSelector((state) => state.seller.orders || []);
+  const auth = useSelector((state) => state.auth);
 
   const [kycModalOpen, setKycModalOpen] = useState(false);
 
   useEffect(() => {
     handleGetMyApplication();
     handleGetSellerOrders();
+
+    // Create the Web Push subscription before the seller leaves the dashboard.
+    // The browser may show its permission prompt here; after that, pushes work
+    // when the tab is closed because delivery happens through the service worker.
+    registerServiceWorker().then(async () => {
+      if (localStorage.getItem("sellerPushNotifications") !== "false") {
+        await subscribeToPushNotifications();
+      }
+    });
   }, []);
 
   const isVerified = application?.applicationStatus === "approved";
@@ -142,15 +157,23 @@ const SellerDashboard = () => {
             <ArrowLeft size={13} />
             Marketplace
           </button>
-          <div className="flex items-center gap-1 text-[10.5px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
-            <Store size={13} />
-            Merchant Console
+          <div className="flex items-center gap-3">
+            <SellerAlarmToggle compact={true} />
+            <div className="flex items-center gap-1 text-[10.5px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
+              <Store size={13} />
+              Merchant Console
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 pt-6">
         <KycBanner application={application} onGoToKyc={() => navigate("/seller/become-seller/verify")} />
+
+        {/* Notification Settings Banner */}
+        <div className="mb-6">
+          <SellerAlarmToggle compact={false} />
+        </div>
 
         {/* Compact Title Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">

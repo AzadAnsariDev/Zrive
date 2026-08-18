@@ -1,18 +1,18 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
+import { ArrowRight, Eye, EyeOff, ShoppingBag } from "lucide-react";
+import { useDispatch } from "react-redux";
 import { setError, setLoading } from "../state/authSlice";
 import { useAuth } from "../hook/useAuth";
 import { useNavigate, Link } from "react-router";
 import ZriveLogo from "../components/ZriveLogo";
-import loginHero from "../../../assets/images/register-hero.png";
+import authHero from "../../../assets/images/auth-hero.jpg";
 import { notify } from "../../../utils/toast";
 
 const EmailOrPhoneRegex = /^([^\s@]+@[^\s@]+\.[^\s@]+|[6-9]\d{9})$/;
 
 const GoogleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 48 48">
+  <svg width="16" height="16" viewBox="0 0 48 48">
     <path fill="#FFC107" d="M43.6 20.5H42V20.4H24v7.2h11.3c-1.6 4.6-6 7.9-11.3 7.9-6.9 0-12.5-5.6-12.5-12.5S17.1 10.5 24 10.5c3.2 0 6.1 1.2 8.3 3.2l5.1-5.1C34.5 5.7 29.5 3.7 24 3.7 12.9 3.7 3.9 12.7 3.9 23.8S12.9 43.9 24 43.9c11.1 0 20.1-9 20.1-20.1 0-1.1-.1-2.2-.3-3.3z" />
     <path fill="#FF3D00" d="M6.3 14.6l5.9 4.3C13.9 15.3 18.6 12.5 24 12.5c3.2 0 6.1 1.2 8.3 3.2l5.1-5.1C34.5 7.7 29.5 5.7 24 5.7c-7.7 0-14.4 4.3-17.7 10.6z" />
     <path fill="#4CAF50" d="M24 43.9c5.4 0 10.3-1.9 14.1-5.1l-6.5-5.5c-2.1 1.5-4.7 2.4-7.6 2.4-5.3 0-9.7-3.3-11.3-7.9l-6.2 4.8C9.7 39.6 16.3 43.9 24 43.9z" />
@@ -22,183 +22,196 @@ const GoogleIcon = () => (
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-
   const { handleLogin } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({ mode: "onBlur" });
+  const { register, handleSubmit, formState: { errors } } = useForm({ mode: "onBlur" });
 
   const onSubmit = async (data) => {
     dispatch(setLoading(true));
-    const { identifier, password } = data;
     try {
-      const user = await handleLogin(identifier, password);
+      const user = await handleLogin(data.identifier, data.password);
       notify.success("Welcome back!");
       user.role === "seller" ? navigate("/seller") : navigate("/");
     } catch (err) {
       dispatch(setError(err.message));
-      notify.error(err, "Invalid email/phone or password. Please try again.");
+      notify.error(err, "Invalid email/phone or password.");
     } finally {
       dispatch(setLoading(false));
     }
   };
 
   return (
-    <div className="min-h-screen w-full bg-cream md:grid md:grid-cols-2">
+    <div style={{ height: "100dvh" }} className="w-full flex overflow-hidden bg-black">
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in-up {
-          animation: fadeInUp 0.5s ease-out both;
+        .fu  { animation: fadeUp .45s cubic-bezier(.22,1,.36,1) both; }
+        .fu1 { animation: fadeUp .45s .06s cubic-bezier(.22,1,.36,1) both; }
+        .fu2 { animation: fadeUp .45s .12s cubic-bezier(.22,1,.36,1) both; }
+        .fu3 { animation: fadeUp .45s .18s cubic-bezier(.22,1,.36,1) both; }
+        .fu4 { animation: fadeUp .45s .24s cubic-bezier(.22,1,.36,1) both; }
+
+        .auth-input {
+          width: 100%;
+          border-radius: 7px;
+          border: 1.5px solid #2a2a2a;
+          background: #141414;
+          padding: 9px 14px;
+          font-size: 13px;
+          color: #f0f0f0;
+          outline: none;
+          transition: border-color .2s, box-shadow .2s;
+        }
+        .auth-input:focus {
+          border-color: #B08D57;
+          box-shadow: 0 0 0 3px rgba(176,141,87,.12);
+        }
+        .auth-input.err { border-color: #e53e3e; }
+        .auth-input::placeholder { color: #555; }
+        .auth-label {
+          display: block;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: .1em;
+          text-transform: uppercase;
+          color: #777;
+          margin-bottom: 5px;
         }
       `}</style>
 
-      {/* Left: brand / image panel */}
-      <div className="relative hidden md:block">
+      {/* ── LEFT: Image panel (desktop only) ── */}
+      <div className="relative hidden md:block md:w-[48%] lg:w-[52%] flex-shrink-0">
         <img
-          src={loginHero}
-          alt="ZRIVE — modern men's fashion"
-          className="h-full w-full object-cover object-left"
+          src={authHero}
+          alt="ZRIVE — Men's Streetwear"
+          className="absolute inset-0 w-full h-full object-cover object-top"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/0 to-black/10" />
-        <div className="absolute left-8 top-8 flex items-center gap-2 lg:left-12 lg:top-12">
+        {/* dark gradient so text pops */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+
+        {/* Top brand */}
+        <div className="absolute top-8 left-8 flex items-center gap-2.5 z-10">
           <span className="text-white"><ZriveLogo /></span>
-          <span className="font-display text-[15px] font-medium tracking-[0.3em] text-white">
-            ZRIVE
-          </span>
+          <span className="text-white font-display text-[15px] font-medium tracking-[0.35em]">ZRIVE</span>
+        </div>
+
+        {/* Bottom editorial copy */}
+        <div className="absolute bottom-10 left-8 right-8 z-10">
+          <p className="text-[10px] font-bold tracking-[0.22em] uppercase text-[#B08D57] mb-2">
+            Premium Streetwear
+          </p>
+          <h2 className="font-display text-[38px] lg:text-[46px] font-bold text-white leading-[1.05] mb-3">
+            Wear what<br />moves you.
+          </h2>
+          <p className="text-[13px] text-white/55 leading-relaxed max-w-[300px]">
+            Curated drops for the ones who set the culture. Exclusive access, zero compromise.
+          </p>
         </div>
       </div>
 
-      {/* Right: form panel */}
-      <div className="flex items-center justify-center px-6 py-12 md:px-10 md:py-16 lg:px-16">
-        <div className="w-full max-w-[420px] animate-fade-in-up">
-          {/* Logo mobile */}
-          <div className="mb-10 flex justify-center md:hidden">
-            <div className="flex flex-col items-center">
-              <div className="text-ink">
-                <ZriveLogo />
-              </div>
-              <p className="mt-4 font-display text-[20px] font-medium tracking-[0.35em] text-ink">
-                ZRIVE
-              </p>
-              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-gold">
-                Men&apos;s Fashion
-              </p>
-            </div>
+      {/* ── RIGHT: Form panel ── */}
+      <div className="flex-1 flex items-center justify-center bg-[#0a0a0a] px-6 md:px-10 lg:px-14 overflow-y-auto">
+        <div className="w-full max-w-[380px] py-6">
+
+          {/* Mobile logo */}
+          <div className="flex flex-col items-center mb-5 md:hidden fu">
+            <span className="text-white"><ZriveLogo /></span>
+            <p className="mt-2.5 font-display text-[17px] font-medium tracking-[0.35em] text-white">ZRIVE</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#B08D57] mt-0.5">Men's Fashion</p>
           </div>
 
-          <h1 className="mb-2 text-center font-display text-[32px] font-medium leading-[1.1] tracking-tight text-ink md:text-left">
-            Welcome Back
-          </h1>
-          <p className="mb-10 text-center text-[13px] leading-relaxed text-ink-soft md:text-left">
-            Please enter your details to continue your luxury shopping journey.
-          </p>
+          {/* Heading */}
+          <div className="fu mb-5">
+            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#B08D57] mb-1.5">Welcome back</p>
+            <h1 className="font-display text-[26px] md:text-[30px] font-bold text-white leading-[1.1]">
+              Sign in to your account
+            </h1>
+          </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             {/* Email or Phone */}
-            <div>
-              <label htmlFor="identifier" className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
-                Email or Phone Number
-              </label>
+            <div className="fu1">
+              <label className="auth-label">Email or Phone</label>
               <input
                 id="identifier"
                 type="text"
-                placeholder="yourname@email.com"
-                aria-invalid={errors.identifier ? "true" : "false"}
-                className={`w-full rounded-[3px] border bg-cream-dark px-4 py-3.5 text-[14px] text-ink placeholder:text-ink-soft outline-none transition-colors focus:border-ink ${
-                  errors.identifier ? "border-error" : "border-border"
-                }`}
+                placeholder="yourname@email.com or 98765 43210"
+                className={`auth-input ${errors.identifier ? "err" : ""}`}
                 {...register("identifier", {
-                  required: "Please enter your email or phone number",
-                  pattern: { value: EmailOrPhoneRegex, message: "Enter a valid email or 10-digit phone number" },
+                  required: "Please enter your email or phone",
+                  pattern: { value: EmailOrPhoneRegex, message: "Enter a valid email or 10-digit phone" },
                 })}
               />
-              {errors.identifier && (
-                <p className="mt-1.5 text-[12px] text-error">{errors.identifier.message}</p>
-              )}
+              {errors.identifier && <p className="mt-1 text-[11px] text-red-400">{errors.identifier.message}</p>}
             </div>
 
             {/* Password */}
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label htmlFor="password" className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
-                  Password
-                </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-[11px] font-semibold tracking-[0.05em] text-gold transition-colors hover:text-gold-deep"
-                >
-                  Forgot Password?
+            <div className="fu2">
+              <div className="flex items-center justify-between mb-[5px]">
+                <label className="auth-label" style={{ marginBottom: 0 }}>Password</label>
+                <Link to="/forgot-password" className="text-[10px] font-semibold text-[#B08D57] hover:text-[#d4aa6a] transition-colors">
+                  Forgot password?
                 </Link>
               </div>
-              <div
-                className={`flex items-center overflow-hidden rounded-[3px] border bg-cream-dark transition-colors focus-within:border-ink ${
-                  errors.password ? "border-error" : "border-border"
-                }`}
-              >
+              <div className={`flex items-center rounded-[7px] border-[1.5px] bg-[#141414] transition-all focus-within:border-[#B08D57] focus-within:shadow-[0_0_0_3px_rgba(176,141,87,.12)] ${errors.password ? "border-red-500" : "border-[#2a2a2a]"}`}>
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  aria-invalid={errors.password ? "true" : "false"}
-                  className="w-full bg-transparent px-4 py-3.5 text-[14px] text-ink placeholder:text-ink-soft outline-none"
+                  className="w-full bg-transparent px-[14px] py-[9px] text-[13px] text-[#f0f0f0] placeholder:text-[#555] outline-none"
                   {...register("password", {
                     required: "Please enter your password",
-                    minLength: { value: 6, message: "Password must be at least 6 characters" },
+                    minLength: { value: 6, message: "Minimum 6 characters" },
                   })}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="px-4 text-ink-soft transition-colors hover:text-ink cursor-pointer"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="px-3 text-[#555] hover:text-[#ccc] transition-colors cursor-pointer">
+                  {showPassword ? <EyeOff size={15} strokeWidth={1.8} /> : <Eye size={15} strokeWidth={1.8} />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1.5 text-[12px] text-error">{errors.password.message}</p>
-              )}
+              {errors.password && <p className="mt-1 text-[11px] text-red-400">{errors.password.message}</p>}
             </div>
 
             {/* Submit */}
-            <button
-              type="submit"
-              className="group mt-2 flex w-full items-center justify-center gap-2 rounded-[3px] bg-charcoal py-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-cream transition-all duration-200 hover:-translate-y-0.5 hover:bg-ink hover:shadow-lg hover:shadow-black/15 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-            >
-              Sign In
-              <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
-            </button>
+            <div className="fu3 pt-1">
+              <button
+                type="submit"
+                className="group w-full flex items-center justify-center gap-2 rounded-[7px] bg-[#B08D57] py-[11px] text-[11px] font-bold uppercase tracking-[0.12em] text-black transition-all duration-200 hover:bg-[#c9a468] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#B08D57]/25 active:translate-y-0 cursor-pointer"
+              >
+                Sign In
+                <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-1" />
+              </button>
+            </div>
           </form>
 
-          <div className="mb-6 mt-8 flex items-center gap-3">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-[10px] font-semibold tracking-[0.2em] text-ink-soft">OR</span>
-            <span className="h-px flex-1 bg-border" />
+          {/* Divider */}
+          <div className="fu3 flex items-center gap-3 my-4">
+            <span className="h-px flex-1 bg-[#222]" />
+            <span className="text-[9px] font-bold tracking-[0.2em] text-[#444]">OR</span>
+            <span className="h-px flex-1 bg-[#222]" />
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              window.location.href = "/api/auth/google";
-            }}
-            className="flex w-full items-center justify-center gap-3 rounded-[3px] border border-border bg-cream py-3.5 text-[13px] font-semibold text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-ink-soft hover:bg-cream-dark hover:shadow-sm active:translate-y-0 cursor-pointer"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
+          {/* Google */}
+          <div className="fu4">
+            <button
+              type="button"
+              onClick={() => { window.location.href = "/api/auth/google"; }}
+              className="flex w-full items-center justify-center gap-2.5 rounded-[7px] border border-[#2a2a2a] bg-[#141414] py-[10px] text-[12px] font-semibold text-[#ccc] transition-all hover:border-[#B08D57]/50 hover:bg-[#1a1a1a] hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
+          </div>
 
-          <p className="mt-8 text-center text-[13px] text-ink-soft">
-            Don&apos;t have an account?{" "}
-            <Link to="/register" className="font-semibold text-ink transition-colors hover:text-gold">
-              Sign Up
+          {/* Footer */}
+          <p className="fu4 mt-5 text-center text-[12px] text-[#555]">
+            Don't have an account?{" "}
+            <Link to="/register" className="font-bold text-[#B08D57] hover:text-[#d4aa6a] transition-colors">
+              Create account
             </Link>
           </p>
         </div>

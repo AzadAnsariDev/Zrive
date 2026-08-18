@@ -1,5 +1,6 @@
 import productModel from "../models/product.model.js"
 import userModel from "../models/user.model.js"
+import sellerModel from "../models/seller.model.js"
 import { uploadFiles } from "../services/storage.service.js"
 
 export const createProduct = async (req, res) => {
@@ -7,7 +8,13 @@ export const createProduct = async (req, res) => {
         const { title, description, priceAmount, priceCurrency, status, category, variants } = req.body
         const shippingDefaults = req.parsedShippingDefaults
 
-        const seller = req.user
+        const sellerProfile = await sellerModel.findOne({ userId: req.user.id })
+        if (!sellerProfile) {
+            return res.status(403).json({
+                message: "Seller profile not found. Please complete seller registration.",
+                success: false
+            })
+        }
 
         let parsedVariants
         try {
@@ -89,7 +96,7 @@ export const createProduct = async (req, res) => {
         const product = await productModel.create({
             title,
             description,
-            seller,
+            seller: sellerProfile._id,
             price: {
                 amount: priceAmount,
                 currency: priceCurrency || "INR"
@@ -116,9 +123,15 @@ export const createProduct = async (req, res) => {
 }
 
 export const getSellerProduct = async (req, res) => {
-    const seller = req.user
+    const sellerProfile = await sellerModel.findOne({ userId: req.user.id })
+    if (!sellerProfile) {
+        return res.status(200).json({
+            message: "All products fetched successfully",
+            products: []
+        })
+    }
 
-    const products = await productModel.find({ seller: seller._id })
+    const products = await productModel.find({ seller: sellerProfile._id })
 
     res.status(200).json({
         message: "All products fetched successfully",
@@ -129,8 +142,10 @@ export const getSellerProduct = async (req, res) => {
 export const getProducts = async (req, res) => {
     const { search } = req.query
 
-    const bannedSellers = await userModel.find({ isBanned: true }).select("_id")
-    const bannedSellerIds = bannedSellers.map(s => s._id)
+    const bannedUsers = await userModel.find({ isBanned: true }).select("_id")
+    const bannedUserIds = bannedUsers.map(s => s._id)
+    const bannedSellerProfiles = await sellerModel.find({ userId: { $in: bannedUserIds } }).select("_id")
+    const bannedSellerIds = bannedSellerProfiles.map(s => s._id)
 
     const filter = { seller: { $nin: bannedSellerIds } }
 
@@ -167,8 +182,10 @@ export const searchProducts = async (req, res) => {
             })
         }
 
-        const bannedSellers = await userModel.find({ isBanned: true }).select("_id")
-        const bannedSellerIds = bannedSellers.map(s => s._id)
+        const bannedUsers = await userModel.find({ isBanned: true }).select("_id")
+        const bannedUserIds = bannedUsers.map(s => s._id)
+        const bannedSellerProfiles = await sellerModel.find({ userId: { $in: bannedUserIds } }).select("_id")
+        const bannedSellerIds = bannedSellerProfiles.map(s => s._id)
 
         const regex = new RegExp(q.trim(), "i")
 
@@ -198,7 +215,10 @@ export const searchProducts = async (req, res) => {
 
 export const getProductDetail = async (req, res) => {
     const { productId } = req.params
-    const product = await productModel.findById(productId).populate("seller", "isBanned")
+    const product = await productModel.findById(productId).populate({
+        path: "seller",
+        populate: { path: "userId", select: "isBanned" }
+    })
 
     if (!product) {
         return res.status(404).json({
@@ -207,7 +227,7 @@ export const getProductDetail = async (req, res) => {
         })
     }
 
-    if (product.seller?.isBanned) {
+    if (product.seller?.userId?.isBanned) {
         return res.status(404).json({
             message: "Product Not Found",
             success: false
@@ -223,10 +243,18 @@ export const getProductDetail = async (req, res) => {
 export const addNewVariant = async (req, res) => {
     try {
         const { productId } = req.params
+        const sellerProfile = await sellerModel.findOne({ userId: req.user.id })
+
+        if (!sellerProfile) {
+            return res.status(403).json({
+                message: "Seller profile not found",
+                success: false
+            })
+        }
 
         const product = await productModel.findOne({
             _id: productId,
-            seller: req.user.id
+            seller: sellerProfile._id
         })
 
         if (!product) {

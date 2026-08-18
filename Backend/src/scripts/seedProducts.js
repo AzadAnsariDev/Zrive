@@ -841,17 +841,17 @@ async function seedProducts() {
         i++
       ) {
 
-        // 50 / 50 seller distribution
-        const sellerId =
+        // 50 / 50 seller profile distribution
+        const sellerProfileId =
           globalIndex % 2 === 0
-            ? seller1._id
-            : seller2._id;
+            ? sellerProfile1._id
+            : sellerProfile2._id;
 
         products.push(
           createProduct(
             category,
             globalIndex,
-            sellerId,
+            sellerProfileId,
             imagePool
           )
         );

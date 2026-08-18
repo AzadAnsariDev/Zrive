@@ -3,6 +3,9 @@ import { stockOfVariant } from "../dao/product.dao.js"
 import cartModel from "../models/cart.model.js"
 import userModel from "../models/user.model.js"
 import jwt from 'jsonwebtoken'
+import { sendEmail } from "../services/email.service.js"
+import { welcomeEmailTemplate } from "../templates/email.templates.js"
+import { savePushSubscription, removePushSubscription, sendPushNotificationToUser } from "../services/push-notification.service.js"
 
 
 const sendTokenResponse = (user, res, statusCode, message)=>{
@@ -50,6 +53,13 @@ export const register = async (req, res)=>{
         // role intentionally not accepted from client — always defaults to
         // "buyer" via the schema. Becoming a seller happens only through the
         // seller onboarding flow (createBasicSellerApplication), never at signup.
+    })
+
+    // Send welcome email (non-blocking - fails silently)
+    await sendEmail({
+        to: user.email,
+        subject: 'Welcome to ZRIVE - Your Shopping Journey Begins!',
+        html: welcomeEmailTemplate(user)
     })
 
     await mergeGuestCart(req, res, user._id)
@@ -260,3 +270,69 @@ export const logout = async (req, res) => {
         success: true
     })
 }
+
+export const subscribePush = async (req, res) => {
+    try {
+        const { subscription } = req.body;
+        if (!subscription || !subscription.endpoint) {
+            return res.status(400).json({ success: false, message: "Subscription data is required" });
+        }
+
+        const userAgent = req.headers["user-agent"] || "";
+        const saved = await savePushSubscription(req.user.id, subscription, userAgent);
+
+        return res.status(200).json({
+            success: true,
+            message: "Push subscription registered successfully",
+            data: saved,
+        });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+export const unsubscribePush = async (req, res) => {
+    try {
+        const { endpoint } = req.body;
+        if (endpoint) {
+            await removePushSubscription(endpoint);
+        }
+        return res.status(200).json({ success: true, message: "Unsubscribed successfully" });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+export const testPushNotification = async (req, res) => {
+    try {
+        // The auth JWT contains only the user id, so resolve the current role
+        // from the database instead of relying on req.user.role.
+        const user = await userModel.findById(req.user.id).select("role");
+        const isSeller = user?.role === "seller" || user?.role === "basic_seller";
+        const testPayload = {
+            title: isSeller ? "🚨 NEW ORDER RECEIVED! (TEST)" : "🎉 ZRIVE Order Update (TEST)",
+            body: isSeller
+                ? "Order #TEST-8832 · ₹1,999 · Tap to view details"
+                : "Your order is confirmed and being prepared!",
+            tag: isSeller ? "zrive-seller-alarm" : "zrive-buyer-notification",
+            url: isSeller ? "/seller/orders" : "/orders",
+            isAlarm: isSeller,
+            data: {
+                orderId: "test-order-123",
+                url: isSeller ? "/seller/orders" : "/orders",
+            },
+        };
+
+        const sent = await sendPushNotificationToUser(req.user.id, testPayload);
+
+        return res.status(200).json({
+            success: true,
+            message: sent
+                ? "Test push notification dispatched successfully!"
+                : "No active push subscription found for this user. Please enable notifications in the browser first.",
+            sent,
+        });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};

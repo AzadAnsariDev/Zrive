@@ -39,8 +39,8 @@ const matchesFilter = (order, key) => {
 const SellerOrders = () => {
   const navigate = useNavigate()
   const { handleGetSellerOrders, handleAcceptOrder, handleRejectOrder } = useSeller()
-  const orders = useSelector((state) => state.seller.orders || [])
-  const loading = useSelector((state) => state.seller.loading?.orders)
+  const orders = useSelector((state) => state.seller.allOrders || [])
+  const loading = useSelector((state) => state.seller.loading)
 
   const [activeFilter, setActiveFilter] = useState('all')
   const [actingOrderId, setActingOrderId] = useState(null)

@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux'
-import { setAllOrders, setApplication, setLoading, setError } from '../state/sellerSlice'
+import { setAllOrders, setCurrentOrder, setApplication, setLoading, setError } from '../state/sellerSlice'
 import {
-    getSellerOrders, acceptOrder, rejectOrder,
+    getSellerOrders, getSellerOrderById, acceptOrder, rejectOrder,
     createBasicSellerApplication, submitVerificationDetails, getMySellerApplication
 } from '../services/seller.api'
 import { getMe } from '../../auth/services/auth.api'      
@@ -17,6 +17,20 @@ const useSeller = () => {
             dispatch(setAllOrders(data.orders))
         } catch (err) {
             dispatch(setError(err.message))
+        } finally {
+            dispatch(setLoading(false))
+        }
+    }
+
+    const handleGetOrderById = async (orderId) => {
+        dispatch(setLoading(true))
+        try {
+            const data = await getSellerOrderById(orderId)
+            dispatch(setCurrentOrder(data.order))
+            return data.order
+        } catch (err) {
+            dispatch(setError(err.message))
+            throw err
         } finally {
             dispatch(setLoading(false))
         }
@@ -94,6 +108,7 @@ const useSeller = () => {
 
     return {
         handleGetSellerOrders,
+        handleGetOrderById,
         handleAcceptOrder,
         handleRejectOrder,
         handleGetMyApplication,

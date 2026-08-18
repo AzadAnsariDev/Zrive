@@ -15,7 +15,14 @@ const required_key = [
     "ADMIN_SEED_PASSWORD",
     "ADMIN_JWT_SECRET",
     "SHIPROCKET_EMAIL",         
-    "SHIPROCKET_PASSWORD"       
+    "SHIPROCKET_PASSWORD",
+    "EMAIL_USER",
+    "EMAIL_PASS",
+    "EMAIL_FROM",
+    "CLIENT_URL",
+    "VAPID_PUBLIC_KEY",
+    "VAPID_PRIVATE_KEY",
+    "VAPID_SUBJECT"
 ]
 
 required_key.forEach((key) => {
@@ -38,7 +45,14 @@ const config = {
     ADMIN_SEED_PASSWORD: process.env.ADMIN_SEED_PASSWORD,
     ADMIN_JWT_SECRET: process.env.ADMIN_JWT_SECRET,
     SHIPROCKET_EMAIL: process.env.SHIPROCKET_EMAIL,
-    SHIPROCKET_PASSWORD: process.env.SHIPROCKET_PASSWORD
+    SHIPROCKET_PASSWORD: process.env.SHIPROCKET_PASSWORD,
+    EMAIL_USER: process.env.EMAIL_USER,
+    EMAIL_PASS: process.env.EMAIL_PASS,
+    EMAIL_FROM: process.env.EMAIL_FROM,
+    CLIENT_URL: process.env.CLIENT_URL,
+    VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT: process.env.VAPID_SUBJECT || "mailto:admin@zrive.com"
 }
 
 export default config

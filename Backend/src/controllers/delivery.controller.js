@@ -8,6 +8,13 @@ import {
 import deliveryModel from "../models/delivery.model.js"
 import { createDeliveryForOrder } from "../services/delivery.service.js"
 import orderModel from "../models/order.model.js"
+import sellerModel from "../models/seller.model.js"
+
+const isDeliveryOwner = async (delivery, userId) => {
+    if (!delivery?.seller || !userId) return false
+    const seller = await sellerModel.findOne({ _id: delivery.seller, userId }).select("_id")
+    return Boolean(seller)
+}
 
 export const getAllDeliveries = async (req, res) => {
     const deliveries = await deliveryModel
@@ -68,7 +75,7 @@ export const assignAWBController = async (req, res) => {
             return res.status(404).json({ success: false, message: "Delivery not found" })
         }
 
-        if (delivery.seller.toString() !== req.user.id.toString()) {
+        if (!(await isDeliveryOwner(delivery, req.user.id))) {
             return res.status(403).json({ success: false, message: "Not authorized" })
         }
 
@@ -87,7 +94,7 @@ export const schedulePickupController = async (req, res) => {
             return res.status(404).json({ success: false, message: "Delivery not found" })
         }
 
-        if (delivery.seller.toString() !== req.user.id.toString()) {
+        if (!(await isDeliveryOwner(delivery, req.user.id))) {
             return res.status(403).json({ success: false, message: "Not authorized" })
         }
 
@@ -106,7 +113,7 @@ export const generateLabelController = async (req, res) => {
             return res.status(404).json({ success: false, message: "Delivery not found" })
         }
 
-        if (delivery.seller.toString() !== req.user.id.toString()) {
+        if (!(await isDeliveryOwner(delivery, req.user.id))) {
             return res.status(403).json({ success: false, message: "Not authorized" })
         }
 
@@ -125,7 +132,7 @@ export const trackDeliveryController = async (req, res) => {
             return res.status(404).json({ success: false, message: "Delivery not found" })
         }
 
-        if (delivery.seller.toString() !== req.user.id.toString()) {
+        if (!(await isDeliveryOwner(delivery, req.user.id))) {
             return res.status(403).json({ success: false, message: "Not authorized" })
         }
 
@@ -143,7 +150,7 @@ export const getDeliveryByOrderController = async (req, res) => {
         return res.status(404).json({ success: false, message: "Delivery not found for this order" })
     }
 
-    if (delivery.seller.toString() !== req.user.id.toString()) {
+    if (!(await isDeliveryOwner(delivery, req.user.id))) {
         return res.status(403).json({ success: false, message: "Not authorized" })
     }
 
@@ -154,7 +161,7 @@ export const cancelDeliveryController = async (req, res) => {
     try {
         const delivery = await deliveryModel.findById(req.params.deliveryId)
         if (!delivery) return res.status(404).json({ success: false, message: "Delivery not found" })
-        if (delivery.seller.toString() !== req.user.id.toString()) {
+        if (!(await isDeliveryOwner(delivery, req.user.id))) {
             return res.status(403).json({ success: false, message: "Not authorized" })
         }
         const updatedDelivery = await cancelDeliveryForDelivery(req.params.deliveryId)

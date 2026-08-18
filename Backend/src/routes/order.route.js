@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { acceptOrder, cancelOrder, createOrder, getOrderById, getOrders, getSellerOrders, rejectOrder, verifyOrder, webhook } from "../controllers/order.controller.js";
+import { acceptOrder, cancelOrder, createOrder, getOrderById, getOrders, getSellerOrders, getSellerOrderById, rejectOrder, verifyOrder, webhook } from "../controllers/order.controller.js";
 import { authenticateSeller, authenticateUser } from "../middlewares/auth.middleware.js";
 
 const orderRouter = Router()
@@ -13,6 +13,8 @@ orderRouter.post("/webhook", webhook);
 orderRouter.get("/getOrders", authenticateUser, getOrders)
 
 orderRouter.get("/getSellerOrders", authenticateSeller, getSellerOrders)
+
+orderRouter.get("/seller/:orderId", authenticateSeller, getSellerOrderById)
 
 orderRouter.get("/:orderId", authenticateUser, getOrderById)
 

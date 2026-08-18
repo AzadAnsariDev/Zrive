@@ -22,6 +22,13 @@ export const getSellerOrders = async ()=>{
     return response.data
 }
 
+export const getSellerOrderById = async (orderId)=>{
+    const response = await sellerApiInstance.get(`/order/seller/${orderId}`)
+    return response.data
+}
+
+export const getOrderById = getSellerOrderById
+
 export const createBasicSellerApplication = async ({ brandName, businessEmail, businessPhone })=>{
     const response = await sellerApiInstance.post(`/seller/onboard`, {
         brandName, businessEmail, businessPhone

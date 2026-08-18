@@ -10,10 +10,12 @@ import config from "../config/config.js";
 import addressModel from "../models/address.model.js";
 import orderModel from "../models/order.model.js";
 import cartModel from "../models/cart.model.js";
+import sellerModel from "../models/seller.model.js";
 import crypto from "crypto";
 import { prepareOrderRejection, processRefund } from "../services/orderRejection.service.js";
 import { deductStock, restoreStock } from "../services/inventory.service.js";
 import { createDeliveryForOrder, assignAWBForDelivery, generateLabelForDelivery } from "../services/delivery.service.js";
+import { notifyOrderPlaced, notifyOrderRejected, notifyOrderCancelled } from "../services/order-notification.service.js";
 
 export const createOrder = async (req, res) => {
   try {
@@ -77,7 +79,9 @@ export const createOrder = async (req, res) => {
 
     const sellerGroups = {};
     for (const item of cart.items) {
-      const sellerId = item.product.seller.toString();
+      const sellerId = item.product.seller?.toString();
+      if (!sellerId) continue;
+
       if (!sellerGroups[sellerId]) sellerGroups[sellerId] = [];
       sellerGroups[sellerId].push(item);
     }
@@ -200,6 +204,12 @@ export const verifyOrder = async (req, res) => {
     { $set: { items: [] } },
   );
 
+  // Send notifications to buyer & seller (non-blocking)
+  const orders = await orderModel.find({ payment: payment._id });
+  for (const order of orders) {
+    await notifyOrderPlaced(order);
+  }
+
   return res.status(200).json({
     message: "Payment verified successfully",
     success: true,
@@ -293,12 +303,17 @@ export const webhook = async (req, res) => {
         },
       );
 
-      const order = await orderModel.findOne({ payment: payment._id });
+      const orders = await orderModel.find({ payment: payment._id });
 
       await cartModel.findOneAndUpdate(
-        { user: order.user },
+        { user: orders[0].user },
         { $set: { items: [] } },
       );
+
+      // Send notifications to buyers & sellers (non-blocking)
+      for (const order of orders) {
+        await notifyOrderPlaced(order);
+      }
     } else if (event === "payment.failed") {
       payment.status = "failed";
       await payment.save();
@@ -456,6 +471,9 @@ export const cancelOrder = async (req, res) => {
 
     await session.commitTransaction();
 
+    // Send cancellation notifications (non-blocking)
+    await notifyOrderCancelled(order);
+
     return res.status(200).json({
       success: true,
       message: "Order cancelled successfully.",
@@ -493,7 +511,8 @@ export const acceptOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found or already actioned" });
     }
 
-    if (order.seller.toString() !== req.user.id.toString()) {
+    const sellerProfile = await sellerModel.findOne({ _id: order.seller, userId: req.user.id }).session(session);
+    if (!sellerProfile) {
       await session.abortTransaction();
       return res.status(403).json({ success: false, message: "Not authorized" });
     }
@@ -569,7 +588,8 @@ export const rejectOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found or already actioned" });
     }
 
-    if (order.seller.toString() !== req.user.id.toString()) {
+    const sellerProfile = await sellerModel.findOne({ _id: order.seller, userId: req.user.id }).session(session);
+    if (!sellerProfile) {
       await session.abortTransaction();
       return res.status(403).json({ success: false, message: "Not authorized" });
     }
@@ -597,6 +617,9 @@ export const rejectOrder = async (req, res) => {
     console.error("Refund failed, will need retry:", err.message);
   }
 
+  // Send rejection notification to buyer (non-blocking)
+  await notifyOrderRejected(order);
+
   return res.status(200).json({
     success: true,
     message: "Order rejected" + (order.refund?.status === "processed" ? ", refund processed" : ", refund pending"),
@@ -606,7 +629,12 @@ export const rejectOrder = async (req, res) => {
 
 export const getSellerOrders = async (req, res) => {
   try {
-    const sellerId = req.user.id
+    const sellerProfile = await sellerModel.findOne({ userId: req.user.id })
+    if (!sellerProfile) {
+      return res.status(404).json({ success: false, message: "Seller profile not found" })
+    }
+
+    const sellerId = sellerProfile._id
 
     const orders = await orderModel.find({
       seller: sellerId,
@@ -624,3 +652,39 @@ export const getSellerOrders = async (req, res) => {
     })
   }
 }
+
+export const getSellerOrderById = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const sellerProfile = await sellerModel.findOne({ userId: req.user.id })
+    if (!sellerProfile) {
+      return res.status(404).json({ success: false, message: "Seller profile not found" })
+    }
+
+    const sellerId = sellerProfile._id;
+
+    const order = await orderModel.findOne({
+      _id: orderId,
+      seller: sellerId,
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Order fetched successfully",
+      success: true,
+      order,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: err.message,
+      success: false,
+    });
+  }
+};
+

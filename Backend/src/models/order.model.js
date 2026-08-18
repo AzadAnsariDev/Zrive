@@ -16,7 +16,7 @@ const orderItemSchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
-    seller: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+    seller: { type: mongoose.Schema.Types.ObjectId, ref: "sellers", required: true },
     payment: { type: mongoose.Schema.Types.ObjectId, ref: "payments", required: true },
     orderItems: {
       type: [orderItemSchema],

@@ -10,7 +10,7 @@ const deliverySchema = new mongoose.Schema(
     },
     seller: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "users",
+      ref: "sellers",
       required: true,
     },
 

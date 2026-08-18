@@ -8,6 +8,7 @@ import {
   Sparkle,
   Truck,
   RotateCcw,
+  Check,
   ShieldCheck,
   BadgeCheck,
   ArrowRight,
@@ -81,70 +82,113 @@ const getProductStock = (p) => {
 };
 
 const SkeletonCard = () => (
-  <div className="animate-pulse bg-[#FAFAFA] border border-[#EAEAEA] rounded-[8px] overflow-hidden p-3">
-    <div className="aspect-[3/4] bg-[#EAEAEA] rounded-md mb-3" />
-    <div className="h-3 bg-[#EAEAEA] w-1/3 mb-2 rounded" />
-    <div className="h-4 bg-[#EAEAEA] w-3/4 mb-2 rounded" />
-    <div className="h-4 bg-[#EAEAEA] w-1/4 rounded" />
+  <div className="animate-pulse">
+    <div className="aspect-[3/4] bg-[#EAEAEA] rounded-sm mb-2" />
+    <div className="h-2.5 bg-[#EAEAEA] w-1/3 mb-1.5 rounded" />
+    <div className="h-3 bg-[#EAEAEA] w-3/4 mb-1.5 rounded" />
+    <div className="h-3 bg-[#EAEAEA] w-1/4 rounded" />
   </div>
 );
 
 const ProductCard = ({ product, onClick, salePercent = null }) => {
+  const { handleAddToCart } = useCart();
+  const [added, setAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
+
   const isNew = getProductAgeInDays(product) <= NEW_BADGE_WINDOW_DAYS;
   const originalPrice = salePercent
     ? Math.round(getProductPrice(product) / (1 - salePercent / 100))
     : null;
 
+  const onAddToCart = async (e) => {
+    e.stopPropagation();
+    if (adding || added) return;
+    setAdding(true);
+    try {
+      const variantId = product.variants?.[0]?._id || product.variants?.[0]?.sku;
+      await handleAddToCart(product._id, variantId);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    } catch (err) {
+      console.error("Failed to add to cart:", err);
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
-    <div
-      className="group cursor-pointer bg-white border border-[#EAEAEA] rounded-[3px] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
-      onClick={onClick}
-    >
-      <div className="relative aspect-[3/4] overflow-hidden bg-[#FAFAFA]">
+    <div className="group cursor-pointer" onClick={onClick}>
+      {/* Image container */}
+      <div className="relative aspect-[3/4] overflow-hidden bg-[#F7F7F5] mb-2 rounded-sm border border-[#E5E5E5] group-hover:border-[#111111] transition-all duration-300">
         <img
           src={getProductImage(product)}
           alt={getProductName(product)}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
+
         {/* Badges */}
         {salePercent ? (
-          <span className="absolute top-2.5 left-2.5 bg-[#C43D3D] text-white text-[9px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 rounded shadow">
-            -{salePercent}% OFF
+          <span className="absolute top-2 left-2 bg-[#C43D3D] text-white text-[9px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 shadow-sm">
+            -{salePercent}%
           </span>
         ) : isNew ? (
-          <span className="absolute top-2.5 left-2.5 bg-[#B08D57] text-[#0e0e0e] text-[9px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 rounded shadow">
+          <span className="absolute top-2 left-2 bg-[#B08D57] text-[#0e0e0e] text-[9px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 shadow-sm">
             NEW
           </span>
         ) : null}
 
-        {/* Wishlist Button */}
+        {/* Wishlist */}
         <WishlistButton
           productId={product._id}
           variantSku={product.variants?.[0]?.sku}
-          className="absolute top-2.5 right-2.5 z-10"
+          className="absolute top-2 right-2 z-10"
         />
+
+        {/* Add to Cart — slide up on hover */}
+        <button
+          type="button"
+          onClick={onAddToCart}
+          className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-250 bg-[#111111] hover:bg-[#B08D57] py-2.5 flex items-center justify-center gap-1.5 z-10 transition-colors duration-200"
+        >
+          {adding ? (
+            <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-white animate-pulse">
+              Adding...
+            </span>
+          ) : added ? (
+            <>
+              <Check size={12} className="text-emerald-400" />
+              <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-emerald-400">
+                Added ✓
+              </span>
+            </>
+          ) : (
+            <>
+              <ShoppingBag size={12} className="text-white" />
+              <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-white">
+                Add to Cart
+              </span>
+            </>
+          )}
+        </button>
       </div>
 
-      <div className="p-3.5 flex-1 flex flex-col justify-between">
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#B08D57] mb-0.5 truncate">
-            {product.brand || "ZRIVE"}
-          </p>
-          <h3 className="font-display text-[13.5px] font-semibold text-[#111111] leading-snug truncate mb-1">
-            {getProductName(product)}
-          </h3>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[14px] font-bold text-[#111111]">
-              {formatPrice(product.price)}
-            </span>
-            {originalPrice && (
-              <span className="text-[11px] text-[#999999] line-through">
-                {formatPrice(originalPrice)}
-              </span>
-            )}
-          </div>
-        </div>
+      {/* Product Info */}
+      <p className="text-[9px] font-semibold tracking-[0.14em] uppercase text-[#B08D57] mb-0.5 truncate">
+        {product.brand || "ZRIVE"}
+      </p>
+      <h3 className="text-[13px] font-medium text-[#111111] truncate leading-snug mb-1">
+        {getProductName(product)}
+      </h3>
+      <div className="flex items-baseline gap-2">
+        <span className="text-[13px] font-semibold text-[#111111]">
+          {formatPrice(product.price)}
+        </span>
+        {originalPrice && (
+          <span className="text-[11px] text-[#999] line-through">
+            {formatPrice(originalPrice)}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -485,8 +529,8 @@ const AllProducts = () => {
           {/* Products Grid */}
           <main>
             {loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
                   <SkeletonCard key={i} />
                 ))}
               </div>
@@ -503,7 +547,7 @@ const AllProducts = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
                 {filteredProducts.map((product, i) => (
                   <ProductCard
                     key={getProductKey(product, i)}

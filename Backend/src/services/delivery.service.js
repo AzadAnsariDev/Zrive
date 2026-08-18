@@ -12,6 +12,7 @@ import {
     trackShipmentByAWB,
     checkCourierServiceability
 } from "./shiprocket.service.js"
+import { notifyOrderShipped, notifyOrderDelivered } from "./order-notification.service.js"
 
 const resolveItemShippingData = async (orderItem) => {
     const product = await productModel.findById(orderItem.productId)
@@ -43,7 +44,7 @@ export const createDeliveryForOrder = async (orderId) => {
         throw new Error("Order not found")
     }
 
-    const seller = await sellerModel.findOne({ userId: order.seller })
+    const seller = await sellerModel.findById(order.seller)
 
     if (!seller || !seller.shiprocket?.pickupNickname) {
         throw new Error("Seller pickup location not synced with Shiprocket")
@@ -278,6 +279,13 @@ const syncOrderStatusFromDelivery = async (delivery) => {
 
     order.orderStatus = targetStatus
     await order.save()
+
+    // Send notifications based on new status (non-blocking)
+    if (targetStatus === "shipped") {
+        await notifyOrderShipped(order)
+    } else if (targetStatus === "delivered") {
+        await notifyOrderDelivered(order)
+    }
 }
 
 export const trackDelivery = async (deliveryId) => {
