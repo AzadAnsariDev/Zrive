@@ -26,6 +26,10 @@ import SizeChartModal, {
   isFootwearCategory,
 } from '../components/SizeChartModal'
 import { notify } from '../../../utils/toast'
+import { useReview } from '../../review/hook/useReview'
+import ReviewSummary from '../../review/components/ReviewSummary'
+import ReviewList from '../../review/components/ReviewList'
+import ReviewForm from '../../review/components/ReviewForm'
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
@@ -192,6 +196,7 @@ const SingleProduct = () => {
   const { productId } = useParams()
   const navigate = useNavigate()
   const { handleGetProductDetail } = useProduct()
+  const { handleGetProductReviews, handleCheckEligibility, handleCreateReview } = useReview()
 
   const [product, setProduct] = useState(null)
   const [activeImage, setActiveImage] = useState(0)
@@ -202,8 +207,17 @@ const SingleProduct = () => {
   const [shakeSize, setShakeSize] = useState(false)
   const [isBuyingNow, setIsBuyingNow] = useState(false)
 
+  // ── Review state ──
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [reviews, setReviews] = useState([])
+  const [reviewPagination, setReviewPagination] = useState({ total: 0, page: 1, totalPages: 1 })
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [canReview, setCanReview] = useState(false)
+  const [submittingReview, setSubmittingReview] = useState(false)
+
   const addresses = useSelector((state) => state.address?.addresses ?? [])
   const selectedAddress = useSelector((state) => state.address?.selectedAddress)
+  const isLoggedIn = useSelector((state) => state.auth?.user)
 
   async function fetchProductDetail() {
     try {
@@ -222,6 +236,43 @@ const SingleProduct = () => {
       setSelectedSize(product.variants[0].size)
     }
   }, [product])
+
+  // ── Load reviews + eligibility ──
+  useEffect(() => {
+    if (!productId) return
+    loadReviews(1)
+    if (isLoggedIn) {
+      handleCheckEligibility(productId).then((res) => {
+        if (res) setCanReview(res.canReview)
+      })
+    }
+  }, [productId, isLoggedIn])
+
+  const loadReviews = async (page = 1) => {
+    setReviewsLoading(true)
+    const result = await handleGetProductReviews(productId, { page, limit: 5 })
+    if (result) {
+      setReviews((prev) => (page === 1 ? result.reviews : [...prev, ...result.reviews]))
+      setReviewPagination(result.pagination)
+    }
+    setReviewsLoading(false)
+  }
+
+  const handleSubmitReview = async (data) => {
+    setSubmittingReview(true)
+    try {
+      await handleCreateReview(productId, data)
+      setShowReviewForm(false)
+      setCanReview(false)
+      loadReviews(1)
+      fetchProductDetail() // avgRating/totalReviews refresh
+      notify.success("Review submitted!")
+    } catch (err) {
+      throw err
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
 
   const variants = product?.variants ?? []
   const colors = [...new Set(variants.map(v => v.color))]
@@ -306,7 +357,7 @@ const SingleProduct = () => {
   return (
     <div className="bg-white text-[#111111] min-h-screen pb-24 md:pb-12">
       <ShakeKeyframes />
-      
+
       {sizeChartOpen && (
         <SizeChartModal
           onClose={() => setSizeChartOpen(false)}
@@ -414,14 +465,20 @@ const SingleProduct = () => {
                 {product.name || product.title}
               </h1>
 
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} size={13} fill={i <= 4 ? '#B08D57' : 'none'} stroke="#B08D57" strokeWidth={1.5} />
-                  ))}
+              {product.totalReviews > 0 ? (
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star key={i} size={13} fill={i <= Math.round(product.avgRating) ? '#B08D57' : 'none'} stroke="#B08D57" strokeWidth={1.5} />
+                    ))}
+                  </div>
+                  <span className="text-[12px] text-[#666]">
+                    ({product.avgRating.toFixed(1)} Rating) · {product.totalReviews} {product.totalReviews === 1 ? 'Review' : 'Reviews'}
+                  </span>
                 </div>
-                <span className="text-[12px] text-[#666]">(4.2 Rating) · 128 Reviews</span>
-              </div>
+              ) : (
+                <p className="text-[11.5px] font-medium text-[#999] mb-3">Be the first to believe in this piece</p>
+              )}
 
               <div className="flex items-baseline gap-3 mb-2">
                 <span className="text-[24px] font-bold text-[#111]">{formatPrice(effectivePrice)}</span>
@@ -482,6 +539,27 @@ const SingleProduct = () => {
             </div>
           </div>
         </div>
+
+        {/* Ratings & Reviews */}
+        <ReviewSummary
+          product={product}
+          canReview={canReview}
+          onWriteReview={() => setShowReviewForm(true)}
+        />
+        <ReviewList
+          reviews={reviews}
+          pagination={reviewPagination}
+          onLoadMore={() => loadReviews(reviewPagination.page + 1)}
+          loading={reviewsLoading}
+        />
+
+        {showReviewForm && (
+          <ReviewForm
+            onClose={() => setShowReviewForm(false)}
+            onSubmit={handleSubmitReview}
+            submitting={submittingReview}
+          />
+        )}
 
         {/* You May Also Like */}
         {related.length > 0 && (

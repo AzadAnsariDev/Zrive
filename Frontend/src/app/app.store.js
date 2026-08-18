@@ -8,6 +8,7 @@ import sellerReducer from "../features/seller/state/sellerSlice"
 import adminReducer from "../features/admin/state/adminSlice"
 import deliveryReducer from "../features/delivery/state/deliverySlice"
 import wishlistReducer from "../features/wishlist/state/wishlistSlice"
+import reviewReducer from "../features/review/state/reviewSlice"
 export const store = configureStore({
     reducer :{
         auth : authReducer,
@@ -18,7 +19,8 @@ export const store = configureStore({
         seller: sellerReducer,
         admin: adminReducer,
         delivery: deliveryReducer,
-        wishlist: wishlistReducer
+        wishlist: wishlistReducer,
+        review: reviewReducer
     }
 })
 

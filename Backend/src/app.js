@@ -14,6 +14,7 @@ import adminRouter from './routes/admin.route.js'
 import testRouter from './routes/test.route.js'
 import deliveryRouter from './routes/delivery.route.js'
 import wishlistRouter from './routes/wishlist.route.js'
+import reviewRouter from './routes/review.route.js'
 
 const app = express()
 
@@ -73,6 +74,9 @@ app.use("/api/delivery", deliveryRouter )
 
 //wishlist Router
 app.use("/api/wishlist", wishlistRouter)
+
+//review Router
+app.use("/api/review", reviewRouter);
 
 
 export default app

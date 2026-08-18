@@ -23,12 +23,15 @@ import {
   Building2,
   Calendar,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { notify } from "../../../utils/toast";
 import useOrder from "../hook/useOrder.js";
 import useDelivery from "../../delivery/hook/useDelivery.js";
 import { setCurrentDelivery } from "../../delivery/state/deliverySlice.js";
 import CancelOrderModal from "../components/CancelOrderModal";
+import { useReview } from "../../review/hook/useReview";
+import ReviewForm from "../../review/components/ReviewForm";
 
 const STATUS_CONFIG = {
   pending_payment: {
@@ -475,6 +478,32 @@ const CourierTrackingCard = ({ delivery, order, onRefresh, refreshing }) => {
   );
 };
 
+// ── Post-delivery "Write a Review" invite card ──
+// Shows between Order Items and Address/Payment sections once the buyer
+// dismisses the auto-popup modal (or as a standing reminder to review later).
+const ReviewInviteCard = ({ onOpen }) => (
+  <div className="bg-gradient-to-br from-[#FBF9F6] to-white border border-[#E0D5C5] rounded-[12px] p-5 md:p-6 shadow-sm flex items-center justify-between gap-4 flex-wrap">
+    <div className="flex items-center gap-3.5">
+      <div className="w-11 h-11 rounded-full bg-[#F5EFE5] flex items-center justify-center text-[#B08D57] shrink-0">
+        <Star size={20} />
+      </div>
+      <div>
+        <p className="text-[13.5px] font-bold text-[#111]">How was your purchase?</p>
+        <p className="text-[12px] text-[#777] mt-0.5">
+          Your review helps other shoppers decide with confidence.
+        </p>
+      </div>
+    </div>
+    <button
+      type="button"
+      onClick={onOpen}
+      className="shrink-0 px-5 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11.5px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all cursor-pointer"
+    >
+      Write a Review
+    </button>
+  </div>
+);
+
 const OrderDetail = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -482,6 +511,7 @@ const OrderDetail = () => {
 
   const { handleGetOrderById, handleCancelOrder } = useOrder();
   const { handleGetDeliveryByOrderBuyer, handleTrackDeliveryBuyer } = useDelivery();
+  const { handleCheckEligibility, handleCreateReview } = useReview();
 
   const order = useSelector((state) => state.order.currentOrder);
   const loading = useSelector((state) => state.order?.loading ?? true);
@@ -490,6 +520,13 @@ const OrderDetail = () => {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [refreshingDelivery, setRefreshingDelivery] = useState(false);
+
+  // ── Review state ──
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewDismissed, setReviewDismissed] = useState(false);
+  const [canReview, setCanReview] = useState(false);
+  const [alreadyReviewed, setAlreadyReviewed] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     handleGetOrderById(orderId);
@@ -501,6 +538,22 @@ const OrderDetail = () => {
       await handleGetDeliveryByOrderBuyer(order._id);
     })();
   }, [order?._id]);
+
+  const primaryItem = order?.orderItems?.[0];
+  const primaryProductId = primaryItem?.productId;
+
+  // Auto-open the review popup the moment a delivered order (that the user
+  // hasn't reviewed yet) is opened.
+  useEffect(() => {
+    if (order?.orderStatus !== "delivered" || !primaryProductId) return;
+
+    handleCheckEligibility(primaryProductId).then((res) => {
+      if (!res) return;
+      setCanReview(res.canReview);
+      setAlreadyReviewed(res.alreadyReviewed);
+      if (res.canReview) setReviewModalOpen(true);
+    });
+  }, [order?._id, order?.orderStatus, primaryProductId]);
 
   const handleRefreshTracking = async () => {
     if (!deliveryState?._id) {
@@ -527,9 +580,31 @@ const OrderDetail = () => {
     handleGetOrderById(orderId);
   };
 
+  const handleCloseReviewModal = () => {
+    setReviewModalOpen(false);
+    setReviewDismissed(true); // once closed, fall back to the inline invite card
+  };
+
+  const handleSubmitReview = async (data) => {
+    setSubmittingReview(true);
+    try {
+      await handleCreateReview(primaryProductId, data);
+      setCanReview(false);
+      setAlreadyReviewed(true);
+      setReviewModalOpen(false);
+      notify.success("Thanks! Your review is now live.");
+    } catch (err) {
+      throw err;
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   const delivery = deliveryState;
   const statusCfg = STATUS_CONFIG[order?.orderStatus] || STATUS_CONFIG.placed;
   const isCancellable = CANCELLABLE_STATUSES.includes(order?.orderStatus);
+  const showReviewInvite =
+    order?.orderStatus === "delivered" && canReview && reviewDismissed && !alreadyReviewed;
 
   const onConfirmCancel = async () => {
     setCancelling(true);
@@ -688,6 +763,11 @@ const OrderDetail = () => {
           </div>
         </div>
 
+        {/* Post-delivery Review Invite — shown between Order Items & Address/Payment */}
+        {showReviewInvite && (
+          <ReviewInviteCard onOpen={() => setReviewModalOpen(true)} />
+        )}
+
         {/* Address & Payment Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Delivery Address */}
@@ -750,6 +830,14 @@ const OrderDetail = () => {
           onClose={() => setCancelModalOpen(false)}
           onConfirm={onConfirmCancel}
           submitting={cancelling}
+        />
+      )}
+
+      {reviewModalOpen && (
+        <ReviewForm
+          onClose={handleCloseReviewModal}
+          onSubmit={handleSubmitReview}
+          submitting={submittingReview}
         />
       )}
     </div>

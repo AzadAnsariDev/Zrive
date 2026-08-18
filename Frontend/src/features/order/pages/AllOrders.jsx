@@ -12,9 +12,13 @@ import {
   Search,
   ChevronDown,
   RefreshCw,
+  Star,
 } from "lucide-react";
 import useOrder from "../hook/useOrder";
 import useDelivery from "../../delivery/hook/useDelivery";
+import { useReview } from "../../review/hook/useReview";
+import ReviewForm from "../../review/components/ReviewForm";
+import { notify } from "../../../utils/toast";
 
 // ---- Layout tokens (same as Home.jsx — keep every page consistent) --------
 const SECTION_X = "px-5 md:px-6 lg:px-10";
@@ -288,6 +292,7 @@ const AllOrders = () => {
   const location = useLocation();
   const { handleGetOrders } = useOrder();
   const { handleSyncOrderDeliveries } = useDelivery();
+  const { handleCheckEligibility, handleCreateReview } = useReview();
   const orders = useSelector((state) => state.order.orders);
   const loading = useSelector((state) => state.order.loading);
   const deliveries = useSelector((state) => state.delivery.deliveries);
@@ -296,6 +301,11 @@ const AllOrders = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [openFaq, setOpenFaq] = useState(null);
   const hasTrackedRef = useRef(false);
+
+  // ── Review state ──
+  const [reviewModal, setReviewModal] = useState(null); // { productId, orderId }
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewedKeys, setReviewedKeys] = useState(new Set());
 
   // Refetch every time the user actually navigates to this screen, not just
   // the very first time it ever mounts. This route sits behind a persistent
@@ -389,6 +399,46 @@ const AllOrders = () => {
     navigator.clipboard?.writeText(shortId);
     setCopiedId(id);
     setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1500);
+  };
+
+  // ── Review handlers ──
+  const openReviewModal = async (e, productId, orderId) => {
+    e.stopPropagation();
+    if (!productId || !orderId) return;
+
+    const key = `${productId}-${orderId}`;
+    if (reviewedKeys.has(key)) {
+      notify.success("You've already shared your thoughts on this one!");
+      return;
+    }
+
+    const res = await handleCheckEligibility(productId);
+    if (res?.alreadyReviewed) {
+      setReviewedKeys((prev) => new Set(prev).add(key));
+      notify.success("You've already reviewed this item.");
+      return;
+    }
+    if (!res?.canReview) {
+      notify.error("This item isn't eligible for a review right now.");
+      return;
+    }
+    setReviewModal({ productId, orderId });
+  };
+
+  const handleSubmitReview = async (data) => {
+    setSubmittingReview(true);
+    try {
+      await handleCreateReview(reviewModal.productId, data);
+      setReviewedKeys((prev) =>
+        new Set(prev).add(`${reviewModal.productId}-${reviewModal.orderId}`),
+      );
+      notify.success("Thanks! Your review helps other shoppers.");
+      setReviewModal(null);
+    } catch (err) {
+      throw err;
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   const noOrdersAtAll = !loading && orders.length === 0;
@@ -504,6 +554,10 @@ const AllOrders = () => {
             <div className="divide-y divide-border">
               {filteredGroups.map((g, i) => {
                 const showTrackOrder = g.status === "shipped" && g.trackingAwb;
+                const showReviewCta = g.status === "delivered";
+                const primaryItem = g.allItems[0];
+                const reviewKey = `${primaryItem?.productId}-${g.orders[0]._id}`;
+                const alreadyReviewed = reviewedKeys.has(reviewKey);
 
                 return (
                   <div
@@ -581,6 +635,27 @@ const AllOrders = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {showReviewCta && (
+                          <button
+                            type="button"
+                            onClick={(e) =>
+                              openReviewModal(
+                                e,
+                                primaryItem?.productId,
+                                g.orders[0]._id,
+                              )
+                            }
+                            disabled={alreadyReviewed}
+                            className={`flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.1em] uppercase px-5 py-2.5 rounded-[3px] transition-colors ${
+                              alreadyReviewed
+                                ? "border border-border text-ink-soft/60 cursor-default"
+                                : "border border-gold/50 text-gold-deep hover:bg-gold/10"
+                            }`}
+                          >
+                            <Star size={12} fill={alreadyReviewed ? "currentColor" : "none"} />
+                            {alreadyReviewed ? "Reviewed" : "Write a Review"}
+                          </button>
+                        )}
                         {showTrackOrder && (
                           <button
                             type="button"
@@ -679,6 +754,14 @@ const AllOrders = () => {
           </a>
         </div>
       </section>
+
+      {reviewModal && (
+        <ReviewForm
+          onClose={() => setReviewModal(null)}
+          onSubmit={handleSubmitReview}
+          submitting={submittingReview}
+        />
+      )}
     </div>
   );
 };
