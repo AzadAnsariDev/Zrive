@@ -11,6 +11,9 @@ const sellerSchema = new mongoose.Schema(
     brandName: { type: String, required: true },
     businessEmail: { type: String, required: true },
     businessPhone: { type: String, required: true },
+    description: { type: String, default: "" },
+    category: { type: String, default: "Fashion & Apparel" },
+    logoUrl: { type: String, default: "" },
 
     applicationStatus: {
       type: String,
@@ -37,6 +40,15 @@ const sellerSchema = new mongoose.Schema(
       upiId: String,
       upiMobile: String,
       verified: { type: Boolean, default: false },
+    },
+
+    plan: {
+      name: { type: String, default: "Standard Free" },
+      price: { type: Number, default: 0 },
+      days: { type: Number, default: 0 },
+      activeTill: { type: Date },
+      boostMultiplier: { type: Number, default: 1 },
+      status: { type: String, enum: ["active", "expired", "none"], default: "none" },
     },
 
     shiprocket: {

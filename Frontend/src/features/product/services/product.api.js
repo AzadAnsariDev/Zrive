@@ -6,7 +6,9 @@ const productApiInstance = axios.create({
 })
 
 export const createProduct = async (formData) => {
-    const response = await productApiInstance.post("/createProduct", formData)
+    const response = await productApiInstance.post("/createProduct", formData, {
+        headers: formData instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
+    })
     return response.data
 }
 
@@ -28,7 +30,16 @@ export const getProductDetail = async (productId) => {
 }
 
 export const addNewVariant = async (productId, formData) => {
-    const response = await productApiInstance.post(`/${productId}/addNewVariant`, formData)
+    const response = await productApiInstance.post(`/${productId}/addNewVariant`, formData, {
+        headers: formData instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
+    })
+    return response.data
+}
+
+export const updateVariant = async (productId, variantId, formData) => {
+    const response = await productApiInstance.put(`/${productId}/variants/${variantId}`, formData, {
+        headers: formData instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
+    })
     return response.data
 }
 

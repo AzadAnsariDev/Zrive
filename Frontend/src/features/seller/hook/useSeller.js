@@ -2,7 +2,8 @@ import { useDispatch } from 'react-redux'
 import { setAllOrders, setCurrentOrder, setApplication, setLoading, setError } from '../state/sellerSlice'
 import {
     getSellerOrders, getSellerOrderById, acceptOrder, rejectOrder,
-    createBasicSellerApplication, submitVerificationDetails, getMySellerApplication
+    createBasicSellerApplication, submitVerificationDetails, getMySellerApplication,
+    updateSellerProfile, subscribeSellerPlan, getSellerPayoutSummary
 } from '../services/seller.api'
 import { getMe } from '../../auth/services/auth.api'      
 import { setUser } from '../../auth/state/authSlice'     
@@ -15,6 +16,7 @@ const useSeller = () => {
         try {
             const data = await getSellerOrders()
             dispatch(setAllOrders(data.orders))
+            return data.orders
         } catch (err) {
             dispatch(setError(err.message))
         } finally {
@@ -65,6 +67,7 @@ const useSeller = () => {
         try {
             const data = await getMySellerApplication()
             dispatch(setApplication(data.seller))
+            return data.seller
         } catch (err) {
             dispatch(setError(err.message))
         } finally {
@@ -78,8 +81,6 @@ const useSeller = () => {
             const data = await createBasicSellerApplication({ brandName, businessEmail, businessPhone })
             dispatch(setApplication(data.seller))
 
-            // user.role just changed to "basic_seller" on the backend —
-            // refresh Redux's user so Protected/dashboard checks see it now.
             const meData = await getMe()
             dispatch(setUser(meData.user))
 
@@ -106,6 +107,44 @@ const useSeller = () => {
         }
     }
 
+    const handleUpdateProfile = async (profileData) => {
+        dispatch(setLoading(true))
+        try {
+            const data = await updateSellerProfile(profileData)
+            dispatch(setApplication(data.seller))
+            return data.seller
+        } catch (err) {
+            dispatch(setError(err.message))
+            throw err
+        } finally {
+            dispatch(setLoading(false))
+        }
+    }
+
+    const handleSubscribePlan = async (planKey) => {
+        dispatch(setLoading(true))
+        try {
+            const data = await subscribeSellerPlan(planKey)
+            await handleGetMyApplication()
+            return data
+        } catch (err) {
+            dispatch(setError(err.message))
+            throw err
+        } finally {
+            dispatch(setLoading(false))
+        }
+    }
+
+    const handleGetPayoutSummary = async () => {
+        try {
+            const data = await getSellerPayoutSummary()
+            return data.payoutInfo
+        } catch (err) {
+            console.error("Failed to fetch payout summary", err)
+            return null
+        }
+    }
+
     return {
         handleGetSellerOrders,
         handleGetOrderById,
@@ -114,6 +153,9 @@ const useSeller = () => {
         handleGetMyApplication,
         handleCreateBasicApplication,
         handleSubmitVerification,
+        handleUpdateProfile,
+        handleSubscribePlan,
+        handleGetPayoutSummary,
     }
 }
 

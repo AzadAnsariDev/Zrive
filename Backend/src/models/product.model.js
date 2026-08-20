@@ -28,7 +28,13 @@ const productSchema = new mongoose.Schema(
       ],
       required: true,
     },
-    images: [{ url: { type: String, required: true } }],
+    images: {
+      type: [{ url: { type: String, required: true } }],
+      validate: {
+        validator: (v) => Array.isArray(v) && v.length >= 1,
+        message: "Product must have at least one image",
+      },
+    },
     shippingDefaults: {
       weight: { type: Number, required: true },  // kg
       dimensions: {

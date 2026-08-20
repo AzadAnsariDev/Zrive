@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Bell, Search, Plus, ChevronLeft, ChevronRight, ArrowLeft, Boxes, Layers, ExternalLink } from 'lucide-react'
-import { Link, useNavigate } from 'react-router'
+import { Search, Plus, ChevronLeft, ChevronRight, ArrowLeft, Layers } from 'lucide-react'
+import { useNavigate } from 'react-router'
 import { useProduct } from '../hook/useProduct'
 import { useSelector } from 'react-redux'
 import EmptyProductState from '../components/EmptyProductState'
@@ -27,19 +27,19 @@ const ImageSlider = ({ images, alt, className = '' }) => {
           <button
             type="button"
             onClick={(e) => goTo(e, index - 1)}
-            className="absolute left-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity"
+            className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity"
           >
-            <ChevronLeft size={12} strokeWidth={2} />
+            <ChevronLeft size={10} strokeWidth={2} />
           </button>
           <button
             type="button"
             onClick={(e) => goTo(e, index + 1)}
-            className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity"
+            className="absolute right-1 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity"
           >
-            <ChevronRight size={12} strokeWidth={2} />
+            <ChevronRight size={10} strokeWidth={2} />
           </button>
 
-          <span className="absolute top-1 right-1 text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white">
+          <span className="absolute top-1 right-1 text-[8px] font-bold px-1 py-0.5 rounded bg-black/60 text-white">
             {index + 1}/{total}
           </span>
         </>
@@ -82,100 +82,88 @@ const ProductList = () => {
   const outStockCount = PRODUCTS.filter((p) => p.status === 'Out of Stock').length
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
-      {/* Top Header Bar */}
-      <div className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
-        <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 py-4 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate('/seller')}
-            className="flex items-center gap-2 text-[12px] font-medium text-[#666666] hover:text-[#111111] transition-colors"
-          >
-            <ArrowLeft size={15} strokeWidth={2} />
-            Back to Dashboard
-          </button>
-
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
-            <Boxes size={14} />
-            Merchant Inventory & Variants
+    <div className="min-h-screen bg-white text-[#111] pb-16">
+      {/* Header */}
+      <div className="border-b border-[#EBEBEB] bg-[#FAFAFA]">
+        <div className="max-w-5xl mx-auto px-6 md:px-10 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <button
+              onClick={() => navigate('/seller')}
+              className="md:hidden mt-1 p-1.5 rounded-full bg-[#EBEBEB] text-[#111] hover:bg-[#D4D4D4] transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#B08D57]">Merchant Inventory</p>
+              <h1 className="text-[20px] font-bold text-[#111] mt-0.5">Product Catalog</h1>
+              <p className="text-[11px] text-[#888] mt-0.5">Manage product listings, size/color variants, and live stock.</p>
+            </div>
           </div>
+
+          <button
+            onClick={() => navigate('/seller/inventory/new')}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#111] text-white rounded-lg text-[11.5px] font-bold uppercase tracking-wide hover:bg-[#B08D57] transition-all cursor-pointer shadow-sm w-fit self-start sm:self-auto"
+          >
+            <Plus size={14} />
+            Add Product
+          </button>
         </div>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 pt-8">
-        {/* Title & Actions */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-4 border-b border-[#E5E5E5]">
-          <div>
-            <h1 className="font-display text-[28px] md:text-[34px] font-bold text-[#111111]">
-              Product Catalog
-            </h1>
-            <p className="text-[13px] text-[#666666] mt-0.5">
-              Manage product listings, size/color variants, and live stock.
-            </p>
+      <div className="max-w-5xl mx-auto px-6 md:px-10 pt-6 space-y-6">
+        {/* Controls Bar: Search & Filter Tabs */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#EBEBEB]">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {FILTER_TABS.map((tab) => {
+              const active = activeFilter === tab
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveFilter(tab)}
+                  className={`px-3 py-1.5 rounded-md text-[11px] font-bold tracking-wide transition-all whitespace-nowrap cursor-pointer ${
+                    active
+                      ? 'bg-[#111] text-white shadow-sm'
+                      : 'bg-[#FAFAFA] text-[#666] border border-[#EBEBEB] hover:border-[#111]'
+                  }`}
+                >
+                  {tab} {tab === 'In Stock' ? `(${inStockCount})` : tab === 'Out of Stock' ? `(${outStockCount})` : `(${PRODUCTS.length})`}
+                </button>
+              )
+            })}
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative w-full md:w-64">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999999]" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search catalog..."
-                className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-[6px] pl-9 pr-3 py-2 text-[12.5px] outline-none focus:border-[#B08D57]"
-              />
-            </div>
-
-            <button
-              onClick={() => navigate('/seller/inventory/new')}
-              className="flex items-center gap-2 bg-[#111111] text-white px-5 py-2.5 rounded-[6px] text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-[#B08D57] transition-all shadow-md shrink-0"
-            >
-              <Plus size={15} />
-              Add Product
-            </button>
+          <div className="relative w-full sm:w-60">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search catalog..."
+              className="w-full bg-[#FAFAFA] border border-[#EBEBEB] rounded-lg pl-8 pr-3 py-1.5 text-[12px] outline-none focus:border-[#B08D57] transition-colors"
+            />
           </div>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-4 mb-6 border-b border-[#E5E5E5]">
-          {FILTER_TABS.map((tab) => {
-            const active = activeFilter === tab
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveFilter(tab)}
-                className={`px-4 py-2 rounded-[6px] text-[12px] font-bold tracking-[0.04em] transition-all whitespace-nowrap ${
-                  active
-                    ? 'bg-[#111111] text-white shadow-sm'
-                    : 'bg-[#FAFAFA] text-[#666666] border border-[#E5E5E5] hover:border-[#111111]'
-                }`}
-              >
-                {tab} {tab === 'In Stock' ? `(${inStockCount})` : tab === 'Out of Stock' ? `(${outStockCount})` : `(${PRODUCTS.length})`}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Content */}
+        {/* Content: Spacious, zoomed-out, compact cards */}
         {filteredProducts.length === 0 ? (
           <EmptyProductState />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredProducts.map((p) => (
               <div
                 key={p._id || p.id}
-                className="bg-white border border-[#EAEAEA] rounded-[3px] overflow-hidden hover:border-[#B08D57] transition-all duration-300 shadow-sm flex flex-col justify-between"
+                className="bg-[#FAFAFA] border border-[#EBEBEB] rounded-xl overflow-hidden hover:border-[#B08D57] transition-all duration-200 shadow-sm flex flex-col justify-between"
               >
                 <div>
-                  <ImageSlider images={p.images} alt={p.title || p.name} className="aspect-[3/4] w-full" />
+                  <ImageSlider images={p.images} alt={p.title || p.name} className="aspect-[4/5] w-full" />
 
-                  <div className="p-3.5">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#B08D57]">
+                  <div className="p-3 space-y-1">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-[#B08D57] truncate">
                         {p.category || 'Menswear'}
                       </span>
                       <span
-                        className={`text-[9.5px] font-bold uppercase px-2 py-0.5 rounded ${
+                        className={`text-[8.5px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${
                           p.status === 'In-Stock' ? 'bg-[#EAF5EE] text-[#287A4B]' : 'bg-[#FCECEC] text-[#C43D3D]'
                         }`}
                       >
@@ -185,32 +173,33 @@ const ProductList = () => {
 
                     <h3
                       onClick={() => navigate(`/seller/inventory/${p._id}/addVariant`)}
-                      className="font-display text-[14.5px] font-bold text-[#111111] truncate cursor-pointer hover:text-[#B08D57]"
+                      className="text-[12.5px] font-bold text-[#111] truncate cursor-pointer hover:text-[#B08D57]"
+                      title={p.title || p.name}
                     >
                       {p.title || p.name}
                     </h3>
-                    <p className="text-[13.5px] font-bold text-[#111111] mt-1">{formatPrice(p.price)}</p>
+                    <p className="text-[13px] font-bold text-[#111]">{formatPrice(p.price)}</p>
 
-                    <div className="mt-3 pt-2.5 border-t border-[#EAEAEA] text-[11px] text-[#666666] flex items-center justify-between">
-                      <span>Variants: <strong className="text-[#111111]">{p.variants?.length || 0}</strong></span>
-                      <span>Brand: <strong className="text-[#111111]">{p.brand || 'ZRIVE'}</strong></span>
+                    <div className="pt-2 border-t border-[#EBEBEB] text-[10px] text-[#777] flex items-center justify-between">
+                      <span>Variants: <strong className="text-[#111]">{p.variants?.length || 0}</strong></span>
+                      <span>Brand: <strong className="text-[#111]">{p.brand || 'ZRIVE'}</strong></span>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-3.5 pt-0 grid grid-cols-2 gap-2">
+                <div className="p-3 pt-0 grid grid-cols-2 gap-1.5">
                   <button
                     onClick={() => navigate(`/seller/inventory/${p._id}/addVariant`)}
-                    className="py-2 px-2.5 rounded-[3px] border border-[#EAEAEA] text-[#111111] text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-[#FAFAFA] hover:border-[#111111] transition-all flex items-center justify-center gap-1"
+                    className="py-1.5 px-2 rounded-md border border-[#EBEBEB] bg-white text-[#111] text-[10px] font-bold uppercase tracking-wide hover:border-[#111] transition-all flex items-center justify-center gap-1 cursor-pointer"
                   >
-                    <Layers size={13} />
-                    Add Variant
+                    <Layers size={11} />
+                    Variant
                   </button>
                   <button
                     onClick={() => navigate(`/seller/inventory/${p._id}/addVariant`)}
-                    className="py-2 px-2.5 rounded-[3px] bg-[#111111] text-white text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-[#B08D57] transition-all flex items-center justify-center gap-1"
+                    className="py-1.5 px-2 rounded-md bg-[#111] text-white text-[10px] font-bold uppercase tracking-wide hover:bg-[#B08D57] transition-all flex items-center justify-center cursor-pointer"
                   >
-                    Manage Details
+                    Manage
                   </button>
                 </div>
               </div>

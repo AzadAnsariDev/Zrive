@@ -264,7 +264,7 @@ export const addNewVariant = async (req, res) => {
             })
         }
 
-        const { size, stock, color, priceAmount, priceCurrency, price, sku } = req.body
+        const { size, stock, color, priceAmount, priceCurrency, price, priceOverride, sku, weight, length, width, height } = req.body
         const files = req.files
 
         let images = []
@@ -285,19 +285,43 @@ export const addNewVariant = async (req, res) => {
             })
         )
 
-        const variantAmount = price?.amount ?? priceAmount ?? product.price.amount;
+        const variantAmount = priceOverride ?? price?.amount ?? priceAmount ?? (price ? Number(price) : product.price.amount);
         const variantCurrency = price?.currency || priceCurrency || product.price.currency || "INR";
 
+        const normalizedSku = (sku || '').trim().toUpperCase();
+        const normalizedSize = (size || '').trim().toUpperCase();
+        const normalizedColor = (color || '').trim();
+
+        if (product.variants.some(v => v.sku?.toUpperCase() === normalizedSku)) {
+            return res.status(400).json({
+                message: `Variant with SKU ${normalizedSku} already exists`,
+                success: false
+            })
+        }
+
+        if (product.variants.some(v => v.size?.toUpperCase() === normalizedSize && v.color?.toLowerCase() === normalizedColor.toLowerCase())) {
+            return res.status(400).json({
+                message: `Variant with Size ${normalizedSize} and Color ${normalizedColor} already exists`,
+                success: false
+            })
+        }
+
         const variant = {
-            size,
-            stock,
-            color,
+            size: normalizedSize,
+            stock: Number(stock) || 0,
+            color: normalizedColor,
             price: {
                 amount: Number(variantAmount),
                 currency: variantCurrency
             },
-            sku,
-            images
+            sku: normalizedSku,
+            images,
+            weight: weight ? Number(weight) : product.shippingDefaults?.weight,
+            dimensions: {
+                length: length ? Number(length) : product.shippingDefaults?.dimensions?.length,
+                width: width ? Number(width) : product.shippingDefaults?.dimensions?.width,
+                height: height ? Number(height) : product.shippingDefaults?.dimensions?.height,
+            }
         }
 
         product.variants.push(variant)
@@ -306,6 +330,130 @@ export const addNewVariant = async (req, res) => {
 
         res.status(201).json({
             message: "New variant added successfully",
+            success: true,
+            product
+        })
+
+    } catch (err) {
+        res.status(400).json({
+            message: err.message,
+            success: false
+        })
+    }
+}
+
+export const updateVariant = async (req, res) => {
+    try {
+        const { productId, variantId } = req.params
+        const sellerProfile = await sellerModel.findOne({ userId: req.user.id })
+
+        if (!sellerProfile) {
+            return res.status(403).json({
+                message: "Seller profile not found",
+                success: false
+            })
+        }
+
+        const product = await productModel.findOne({
+            _id: productId,
+            seller: sellerProfile._id
+        })
+
+        if (!product) {
+            return res.status(404).json({
+                message: "No product found",
+                success: false
+            })
+        }
+
+        const variant = product.variants.id?.(variantId) || product.variants.find(v => v._id?.toString() === variantId || v.sku === variantId)
+        if (!variant) {
+            return res.status(404).json({
+                message: "Variant not found",
+                success: false
+            })
+        }
+
+        const { size, stock, color, priceAmount, priceCurrency, price, priceOverride, sku, existingImages } = req.body
+        const files = req.files
+
+        if (size) variant.size = size.trim().toUpperCase()
+        if (color) variant.color = color.trim()
+        if (sku) variant.sku = sku.trim().toUpperCase()
+        if (stock !== undefined && stock !== null && stock !== '') variant.stock = Number(stock)
+
+        const newAmount = priceOverride ?? price?.amount ?? priceAmount ?? (price !== undefined && price !== '' ? Number(price) : undefined)
+        if (newAmount !== undefined && newAmount !== null && !isNaN(Number(newAmount))) {
+            variant.price = {
+                amount: Number(newAmount),
+                currency: price?.currency || priceCurrency || variant.price?.currency || product.price.currency || "INR"
+            }
+        }
+
+        let updatedImages = []
+
+        if (existingImages !== undefined) {
+            try {
+                const parsed = typeof existingImages === 'string' ? JSON.parse(existingImages) : existingImages
+                if (Array.isArray(parsed)) {
+                    updatedImages = parsed
+                        .map(img => (typeof img === 'string' ? { url: img } : { url: img?.url }))
+                        .filter(i => !!i.url)
+                }
+            } catch (e) {
+                console.error("Error parsing existingImages:", e)
+            }
+        } else if (!files || files.length === 0) {
+            updatedImages = variant.images || []
+        }
+
+        if (files && files.length > 0) {
+            const newlyUploaded = await Promise.all(
+                files.map(async (file) => {
+                    return await uploadFiles({
+                        buffer: file.buffer,
+                        fileName: file.originalname
+                    })
+                })
+            )
+            updatedImages = [...updatedImages, ...newlyUploaded]
+        }
+
+        if (updatedImages.length === 0) {
+            return res.status(400).json({
+                message: "At least one image is required for the variant",
+                success: false
+            })
+        }
+
+        variant.images = updatedImages
+
+        const duplicateSku = product.variants.some(
+            v => v._id.toString() !== variant._id.toString() && v.sku?.toUpperCase() === variant.sku?.toUpperCase()
+        )
+        if (duplicateSku) {
+            return res.status(400).json({
+                message: `Another variant with SKU ${variant.sku} already exists`,
+                success: false
+            })
+        }
+
+        const duplicateSizeColor = product.variants.some(
+            v => v._id.toString() !== variant._id.toString() &&
+                 v.size?.toUpperCase() === variant.size?.toUpperCase() &&
+                 v.color?.toLowerCase() === variant.color?.toLowerCase()
+        )
+        if (duplicateSizeColor) {
+            return res.status(400).json({
+                message: `Another variant with Size ${variant.size} and Color ${variant.color} already exists`,
+                success: false
+            })
+        }
+
+        await product.save()
+
+        res.status(200).json({
+            message: "Variant updated successfully",
             success: true,
             product
         })

@@ -15,8 +15,6 @@ import {
   X,
   ChevronRight,
   ArrowLeft,
-  Sun,
-  Moon,
   LogIn,
   Sparkles,
   TrendingUp,
@@ -43,19 +41,11 @@ const DESKTOP_LINKS = [
 
 const MOBILE_NAV = [
   { key: 'home', icon: HomeIcon, label: 'Home', to: '/' },
-  { key: 'categories', icon: LayoutGrid, label: 'Categories' },
+  { key: 'categories', icon: LayoutGrid, label: 'Categories', to: null },
   { key: 'cart', icon: ShoppingCart, label: 'Cart', to: '/cart' },
   { key: 'orders', icon: Package, label: 'Orders', to: '/orders' },
   { key: 'profile', icon: User, label: 'Profile', to: '/profile' },
 ]
-
-// ── Dark Mode Helper ──────────────────────────────────────────────
-const getInitialDark = () => {
-  if (typeof window === 'undefined') return false
-  const stored = localStorage.getItem('zrive-theme')
-  if (stored) return stored === 'dark'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-}
 
 const Navbar = () => {
   const navigate = useNavigate()
@@ -65,24 +55,9 @@ const Navbar = () => {
   const [mobileCatOpen, setMobileCatOpen] = useState(false)
   const [mobileActiveGroup, setMobileActiveGroup] = useState(null)
   const [profileOpen, setProfileOpen] = useState(false)
-  const [isDark, setIsDark] = useState(getInitialDark)
   const notifRef = useRef(null)
   const profileRef = useRef(null)
   const closeTimer = useRef(null)
-
-  // Dark mode effect
-  useEffect(() => {
-    const root = document.documentElement
-    if (isDark) {
-      root.classList.add('dark')
-      localStorage.setItem('zrive-theme', 'dark')
-    } else {
-      root.classList.remove('dark')
-      localStorage.setItem('zrive-theme', 'light')
-    }
-  }, [isDark])
-
-  const toggleTheme = () => setIsDark(d => !d)
 
   // ── Search ────────────────────────────────────────────────────────
   const [query, setQuery] = useState('')
@@ -163,25 +138,22 @@ const Navbar = () => {
     ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'
 
-  // CSS classes based on theme
-  const navBg = isDark
-    ? 'bg-[#0e0e0e]/95 border-[#2a2a2a]'
-    : 'bg-white/95 border-[#E5E5E5]'
-  const textPrimary = isDark ? 'text-[#e5e2e1]' : 'text-[#111111]'
-  const textSoft = isDark ? 'text-[#9a8f81]' : 'text-[#666666]'
-  const surfaceBg = isDark ? 'bg-[#131313]' : 'bg-white'
-  const cardBg = isDark ? 'bg-[#1c1b1b] border-[#2a2a2a]' : 'bg-white border-[#E5E5E5]'
-  const inputBg = isDark ? 'bg-[#1c1b1b] text-[#e5e2e1] placeholder:text-[#9a8f81]' : 'bg-transparent text-[#111111] placeholder:text-[#999]'
-  const hoverBg = isDark ? 'hover:bg-[#201f1f]' : 'hover:bg-[#F7F7F5]'
+  // Standard clean light mode styling tokens
+  const navBg = 'bg-white/95 border-[#E5E5E5]'
+  const textPrimary = 'text-[#111111]'
+  const textSoft = 'text-[#666666]'
+  const surfaceBg = 'bg-white'
+  const cardBg = 'bg-white border-[#E5E5E5]'
+  const hoverBg = 'hover:bg-[#F7F7F5]'
 
   return (
     <>
       {/* ─── ANNOUNCEMENT BAR ────────────────────────────────── */}
-      <div className={`hidden md:flex items-center justify-center gap-6 px-4 py-2 text-[11px] font-medium tracking-[0.08em] uppercase ${isDark ? 'bg-[#B08D57]/10 text-[#D4B982] border-b border-[#B08D57]/20' : 'bg-[#111111] text-[#D4B982]'}`}>
+      <div className="hidden md:flex items-center justify-center gap-6 px-4 py-2 text-[11px] font-medium tracking-[0.08em] uppercase bg-[#111111] text-[#D4B982]">
         <span>⚡ FLAT 20% OFF YOUR FIRST ORDER — USE: ZRIVE20</span>
-        <span className={isDark ? 'text-[#4e453a]' : 'text-[#555]'}>|</span>
+        <span className="text-[#555]">|</span>
         <span>FREE SHIPPING ABOVE ₹999</span>
-        <span className={isDark ? 'text-[#4e453a]' : 'text-[#555]'}>|</span>
+        <span className="text-[#555]">|</span>
         <span>7-DAY EASY RETURNS</span>
       </div>
 
@@ -278,11 +250,7 @@ const Navbar = () => {
                 onChange={(e) => { setQuery(e.target.value); setSearchOpen(true) }}
                 onFocus={() => query.trim() && setSearchOpen(true)}
                 placeholder="Search for brands, clothes, accessories…"
-                className={`w-full rounded-[6px] border pl-10 pr-4 py-2.5 text-[12.5px] outline-none transition-all ${
-                  isDark
-                    ? 'bg-[#1c1b1b] border-[#2a2a2a] text-[#e5e2e1] placeholder:text-[#9a8f81] focus:border-[#B08D57]'
-                    : 'bg-[#F5F5F5] border-[#E5E5E5] text-[#111] placeholder:text-[#999] focus:border-[#B08D57] focus:bg-white'
-                }`}
+                className="w-full rounded-[6px] border border-[#E5E5E5] pl-10 pr-4 py-2.5 text-[12.5px] outline-none transition-all bg-[#F5F5F5] text-[#111] placeholder:text-[#999] focus:border-[#B08D57] focus:bg-white"
               />
               {searchOpen && query.trim() && (
                 <div className={`absolute left-0 right-0 top-full mt-2 border shadow-2xl rounded-[6px] max-h-[70vh] overflow-y-auto z-50 ${cardBg}`}>
@@ -299,18 +267,6 @@ const Navbar = () => {
 
           {/* Icon Cluster */}
           <div className="flex items-center gap-4 flex-shrink-0">
-            {/* Theme Toggle */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                isDark ? 'bg-[#1c1b1b] hover:bg-[#2a2a2a] text-[#D4B982]' : 'bg-[#F5F5F5] hover:bg-[#E5E5E5] text-[#666]'
-              }`}
-            >
-              {isDark ? <Sun size={15} strokeWidth={1.75} /> : <Moon size={15} strokeWidth={1.75} />}
-            </button>
-
             <SellerNavIcon />
 
             <NavLink to="/wishlist" aria-label="Wishlist" className={`${textSoft} hover:text-[#B08D57] transition-colors`}>
@@ -335,11 +291,11 @@ const Navbar = () => {
 
               {notifOpen && (
                 <div className={`absolute right-0 top-full mt-3 w-80 border shadow-2xl overflow-hidden rounded-[8px] animate-fade-in-down z-50 ${cardBg}`}>
-                  <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'}`}>
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E5E5]">
                     <span className={`text-[11px] font-semibold tracking-[0.1em] uppercase ${textPrimary}`}>Notifications</span>
                     {unreadCount > 0 && <span className="text-[11px] text-[#B08D57]">{unreadCount} unread</span>}
                   </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-[#E5E5E5] dark:divide-[#2a2a2a]">
+                  <div className="max-h-72 overflow-y-auto divide-y divide-[#E5E5E5]">
                     {MOCK_NOTIFICATIONS.map((n) => (
                       <button key={n.id} type="button" className={`w-full flex items-start gap-3 text-left px-4 py-3 transition-colors ${hoverBg}`}>
                         {n.unread && <span className="w-1.5 h-1.5 rounded-full bg-[#B08D57] mt-1.5 flex-shrink-0" />}
@@ -376,7 +332,7 @@ const Navbar = () => {
                 </button>
                 {profileOpen && (
                   <div className={`absolute right-0 top-full mt-3 w-52 border shadow-2xl overflow-hidden rounded-[8px] animate-fade-in-down z-50 ${cardBg}`}>
-                    <div className={`px-4 py-3 border-b ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'}`}>
+                    <div className="px-4 py-3 border-b border-[#E5E5E5]">
                       <p className={`text-[13px] font-semibold ${textPrimary}`}>{user.fullName || user.name}</p>
                       <p className={`text-[11px] ${textSoft}`}>{user.email}</p>
                     </div>
@@ -407,7 +363,7 @@ const Navbar = () => {
 
         {/* ── Mega Menu ─────────────────────────────────── */}
         {catOpen && (
-          <div onMouseEnter={openMenu} className={`absolute left-0 right-0 top-full w-full border-t shadow-2xl z-40 animate-fade-in-down ${surfaceBg} ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'}`}>
+          <div onMouseEnter={openMenu} className={`absolute left-0 right-0 top-full w-full border-t shadow-2xl z-40 animate-fade-in-down ${surfaceBg} border-[#E5E5E5]`}>
             <div className="max-w-[1440px] mx-auto px-8 lg:px-12 py-8 grid grid-cols-5 gap-8">
               {CATEGORY_MENU.map((group) => (
                 <div key={group.title}>
@@ -481,7 +437,7 @@ const Navbar = () => {
         <div className="md:hidden fixed inset-0 z-40">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileCatOpen(false)} />
           <div className={`absolute bottom-0 left-0 right-0 rounded-t-[20px] max-h-[85vh] flex flex-col animate-fade-in-up ${surfaceBg}`}>
-            <div className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'} flex-shrink-0`}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E5E5] flex-shrink-0">
               <span className={`font-display text-[17px] ${textPrimary}`}>Shop By Category</span>
               <button type="button" onClick={() => setMobileCatOpen(false)} className={`${textSoft} hover:text-[#B08D57] transition-colors`}>
                 <X size={18} strokeWidth={1.5} />
@@ -491,7 +447,7 @@ const Navbar = () => {
               {CATEGORY_MENU.map((group) => {
                 const isOpen = mobileActiveGroup === group.title
                 return (
-                  <div key={group.title} className={`border-b ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'}`}>
+                  <div key={group.title} className="border-b border-[#E5E5E5]">
                     <button
                       type="button"
                       onClick={() => setMobileActiveGroup(isOpen ? null : group.title)}
@@ -525,7 +481,7 @@ const Navbar = () => {
       {/* ─── MOBILE SEARCH OVERLAY ──────────────────────────────── */}
       {mobileSearchOpen && (
         <div className={`md:hidden fixed inset-0 z-50 flex flex-col ${surfaceBg}`}>
-          <div className={`flex items-center gap-3 px-5 py-3 border-b flex-shrink-0 ${isDark ? 'border-[#2a2a2a]' : 'border-[#E5E5E5]'}`}>
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-[#E5E5E5] flex-shrink-0">
             <button type="button" onClick={closeMobileSearch} className={`${textSoft} hover:text-[#B08D57] transition-colors flex-shrink-0`}>
               <ArrowLeft size={19} strokeWidth={1.5} />
             </button>
@@ -537,9 +493,7 @@ const Navbar = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search brands, styles, collections…"
-                className={`w-full rounded-[6px] pl-9 pr-4 py-2.5 text-[14px] outline-none border ${
-                  isDark ? 'bg-[#1c1b1b] border-[#2a2a2a] text-[#e5e2e1] placeholder:text-[#9a8f81]' : 'bg-[#F5F5F5] border-transparent text-[#111] placeholder:text-[#999]'
-                }`}
+                className="w-full rounded-[6px] pl-9 pr-4 py-2.5 text-[14px] outline-none border bg-[#F5F5F5] border-transparent text-[#111] placeholder:text-[#999]"
               />
             </div>
           </div>

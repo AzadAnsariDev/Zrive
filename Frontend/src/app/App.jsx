@@ -33,12 +33,11 @@ const App = () => {
 
   useEffect(() => {
     handleGetMe()
-    const theme = localStorage.getItem('zrive_theme')
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+    // Enforce default light theme across the application
+    document.documentElement.classList.remove('dark')
+    localStorage.removeItem('zrive_theme')
+    localStorage.removeItem('seller_theme')
+    localStorage.removeItem('zrive-theme')
 
     // Register service worker on initial load
     registerServiceWorker().then((reg) => {

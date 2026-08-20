@@ -663,10 +663,13 @@ export const getSellerOrderById = async (req, res) => {
 
     const sellerId = sellerProfile._id;
 
-    const order = await orderModel.findOne({
-      _id: orderId,
-      seller: sellerId,
-    });
+    const order = await orderModel
+      .findOne({
+        _id: orderId,
+        seller: sellerId,
+      })
+      .populate("user", "name email phone")
+      .populate("orderItems.productId");
 
     if (!order) {
       return res.status(404).json({

@@ -81,9 +81,21 @@ const SellerOrderDetail = () => {
     );
   }
 
-  const isPending = order.confirmationStatus === "pending";
+  const isTimeout =
+    order.confirmationStatus === "expired" ||
+    order.confirmationStatus === "timeout" ||
+    order.cancelReason === "seller_no_response" ||
+    (order.confirmationStatus === "pending" &&
+      !!order.confirmationDeadline &&
+      new Date(order.confirmationDeadline).getTime() < Date.now());
+
+  const isPending = order.confirmationStatus === "pending" && !isTimeout;
   const isAccepted = order.confirmationStatus === "accepted";
-  const isRejected = order.confirmationStatus === "rejected";
+  const isRejected = (order.confirmationStatus === "rejected" || order.orderStatus === "cancelled") && !isTimeout;
+
+  const displayStatus = isTimeout
+    ? "TIMED OUT"
+    : (order.confirmationStatus || order.orderStatus || "PENDING").toUpperCase();
 
   const onAccept = async () => {
     setSubmitting(true);
@@ -112,6 +124,16 @@ const SellerOrderDetail = () => {
     }
   };
 
+  const address = order.shippingAddress || order.address;
+  const buyerName = address?.name || address?.fullName || order.user?.name || "Buyer";
+  const phone = address?.phone || order.user?.phone || "—";
+  const line1 = address?.line1 || address?.streetAddress || address?.addressLine1 || "";
+  const line2 = address?.line2 || address?.addressLine2 || "";
+  const city = address?.city || "";
+  const state = address?.state || "";
+  const pincode = address?.pincode || "";
+  const addressType = address?.addressType;
+
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
       {/* Header Bar */}
@@ -136,8 +158,18 @@ const SellerOrderDetail = () => {
         <div className="bg-[#FAFAFA] border border-[#EAEAEA] rounded-[8px] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-[0.08em] bg-[#F5EFE5] text-[#B08D57] px-2.5 py-0.5 rounded">
-                Status: {order.confirmationStatus}
+              <span
+                className={`text-[10px] font-bold uppercase tracking-[0.08em] px-2.5 py-0.5 rounded ${
+                  isTimeout
+                    ? "bg-[#FCECEC] text-[#C43D3D]"
+                    : isAccepted
+                    ? "bg-[#EAF5EE] text-[#287A4B]"
+                    : isRejected
+                    ? "bg-[#FCECEC] text-[#C43D3D]"
+                    : "bg-[#F5EFE5] text-[#B08D57]"
+                }`}
+              >
+                Status: {displayStatus}
               </span>
               <span className="text-[11.5px] text-[#666]">{formatDate(order.createdAt)}</span>
             </div>
@@ -145,8 +177,35 @@ const SellerOrderDetail = () => {
               Sub-Order #{order._id?.slice(-8).toUpperCase()}
             </h1>
             <p className="text-[12.5px] text-[#666] mt-0.5">
-              Net Settlement Payout: <strong className="text-[#287A4B]">{formatMoney(order.sellerAmount?.amount)}</strong>
+              Net Settlement Payout:{" "}
+              <strong className="text-[#287A4B]">
+                {formatMoney(order.sellerAmount?.amount ?? order.sellerAmount ?? 0)}
+              </strong>
             </p>
+
+            {(isRejected || isTimeout || order.cancelReason) && (
+              <div className="mt-3 p-3 bg-[#FFF5F5] border border-[#FCECEC] rounded text-[12px] text-[#C43D3D] space-y-0.5">
+                <p>
+                  <strong>Reason:</strong>{" "}
+                  {order.cancelReason === "seller_no_response"
+                    ? "Timed out — No confirmation provided within deadline"
+                    : order.cancelReason === "out_of_stock"
+                    ? "Out of Stock"
+                    : order.cancelReason === "pricing_error"
+                    ? "Pricing Error"
+                    : order.cancelReason === "logistics_issue"
+                    ? "Logistics / Address Unserviceable"
+                    : order.cancelReason === "unable_to_fulfill"
+                    ? "Unable to fulfill"
+                    : order.cancelReason || "Order Cancelled"}
+                </p>
+                {order.rejectionNote && (
+                  <p className="text-[#666]">
+                    <strong>Note:</strong> {order.rejectionNote}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -191,14 +250,53 @@ const SellerOrderDetail = () => {
 
           <div className="divide-y divide-[#EAEAEA]">
             {order.orderItems?.map((item, i) => {
-              const cover = item.variant?.images?.[0]?.url || item.product?.images?.[0]?.url;
+              const cover =
+                item.images?.[0]?.url ||
+                (typeof item.images?.[0] === "string" ? item.images[0] : null) ||
+                item.image ||
+                item.variant?.images?.[0]?.url ||
+                (typeof item.variant?.images?.[0] === "string" ? item.variant?.images?.[0] : null) ||
+                item.productId?.images?.[0]?.url ||
+                (typeof item.productId?.images?.[0] === "string" ? item.productId?.images?.[0] : null) ||
+                item.product?.images?.[0]?.url ||
+                (typeof item.product?.images?.[0] === "string" ? item.product?.images?.[0] : null) ||
+                null;
+
+              const title =
+                item.title ||
+                item.name ||
+                item.productId?.title ||
+                item.productId?.name ||
+                item.product?.title ||
+                item.product?.name ||
+                "Item";
+
+              const variantObj =
+                item.variant ||
+                item.productId?.variants?.find?.(
+                  (v) => v._id?.toString() === item.variantId?.toString()
+                );
+
+              const qty = item.quantity || item.qty || 1;
+              const unitPrice = Number(item.price?.amount ?? item.price ?? 0);
+              const totalPrice = unitPrice * qty;
+
+              const variantDetails = [
+                variantObj?.sku && `SKU: ${variantObj.sku}`,
+                variantObj?.size && `Size: ${variantObj.size}`,
+                variantObj?.color && `Color: ${variantObj.color}`,
+                item.size && `Size: ${item.size}`,
+                item.color && `Color: ${item.color}`,
+              ]
+                .filter(Boolean)
+                .join(" · ");
 
               return (
-                <div key={i} className="py-3 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
+                <div key={item._id || item.variantId || i} className="py-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 min-w-0">
                     <div className="w-16 h-20 bg-[#FAFAFA] border border-[#EAEAEA] rounded overflow-hidden shrink-0">
                       {cover ? (
-                        <img src={cover} alt="" className="w-full h-full object-cover" />
+                        <img src={cover} alt={title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[#999]">
                           <Package size={20} />
@@ -206,20 +304,25 @@ const SellerOrderDetail = () => {
                       )}
                     </div>
 
-                    <div>
-                      <h3 className="font-display text-[14px] font-bold text-[#111]">
-                        {item.product?.title || item.product?.name}
+                    <div className="min-w-0">
+                      <h3 className="font-display text-[14px] font-bold text-[#111] line-clamp-1">
+                        {title}
                       </h3>
-                      {item.variant && (
-                        <p className="text-[11.5px] text-[#666]">
-                          SKU: {item.variant.sku} · Size: {item.variant.size} · Color: {item.variant.color}
+                      <p className="text-[11.5px] text-[#666] mt-0.5">
+                        {variantDetails ? `${variantDetails} · ` : ""}Qty: {qty}
+                      </p>
+                      {unitPrice > 0 && (
+                        <p className="text-[11px] text-[#888]">
+                          Unit Price: {formatMoney(unitPrice)}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-[14px] font-bold text-[#111]">{formatMoney(item.price?.amount || item.price)}</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-[14px] font-bold text-[#111]">
+                      {formatMoney(totalPrice || order.sellerAmount?.amount || 0)}
+                    </p>
                   </div>
                 </div>
               );
@@ -232,11 +335,32 @@ const SellerOrderDetail = () => {
           <h3 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#B08D57] pb-2 border-b border-[#EAEAEA]">
             Buyer Delivery Address
           </h3>
-          {order.address ? (
+          {address ? (
             <div className="text-[12.5px] text-[#555] space-y-1">
-              <p className="font-bold text-[#111]">{order.address.fullName} · {order.address.phone}</p>
-              <p>{order.address.addressLine1}, {order.address.addressLine2}</p>
-              <p>{order.address.city}, {order.address.state} - <strong>{order.address.pincode}</strong></p>
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-[#111]">
+                  {buyerName} · {phone}
+                </p>
+                {addressType && (
+                  <span className="text-[9.5px] font-bold uppercase px-2 py-0.5 bg-[#EAEAEA] text-[#555] rounded">
+                    {addressType}
+                  </span>
+                )}
+              </div>
+              {(line1 || line2) && (
+                <p>
+                  {line1}
+                  {line2 ? `, ${line2}` : ""}
+                </p>
+              )}
+              {(city || state || pincode) && (
+                <p>
+                  {city}
+                  {city && state ? ", " : ""}
+                  {state} {pincode ? "— " : ""}
+                  {pincode ? <strong className="text-[#111]">{pincode}</strong> : null}
+                </p>
+              )}
             </div>
           ) : (
             <p className="text-[12px] text-[#666]">Address details unavailable.</p>
@@ -257,6 +381,8 @@ const SellerOrderDetail = () => {
             >
               <option value="out_of_stock">Out of Stock</option>
               <option value="unable_to_fulfill">Unable to fulfill in time</option>
+              <option value="pricing_error">Pricing Error</option>
+              <option value="logistics_issue">Logistics / Address Unserviceable</option>
               <option value="other">Other</option>
             </select>
             <div className="flex justify-end gap-2 pt-2">

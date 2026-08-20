@@ -1,6 +1,7 @@
 import { setError } from "../../auth/state/authSlice"
 import {
     addNewVariant,
+    updateVariant,
     createProduct,
     getProductDetail,
     getProducts,
@@ -30,6 +31,7 @@ export const useProduct = () => {
         } catch (err) {
             console.log(err)
             dispacth(setError(err.message))
+            throw err
         } finally {
             dispacth(setCreateLoading(false))
         }
@@ -44,6 +46,7 @@ export const useProduct = () => {
         } catch (err) {
             console.log(err)
             dispacth(setError(err.message))
+            throw err
         } finally {
             dispacth(setFetchLoading(false))
         }
@@ -58,6 +61,7 @@ export const useProduct = () => {
         } catch (err) {
             console.log(err)
             dispacth(setError(err.message))
+            throw err
         } finally {
             dispacth(setFetchLoading(false))
         }
@@ -71,6 +75,7 @@ export const useProduct = () => {
         } catch (err) {
             console.log(err)
             dispacth(setError(err.message))
+            throw err
         } finally {
             dispacth(setFetchLoading(false))
         }
@@ -84,6 +89,21 @@ export const useProduct = () => {
         } catch (err) {
             console.log(err)
             dispacth(setError(err.message))
+            throw err
+        } finally {
+            dispacth(setCreateLoading(false))
+        }
+    }
+
+    const handleUpdateVariant = async (productId, variantId, formData) => {
+        dispacth(setCreateLoading(true))
+        try {
+            const result = await updateVariant(productId, variantId, formData)
+            return result.product
+        } catch (err) {
+            console.log(err)
+            dispacth(setError(err.message))
+            throw err
         } finally {
             dispacth(setCreateLoading(false))
         }
@@ -98,6 +118,7 @@ export const useProduct = () => {
         } catch (err) {
             console.log(err)
             dispacth(setError(err.message))
+            throw err
         } finally {
             dispacth(setSearchLoading(false))
         }
@@ -113,6 +134,7 @@ export const useProduct = () => {
         handleGetProducts,
         handleGetProductDetail,
         handleAddVariant,
+        handleUpdateVariant,
         handleSearchProducts,
         handleClearSearchResults
     }

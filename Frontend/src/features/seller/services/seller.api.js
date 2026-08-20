@@ -54,3 +54,18 @@ export const getMySellerApplication = async ()=>{
     const response = await sellerApiInstance.get(`/seller/sellerApplication`)
     return response.data
 }
+
+export const updateSellerProfile = async (profileData) => {
+    const response = await sellerApiInstance.put(`/seller/updateProfile`, profileData)
+    return response.data
+}
+
+export const subscribeSellerPlan = async (planKey) => {
+    const response = await sellerApiInstance.post(`/seller/subscribePlan`, { planKey })
+    return response.data
+}
+
+export const getSellerPayoutSummary = async () => {
+    const response = await sellerApiInstance.get(`/seller/payoutSummary`)
+    return response.data
+}

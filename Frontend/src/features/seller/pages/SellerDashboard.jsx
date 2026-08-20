@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router";
 import { useSelector } from "react-redux";
 import {
   Lock, Clock, PlusCircle, Boxes, ShoppingBag, ArrowRight, ArrowUpRight,
-  IndianRupee, TrendingUp, Store, ArrowLeft, ChevronRight, ShieldCheck,
+  IndianRupee, TrendingUp, Store, ArrowLeft, ChevronRight, ShieldCheck, BarChart2,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -49,6 +49,16 @@ const StatusBadge = ({ status }) => (
   </span>
 );
 
+const ACCEPTED_STATUSES = new Set(['accepted', 'confirmed', 'packed', 'shipped', 'delivered', 'completed']);
+
+const isAcceptedOrder = (o) => {
+  const conf = (o?.confirmationStatus || '').toLowerCase();
+  const st = (o?.orderStatus || '').toLowerCase();
+  if (ACCEPTED_STATUSES.has(conf)) return true;
+  if (['shipped', 'delivered', 'completed'].includes(st)) return true;
+  return false;
+};
+
 const buildDailySeries = (orders, days = 7) => {
   const now = new Date();
   const buckets = [];
@@ -68,7 +78,9 @@ const buildDailySeries = (orders, days = 7) => {
     if (!o.createdAt) return;
     const key = new Date(o.createdAt).toISOString().slice(0, 10);
     if (map[key]) {
-      map[key].revenue += Number(o.totalAmount || o.sellerAmount?.amount) || 0;
+      if (isAcceptedOrder(o)) {
+        map[key].revenue += Number(o.sellerAmount?.amount ?? o.sellerAmount ?? 0);
+      }
       map[key].orders += 1;
     }
   });
@@ -200,6 +212,13 @@ const SellerDashboard = () => {
             >
               <Boxes size={14} />
               Inventory
+            </button>
+            <button
+              onClick={() => navigate("/seller/analytics")}
+              className="flex items-center gap-1.5 border border-[#EAEAEA] bg-[#FAFAFA] text-[#111] px-3.5 py-2 rounded text-[11px] font-bold uppercase hover:border-[#B08D57] hover:text-[#B08D57] transition-all"
+            >
+              <BarChart2 size={14} />
+              Analytics
             </button>
           </div>
         </div>
@@ -348,7 +367,9 @@ const SellerDashboard = () => {
                   {orders.slice(0, 5).map((o) => (
                     <tr key={o._id} className="hover:bg-[#FAFAFA]">
                       <td className="py-2.5 px-3 font-bold text-[#111]">#{o._id?.slice(-8).toUpperCase()}</td>
-                      <td className="py-2.5 px-3">{o.address?.fullName || "Buyer"}</td>
+                      <td className="py-2.5 px-3">
+                        {o.shippingAddress?.name || o.shippingAddress?.fullName || o.address?.fullName || o.address?.name || "Buyer"}
+                      </td>
                       <td className="py-2.5 px-3">{o.orderItems?.length || 1} Item(s)</td>
                       <td className="py-2.5 px-3 font-bold text-[#111]">₹{o.sellerAmount?.amount || o.totalAmount || 0}</td>
                       <td className="py-2.5 px-3"><StatusBadge status={o.orderStatus} /></td>

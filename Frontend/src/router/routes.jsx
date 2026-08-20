@@ -21,6 +21,9 @@ import SellerOrders from "../features/seller/pages/SellerOrders";
 import BecomeSeller from "../features/seller/pages/BecomeSeller";
 import SellerKYC from "../features/seller/pages/SellerKYC";
 import SellerDashboard from "../features/seller/pages/SellerDashboard";
+import SellerAnalytics from "../features/seller/pages/SellerAnalytics";
+import SellerPayments from "../features/seller/pages/SellerPayments";
+import SellerSettings from "../features/seller/pages/SellerSettings";
 import AdminLayout from "../features/layout/AdminLayout";
 import AdminLogin from "../features/admin/pages/AdminLogin";
 import ProtectedAdmin from "../features/admin/components/ProtectedAdmin";
@@ -166,15 +169,15 @@ const router = createBrowserRouter([
       },
       {
         path: "analytics",
-        element: <div>Analytics page</div>,
+        element: <SellerAnalytics />,
       },
       {
         path: "payments",
-        element: <div>Payments page</div>,
+        element: <SellerPayments />,
       },
       {
         path: "settings",
-        element: <div>Settings page</div>,
+        element: <SellerSettings />,
       },
       {
         path: "inventory/:productId/addVariant",

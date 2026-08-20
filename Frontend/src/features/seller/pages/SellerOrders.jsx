@@ -16,21 +16,25 @@ const FILTERS = [
 
 const formatMoney = (amount) => `₹${(Number(amount) || 0).toLocaleString('en-IN')}`
 
-const isExpired = (order) =>
-  order.confirmationStatus === 'pending' &&
-  !!order.confirmationDeadline &&
-  new Date(order.confirmationDeadline).getTime() < Date.now()
+const isTimeoutOrder = (order) =>
+  order.confirmationStatus === 'expired' ||
+  order.confirmationStatus === 'timeout' ||
+  order.cancelReason === 'seller_no_response' ||
+  (order.confirmationStatus === 'pending' &&
+    !!order.confirmationDeadline &&
+    new Date(order.confirmationDeadline).getTime() < Date.now())
 
 const matchesFilter = (order, key) => {
+  const isTimeout = isTimeoutOrder(order)
   switch (key) {
     case 'pending':
-      return order.confirmationStatus === 'pending' && !isExpired(order)
+      return order.confirmationStatus === 'pending' && !isTimeout
     case 'accepted':
       return order.confirmationStatus === 'accepted'
     case 'rejected':
-      return order.confirmationStatus === 'rejected'
+      return (order.confirmationStatus === 'rejected' || order.orderStatus === 'cancelled') && !isTimeout
     case 'timeout':
-      return isExpired(order) || order.confirmationStatus === 'timeout'
+      return isTimeout
     default:
       return true
   }
@@ -73,48 +77,39 @@ const SellerOrders = () => {
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">
       {/* Header Bar */}
-      <div className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate('/seller/')}
-            className="flex items-center gap-1 text-[11px] font-medium text-[#666666] hover:text-[#111111]"
-          >
-            <ArrowLeft size={13} />
-            Back to Dashboard
-          </button>
-          <span className="text-[10.5px] font-bold text-[#B08D57] uppercase tracking-[0.08em]">
-            Merchant Order Fulfillment
-          </span>
+      <div className="border-b border-[#EBEBEB] bg-[#FAFAFA]">
+        <div className="max-w-5xl mx-auto px-6 md:px-10 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <button
+              onClick={() => navigate('/seller')}
+              className="md:hidden mt-1 p-1.5 rounded-full bg-[#EBEBEB] text-[#111] hover:bg-[#D4D4D4] transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#B08D57]">Merchant Fulfillment</p>
+              <h1 className="text-[20px] font-bold text-[#111] mt-0.5">Order Fulfillment Queue</h1>
+              <p className="text-[11px] text-[#888] mt-0.5">Review and confirm buyer orders within deadline.</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 pt-6">
-        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#EAEAEA] pb-3">
-          <div>
-            <h1 className="text-[22px] md:text-[26px] font-bold text-[#111111]">
-              Order Fulfillment Queue
-            </h1>
-            <p className="text-[12px] text-[#666666] mt-0.5">
-              Review and confirm buyer orders within your deadline.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setActiveFilter(f.key)}
-                className={`px-3 py-1.5 rounded text-[11px] font-bold uppercase transition-all whitespace-nowrap ${
-                  activeFilter === f.key
-                    ? 'bg-[#111111] text-white'
-                    : 'bg-[#FAFAFA] text-[#666666] border border-[#EAEAEA] hover:border-[#111111]'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+      <div className="max-w-5xl mx-auto px-6 md:px-10 pt-6 space-y-6">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 border-b border-[#EBEBEB]">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setActiveFilter(f.key)}
+              className={`px-3 py-1.5 rounded text-[11px] font-bold uppercase transition-all whitespace-nowrap ${
+                activeFilter === f.key
+                  ? 'bg-[#111111] text-white'
+                  : 'bg-[#FAFAFA] text-[#666666] border border-[#EAEAEA] hover:border-[#111111]'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
 
         {/* Orders Table Container */}
@@ -126,23 +121,42 @@ const SellerOrders = () => {
           ) : (
             <div className="divide-y divide-[#EAEAEA]">
               {filteredOrders.map((order) => {
-                const pending = order.confirmationStatus === 'pending' && !isExpired(order)
+                const isTimeout = isTimeoutOrder(order)
+                const pending = order.confirmationStatus === 'pending' && !isTimeout
                 const isBusy = actingOrderId === order._id
+
+                const address = order.shippingAddress || order.address
+                const buyerName = address?.name || address?.fullName || order.user?.name || 'Buyer'
+                const pincode = address?.pincode || '—'
+
+                const displayStatus = isTimeout
+                  ? 'TIMED OUT'
+                  : (order.confirmationStatus || order.orderStatus || 'PENDING').toUpperCase()
 
                 return (
                   <div key={order._id} className="p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-[#FAFAFA]">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] font-bold text-[#111]">#{order._id?.slice(-8).toUpperCase()}</span>
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#F5EFE5] text-[#B08D57]">
-                          {order.confirmationStatus}
+                        <span
+                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                            isTimeout
+                              ? 'bg-[#FCECEC] text-[#C43D3D]'
+                              : order.confirmationStatus === 'accepted'
+                              ? 'bg-[#EAF5EE] text-[#287A4B]'
+                              : order.confirmationStatus === 'rejected'
+                              ? 'bg-[#FCECEC] text-[#C43D3D]'
+                              : 'bg-[#F5EFE5] text-[#B08D57]'
+                          }`}
+                        >
+                          {displayStatus}
                         </span>
                       </div>
                       <p className="text-[12px] text-[#666]">
-                        Customer: <strong className="text-[#111]">{order.address?.fullName || 'Buyer'}</strong> · Pincode: <strong>{order.address?.pincode}</strong>
+                        Customer: <strong className="text-[#111]">{buyerName}</strong> · Pincode: <strong>{pincode}</strong>
                       </p>
                       <p className="text-[12px] text-[#666]">
-                        Items: <strong>{order.orderItems?.length || 1}</strong> · Revenue: <strong className="text-[#111]">{formatMoney(order.sellerAmount?.amount)}</strong>
+                        Items: <strong>{order.orderItems?.length || 1}</strong> · Revenue: <strong className="text-[#111]">{formatMoney(order.sellerAmount?.amount ?? order.sellerAmount ?? 0)}</strong>
                       </p>
                     </div>
 
