@@ -827,9 +827,10 @@ const OrderDetail = () => {
 
       {cancelModalOpen && (
         <CancelOrderModal
+          open={cancelModalOpen}
           onClose={() => setCancelModalOpen(false)}
           onConfirm={onConfirmCancel}
-          submitting={cancelling}
+          loading={cancelling}
         />
       )}
 

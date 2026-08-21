@@ -89,12 +89,15 @@ const SellerOrderDetail = () => {
       !!order.confirmationDeadline &&
       new Date(order.confirmationDeadline).getTime() < Date.now());
 
-  const isPending = order.confirmationStatus === "pending" && !isTimeout;
+  const isCancelled = order.orderStatus === "cancelled" || Boolean(order.cancelReason);
+  const isPending = order.confirmationStatus === "pending" && !isTimeout && !isCancelled;
   const isAccepted = order.confirmationStatus === "accepted";
-  const isRejected = (order.confirmationStatus === "rejected" || order.orderStatus === "cancelled") && !isTimeout;
+  const isRejected = (order.confirmationStatus === "rejected" || isCancelled) && !isTimeout;
 
   const displayStatus = isTimeout
     ? "TIMED OUT"
+    : isCancelled
+    ? "CANCELLED"
     : (order.confirmationStatus || order.orderStatus || "PENDING").toUpperCase();
 
   const onAccept = async () => {

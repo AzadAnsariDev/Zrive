@@ -139,9 +139,10 @@ const OrderGroupItems = () => {
 
       {cancelTarget && (
         <CancelOrderModal
+          open={Boolean(cancelTarget)}
           onClose={() => setCancelTarget(null)}
           onConfirm={onConfirmCancel}
-          submitting={cancelling}
+          loading={cancelling}
         />
       )}
     </div>

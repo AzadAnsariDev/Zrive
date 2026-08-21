@@ -82,6 +82,15 @@ const Navbar = () => {
   }, [user])
 
   useEffect(() => {
+    if (!user || !notifOpen) return undefined
+
+    handleGetNotifications()
+    const refreshTimer = window.setInterval(handleGetNotifications, 15000)
+
+    return () => window.clearInterval(refreshTimer)
+  }, [user, notifOpen])
+
+  useEffect(() => {
     const trimmed = debouncedQuery.trim()
     if (!trimmed) { handleClearSearchResults(); return }
     handleSearchProducts(trimmed)

@@ -374,7 +374,7 @@ export const cancelOrder = async (req, res) => {
       .findOneAndUpdate(
         {
           _id: orderId,
-          orderStatus: { $in: ["placed", "confirmed"] },
+          orderStatus: { $in: ["placed", "confirmed", "packed"] },
           cancelInProgress: { $ne: true },
         },
         {
@@ -407,7 +407,7 @@ export const cancelOrder = async (req, res) => {
       throw new Error("Payment record not found.");
     }
 
-    const wasConfirmed = order.orderStatus === "confirmed";
+    const wasConfirmed = ["confirmed", "packed"].includes(order.orderStatus);
 
     // Restore inventory only if stock was deducted earlier
     if (wasConfirmed) {
@@ -504,6 +504,7 @@ export const acceptOrder = async (req, res) => {
       _id: orderId,
       orderStatus: "placed",
       confirmationStatus: "pending",
+      cancelReason: { $in: [null] },
     }).session(session);
 
     if (!order) {
@@ -579,6 +580,7 @@ export const rejectOrder = async (req, res) => {
         _id: orderId,
         orderStatus: "placed",
         confirmationStatus: "pending",
+        cancelReason: { $in: [null] },
       })
       .populate("payment")
       .session(session);

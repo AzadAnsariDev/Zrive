@@ -24,11 +24,14 @@ const isTimeoutOrder = (order) =>
     !!order.confirmationDeadline &&
     new Date(order.confirmationDeadline).getTime() < Date.now())
 
+const isCancelledOrder = (order) =>
+  order.orderStatus === 'cancelled' || Boolean(order.cancelReason)
+
 const matchesFilter = (order, key) => {
   const isTimeout = isTimeoutOrder(order)
   switch (key) {
     case 'pending':
-      return order.confirmationStatus === 'pending' && !isTimeout
+      return order.confirmationStatus === 'pending' && !isTimeout && !isCancelledOrder(order)
     case 'accepted':
       return order.confirmationStatus === 'accepted'
     case 'rejected':
@@ -122,7 +125,8 @@ const SellerOrders = () => {
             <div className="divide-y divide-[#EAEAEA]">
               {filteredOrders.map((order) => {
                 const isTimeout = isTimeoutOrder(order)
-                const pending = order.confirmationStatus === 'pending' && !isTimeout
+                const cancelled = isCancelledOrder(order)
+                const pending = order.confirmationStatus === 'pending' && !isTimeout && !isCancelledOrder(order)
                 const isBusy = actingOrderId === order._id
 
                 const address = order.shippingAddress || order.address
@@ -131,6 +135,8 @@ const SellerOrders = () => {
 
                 const displayStatus = isTimeout
                   ? 'TIMED OUT'
+                  : cancelled
+                  ? 'CANCELLED'
                   : (order.confirmationStatus || order.orderStatus || 'PENDING').toUpperCase()
 
                 return (
@@ -141,6 +147,8 @@ const SellerOrders = () => {
                         <span
                           className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                             isTimeout
+                              ? 'bg-[#FCECEC] text-[#C43D3D]'
+                              : cancelled
                               ? 'bg-[#FCECEC] text-[#C43D3D]'
                               : order.confirmationStatus === 'accepted'
                               ? 'bg-[#EAF5EE] text-[#287A4B]'
