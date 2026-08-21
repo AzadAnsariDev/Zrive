@@ -29,6 +29,7 @@ import { formatPrice } from "../../home/pages/Home";
 import { CATEGORIES } from "../../../constant/Categories";
 import WishlistButton from "../../wishlist/components/WishlistButton";
 import useCart from "../../cart/hook/useCart";
+import { notify } from "../../../utils/toast";
 
 const SORT_OPTIONS = [
   { id: "newest", label: "Newest First" },
@@ -40,6 +41,11 @@ const NEW_BADGE_WINDOW_DAYS = 14;
 const SALE_PCTS = [20, 30, 40, 50, 25, 35, 45, 30];
 
 const getProductName = (p) => p?.title || p?.name || "Product";
+
+const normalizeCategory = (category) =>
+  String(category || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 
 const getProductImage = (p) => {
   if (p?.images?.length > 0) {
@@ -107,6 +113,7 @@ const ProductCard = ({ product, onClick, salePercent = null }) => {
     try {
       const variantId = product.variants?.[0]?._id || product.variants?.[0]?.sku;
       await handleAddToCart(product._id, variantId);
+      notify.success("Added to cart");
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
     } catch (err) {
@@ -376,7 +383,7 @@ const AllProducts = () => {
     if (selectedCategories.length > 0) {
       list = list.filter((p) =>
         selectedCategories.some(
-          (catId) => p.category?.toLowerCase() === catId.toLowerCase()
+          (catId) => normalizeCategory(p.category) === normalizeCategory(catId)
         )
       );
     }

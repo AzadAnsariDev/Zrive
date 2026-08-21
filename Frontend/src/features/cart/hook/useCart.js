@@ -7,6 +7,7 @@ const useCart = ()=>{
 
     const handleAddToCart = async(productId, variantId)=>{
         const result = await addToCart(productId, variantId)
+        await handleGetCart()
         return result
     }
 

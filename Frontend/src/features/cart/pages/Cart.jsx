@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useSelector } from 'react-redux'
-import { Minus, Plus, Trash2, ShoppingBag, ShieldCheck, Truck, RefreshCw, Tag, ArrowRight, Lock } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingBag, ShieldCheck, Truck, RefreshCw, Tag, ArrowRight, Lock, AlertTriangle, X } from 'lucide-react'
 import useCart from '../hook/useCart'
 import { formatPrice } from '../../home/pages/Home'
 import { notify } from '../../../utils/toast'
@@ -139,6 +139,8 @@ const Cart = () => {
   const addresses = useSelector((state) => state.address?.addresses ?? [])
   const selectedAddress = useSelector((state) => state.address?.selectedAddress)
   const [loading, setLoading] = useState(true)
+  const [itemToRemove, setItemToRemove] = useState(null)
+  const [removing, setRemoving] = useState(false)
   const navigate = useNavigate()
 
   const handleProceedToCheckout = () => {
@@ -164,6 +166,17 @@ const Cart = () => {
     fetchCartItems()
   }, [])
 
+  useEffect(() => {
+    if (!itemToRemove) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [itemToRemove])
+
   const handleIncrement = async (item) => {
     try {
       await handleAddToCart(item.product._id, item.variant)
@@ -182,14 +195,22 @@ const Cart = () => {
     }
   }
 
-  const handleRemove = async (item) => {
+  const removeItemFromBag = async (item) => {
+    setRemoving(true)
     try {
       await handleRemoveCartItem(item.product._id, item.variant, "remove")
       notify.success("Removed from bag")
       await fetchCartItems()
     } catch (err) {
       notify.error(err, "Could not remove item from bag.")
+    } finally {
+      setRemoving(false)
+      setItemToRemove(null)
     }
+  }
+
+  const handleRemove = (item) => {
+    setItemToRemove(item)
   }
 
   const isFreeShipping = subtotal >= 999
@@ -204,7 +225,8 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] text-[#111111]">
+    <>
+      <div className="min-h-screen bg-[#FFFFFF] text-[#111111]">
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-6">
         <div className="mb-6 flex items-baseline justify-between border-b border-[#EAEAEA] pb-3">
           <h1 className="text-[24px] md:text-[28px] font-bold text-[#111111] leading-tight">
@@ -326,7 +348,57 @@ const Cart = () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+
+      {itemToRemove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => !removing && setItemToRemove(null)}
+          />
+          <div className="relative w-full max-w-sm rounded-t-2xl bg-white p-6 shadow-2xl sm:rounded-2xl">
+            <button
+              type="button"
+              onClick={() => setItemToRemove(null)}
+              disabled={removing}
+              aria-label="Close confirmation"
+              className="absolute right-4 top-4 text-[#999999] hover:text-[#111111] disabled:opacity-50"
+            >
+              <X size={18} />
+            </button>
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-[#C43D3D]/10">
+              <AlertTriangle size={20} className="text-[#C43D3D]" />
+            </div>
+            <h2 className="mb-1.5 text-[18px] font-bold text-[#111111]">
+              {items.length === 1 ? "Remove the last item?" : "Remove this item?"}
+            </h2>
+            <p className="mb-6 text-[13px] leading-relaxed text-[#666666]">
+              {items.length === 1
+                ? "Your bag will be empty. Are you sure you want to remove this item?"
+                : "Are you sure you want to remove this item from your bag?"}
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setItemToRemove(null)}
+                disabled={removing}
+                className="flex-1 rounded border border-[#111111] py-3 text-[11px] font-bold uppercase tracking-[0.06em] text-[#111111] hover:bg-[#FAFAFA] disabled:opacity-50"
+              >
+                Keep Item
+              </button>
+              <button
+                type="button"
+                onClick={() => removeItemFromBag(itemToRemove)}
+                disabled={removing}
+                className="flex-1 rounded bg-[#C43D3D] py-3 text-[11px] font-bold uppercase tracking-[0.06em] text-white hover:bg-[#A83232] disabled:opacity-60"
+              >
+                {removing ? "Removing..." : "Remove Item"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

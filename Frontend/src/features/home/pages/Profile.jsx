@@ -21,6 +21,7 @@ import {
   Sparkles,
   Store,
   ArrowUpRight,
+  Trash2,
 } from "lucide-react";
 import { notify } from "../../../utils/toast";
 import { useAuth } from "../../auth/hook/useAuth";
@@ -38,7 +39,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { handleLogout, handleUpdateProfile } = useAuth();
-  const { handleGetAllAddresses } = useAddress();
+  const { handleGetAllAddresses, handleDeleteAddress } = useAddress();
 
   const user = useSelector((state) => state.auth.user);
   const addresses = useSelector((state) => state.address.addresses || []);
@@ -47,9 +48,11 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [confirmDeleteAddress, setConfirmDeleteAddress] = useState(null);
+  const [deletingAddress, setDeletingAddress] = useState(false);
 
   const [formData, setFormData] = useState({
-    fullName: user?.fullName || user?.name || "",
+    fullName: user?.fullName || user?.username || user?.name || "",
     email: user?.email || "",
     phone: user?.phone || "",
   });
@@ -61,7 +64,7 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       setFormData({
-        fullName: user.fullName || user.name || "",
+        fullName: user.fullName || user.username || user.name || "",
         email: user.email || "",
         phone: user.phone || "",
       });
@@ -88,6 +91,21 @@ const Profile = () => {
     await handleLogout();
     notify.success("Signed out successfully");
     navigate("/login");
+  };
+
+  const onDeleteAddress = async () => {
+    if (!confirmDeleteAddress) return;
+    setDeletingAddress(true);
+    try {
+      await handleDeleteAddress(confirmDeleteAddress._id);
+      notify.success("Address removed successfully");
+      setConfirmDeleteAddress(null);
+      await handleGetAllAddresses();
+    } catch (err) {
+      notify.error(err, "Failed to remove address");
+    } finally {
+      setDeletingAddress(false);
+    }
   };
 
   return (
@@ -120,7 +138,7 @@ const Profile = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-display text-[22px] font-bold text-[#111111]">
-                  {user?.fullName || user?.name || "ZRIVE Member"}
+                  {user?.fullName || user?.username || user?.name || "ZRIVE Member"}
                 </h1>
                 <span className="text-[9.5px] font-bold uppercase tracking-[0.08em] bg-[#F5EFE5] text-[#B08D57] px-2.5 py-0.5 rounded border border-[#B08D57]/30">
                   VERIFIED BUYER
@@ -293,9 +311,17 @@ const Profile = () => {
                 ) : (
                   <div className="space-y-3">
                     {addresses.map((addr) => (
-                      <div key={addr._id} className="p-4 bg-[#FAFAFA] border border-[#EAEAEA] rounded-[6px] text-[13px]">
-                        <p className="font-bold text-[#111] mb-1">{addr.fullName} · {addr.phone}</p>
-                        <p className="text-[#666]">{addr.addressLine1}, {addr.addressLine2}</p>
+                      <div key={addr._id} className="relative p-4 bg-[#FAFAFA] border border-[#EAEAEA] rounded-[6px] text-[13px]">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteAddress(addr)}
+                          aria-label={`Remove address for ${addr.fullName}`}
+                          className="absolute right-3 top-3 p-1 text-[#999999] hover:text-[#C43D3D] transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                        <p className="pr-8 font-bold text-[#111] mb-1">{addr.fullName} · {addr.phone}</p>
+                        <p className="text-[#666]">{addr.addressLine1}{addr.addressLine2 ? `, ${addr.addressLine2}` : ""}</p>
                         <p className="text-[#666]">{addr.city}, {addr.state} - <strong>{addr.pincode}</strong></p>
                       </div>
                     ))}
@@ -341,6 +367,36 @@ const Profile = () => {
                 className="flex-1 py-2.5 bg-[#C43D3D] text-white rounded text-[12px] font-bold uppercase hover:bg-[#9F2E2E] cursor-pointer"
               >
                 Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteAddress && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[10px] border border-[#EAEAEA] p-6 max-w-sm w-full shadow-2xl">
+            <Trash2 size={28} className="text-[#C43D3D] mx-auto mb-4" />
+            <h3 className="font-display text-[18px] font-bold text-[#111] text-center">Remove this address?</h3>
+            <p className="text-[12.5px] text-[#666] text-center mt-2 mb-6">
+              This saved delivery address will be permanently removed.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteAddress(null)}
+                disabled={deletingAddress}
+                className="flex-1 py-2.5 border border-[#EAEAEA] rounded text-[12px] font-bold uppercase text-[#555] cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onDeleteAddress}
+                disabled={deletingAddress}
+                className="flex-1 py-2.5 bg-[#C43D3D] text-white rounded text-[12px] font-bold uppercase hover:bg-[#9F2E2E] cursor-pointer disabled:opacity-60"
+              >
+                {deletingAddress ? "Removing..." : "Remove"}
               </button>
             </div>
           </div>

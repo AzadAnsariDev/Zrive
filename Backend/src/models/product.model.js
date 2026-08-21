@@ -36,9 +36,9 @@ const productSchema = new mongoose.Schema(
       },
     },
     shippingDefaults: {
-      weight: { type: Number, required: true },  // kg
+      weight: { type: Number, required: true },  
       dimensions: {
-        length: { type: Number, required: true }, // cm
+        length: { type: Number, required: true }, 
         width: { type: Number, required: true },
         height: { type: Number, required: true },
       }

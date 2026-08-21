@@ -299,7 +299,7 @@ const CreateProduct = () => {
                 >
                   <option value="">Select Category</option>
                   {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c.id} value={c.label}>{c.label}</option>
                   ))}
                 </select>
                 {errors.category && <p className="text-[11px] text-[#C43D3D] mt-1">{errors.category.message}</p>}

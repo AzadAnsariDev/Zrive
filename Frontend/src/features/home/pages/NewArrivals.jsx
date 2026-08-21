@@ -15,8 +15,14 @@ import { formatPrice } from "./Home";
 import { CATEGORIES } from "../../../constant/Categories";
 import WishlistButton from "../../wishlist/components/WishlistButton";
 import useCart from "../../cart/hook/useCart";
+import { notify } from "../../../utils/toast";
 
 const FILTER_CATEGORIES = CATEGORIES;
+
+const normalizeCategory = (category) =>
+  String(category || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 
 const SORT_OPTIONS = [
   { id: "newest", label: "Newest First" },
@@ -43,6 +49,7 @@ const NewArrivalCard = ({ product, onClick }) => {
     try {
       const variantId = product.variants?.[0]?._id || product.variants?.[0]?.sku;
       await handleAddToCart(product._id, variantId);
+      notify.success("Added to cart");
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
     } catch (err) {
@@ -146,7 +153,7 @@ const NewArrivals = () => {
 
     if (selectedCategory !== "all") {
       list = list.filter(
-        (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
+        (p) => normalizeCategory(p.category) === normalizeCategory(selectedCategory)
       );
     }
 

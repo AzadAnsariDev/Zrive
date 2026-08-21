@@ -22,6 +22,7 @@ import {
 import { useProduct } from "../../product/hook/useProduct";
 import useCart from "../../cart/hook/useCart";
 import WishlistButton from "../../wishlist/components/WishlistButton";
+import { notify } from "../../../utils/toast";
 import { CATEGORIES as MENS_CATEGORIES } from "../../../constant/Categories";
 import ZriveHeroBannerGen from "../../../assets/images/zrive_hero_banner_gen.png";
 import HeroZrive from "../../../assets/images/Hero_Zrive.png";
@@ -94,8 +95,9 @@ const ProductCard = ({ product, onClick, salePercent = null, className = "" }) =
     if (adding || added) return;
     setAdding(true);
     try {
-      const variantSku = product.variants?.[0]?.sku || product.variants?.[0]?._id;
-      await handleAddToCart(product._id, variantSku);
+      const variantId = product.variants?.[0]?._id || product.variants?.[0]?.sku;
+      await handleAddToCart(product._id, variantId);
+      notify.success("Added to cart");
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
     } catch (err) {

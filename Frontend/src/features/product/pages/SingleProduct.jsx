@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import {
   ArrowLeft,
   ChevronLeft,
@@ -20,6 +20,8 @@ import {
 import { useProduct } from '../hook/useProduct'
 import { formatPrice } from '../../home/pages/Home'
 import useCart from '../../cart/hook/useCart'
+import useAddress from '../../address/hook/useAddress'
+import { setSelectedAddress } from '../../address/state/addressSlice'
 import WishlistButton from '../../wishlist/components/WishlistButton'
 import SizeChartModal, {
   isCategoryWithoutSizeChart,
@@ -195,7 +197,9 @@ const VariantSelector = ({
 const SingleProduct = () => {
   const { productId } = useParams()
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const { handleGetProductDetail } = useProduct()
+  const { handleGetAllAddresses } = useAddress()
   const { handleGetProductReviews, handleCheckEligibility, handleCreateReview } = useReview()
 
   const [product, setProduct] = useState(null)
@@ -326,8 +330,25 @@ const SingleProduct = () => {
     setIsBuyingNow(true)
     try {
       await handleAddToCart(product._id, selectedVariant?._id)
-      const hasAddress = selectedAddress || (addresses && addresses.length > 0)
-      navigate(hasAddress ? '/order-summary' : '/address')
+
+      let deliveryAddress = selectedAddress
+      let availableAddresses = addresses
+
+      if (!deliveryAddress && availableAddresses.length === 0) {
+        const result = await handleGetAllAddresses()
+        availableAddresses = result?.addresses || []
+      }
+
+      if (!deliveryAddress) {
+        deliveryAddress = availableAddresses.find((address) => address.isDefault) || availableAddresses[0]
+      }
+
+      if (deliveryAddress) {
+        dispatch(setSelectedAddress(deliveryAddress))
+        navigate('/order-summary', { state: { address: deliveryAddress } })
+      } else {
+        navigate('/address')
+      }
     } catch (err) {
       notify.error(err, "Something went wrong. Redirecting to cart.")
       navigate('/cart')

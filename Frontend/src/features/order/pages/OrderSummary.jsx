@@ -11,6 +11,9 @@ import {
   Package,
   Check,
   AlertCircle,
+  Minus,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import useOrder from "../hook/useOrder";
 import useCart from "../../cart/hook/useCart";
@@ -137,7 +140,7 @@ const AddressCard = ({ address, onChangeClick }) => {
   );
 };
 
-const OrderItemRow = ({ item }) => {
+const OrderItemRow = ({ item, onIncrement, onDecrement, onRemove }) => {
   const variant = item.product?.variants;
   const cover = variant?.images?.[0]?.url ?? item.product?.images?.[0]?.url;
   const unitPrice = getUnitPrice(item);
@@ -179,8 +182,37 @@ const OrderItemRow = ({ item }) => {
             )}
           </div>
         )}
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-[11.5px] text-[#888]">Qty: {qty}</span>
+        <div className="flex items-center justify-between mt-2 gap-3">
+          <div className="flex items-center border border-[#EAEAEA] rounded bg-[#FAFAFA]">
+            <button
+              type="button"
+              onClick={() => onDecrement(item)}
+              disabled={qty <= 1}
+              aria-label="Decrease quantity"
+              className="w-7 h-7 flex items-center justify-center text-[#111] hover:bg-[#EAEAEA] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <Minus size={11} strokeWidth={2} />
+            </button>
+            <span className="w-7 text-center text-[11.5px] font-semibold text-[#111] tabular-nums">
+              {qty}
+            </span>
+            <button
+              type="button"
+              onClick={() => onIncrement(item)}
+              aria-label="Increase quantity"
+              className="w-7 h-7 flex items-center justify-center text-[#111] hover:bg-[#EAEAEA] cursor-pointer"
+            >
+              <Plus size={11} strokeWidth={2} />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => onRemove(item)}
+            aria-label="Remove item"
+            className="p-1 text-[#999] hover:text-[#C43D3D] transition-colors cursor-pointer"
+          >
+            <Trash2 size={14} strokeWidth={1.7} />
+          </button>
           <span className="text-[14px] font-bold text-[#111]">
             {formatINR(unitPrice * qty)}
           </span>
@@ -196,7 +228,7 @@ const OrderSummary = () => {
   const dispatch = useDispatch();
 
   const { handleCreateOrder, handleVerifyOrder } = useOrder();
-  const { handleGetCart } = useCart();
+  const { handleGetCart, handleAddToCart, handleRemoveCartItem } = useCart();
   const { handleGetAddresses } = useAddress();
 
   const user = useSelector((state) => state.auth?.user);
@@ -238,6 +270,33 @@ const OrderSummary = () => {
 
   const handleChangeAddress = () => {
     navigate("/address", { state: { returnTo: "/order-summary" } });
+  };
+
+  const handleIncrement = async (item) => {
+    try {
+      await handleAddToCart(item.product._id, item.variant);
+    } catch (err) {
+      notify.error(err, "Could not update item quantity.");
+    }
+  };
+
+  const handleDecrement = async (item) => {
+    try {
+      await handleRemoveCartItem(item.product._id, item.variant, "decrement");
+      await handleGetCart();
+    } catch (err) {
+      notify.error(err, "Could not update item quantity.");
+    }
+  };
+
+  const handleRemove = async (item) => {
+    try {
+      await handleRemoveCartItem(item.product._id, item.variant, "remove");
+      await handleGetCart();
+      notify.success("Removed from bag");
+    } catch (err) {
+      notify.error(err, "Could not remove item from bag.");
+    }
   };
 
   const handlePay = async () => {
@@ -404,7 +463,13 @@ const OrderSummary = () => {
               </div>
               <div className="px-5">
                 {cartItems.map((item) => (
-                  <OrderItemRow key={item._id} item={item} />
+                  <OrderItemRow
+                    key={item._id}
+                    item={item}
+                    onIncrement={handleIncrement}
+                    onDecrement={handleDecrement}
+                    onRemove={handleRemove}
+                  />
                 ))}
               </div>
               <div className="px-5 py-3.5 border-t border-[#F0F0F0] bg-[#FAFAFA]">

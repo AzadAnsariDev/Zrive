@@ -174,6 +174,13 @@ const Navbar = () => {
 
         <div className="flex items-center gap-4">
           <SellerNavIcon />
+          <NavLink
+            to="/wishlist"
+            aria-label="Wishlist"
+            className={`flex h-5 w-5 items-center justify-center ${textSoft} hover:text-[#B08D57] transition-colors`}
+          >
+            <Heart size={18} strokeWidth={1.5} />
+          </NavLink>
           <NavLink to="/cart" aria-label="Cart" className={`relative ${textSoft} hover:text-[#B08D57] transition-colors`}>
             <ShoppingBag size={18} strokeWidth={1.5} />
             {cartCount > 0 && (
@@ -340,7 +347,7 @@ const Navbar = () => {
                       { label: 'My Profile', to: '/profile' },
                       { label: 'My Orders', to: '/orders' },
                       { label: 'Wishlist', to: '/wishlist' },
-                      { label: 'Become a Seller', to: '/become-seller' },
+                      { label: 'Seller Dashboard', to: '/seller' },
                     ].map(({ label, to }) => (
                       <Link key={label} to={to} className={`flex items-center px-4 py-2.5 text-[12.5px] transition-colors ${textSoft} ${hoverBg} hover:text-[#B08D57]`}>
                         {label}
