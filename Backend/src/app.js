@@ -15,6 +15,7 @@ import testRouter from './routes/test.route.js'
 import deliveryRouter from './routes/delivery.route.js'
 import wishlistRouter from './routes/wishlist.route.js'
 import reviewRouter from './routes/review.route.js'
+import notificationRouter from './routes/notification.route.js'
 
 const app = express()
 
@@ -77,6 +78,9 @@ app.use("/api/wishlist", wishlistRouter)
 
 //review Router
 app.use("/api/review", reviewRouter);
+
+// Persistent in-app notifications
+app.use("/api/notification", notificationRouter)
 
 
 export default app

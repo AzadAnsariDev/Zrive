@@ -16,6 +16,7 @@ import {
 } from '../templates/email.templates.js'
 import { emitNewOrderToSeller, emitOrderUpdateToUser } from './socket.service.js'
 import { sendPushNotificationToUser } from './push-notification.service.js'
+import { createUserNotification } from './notification.service.js'
 import userModel from '../models/user.model.js'
 import sellerModel from '../models/seller.model.js'
 
@@ -36,6 +37,24 @@ export const notifyOrderPlaced = async (order) => {
         const orderShortId = order._id.toString().slice(-8)
         const orderAmount = order.sellerAmount?.amount || 0
         const buyerCity = order.shippingAddress?.city || 'Customer'
+
+        await createUserNotification({
+            user: buyerId,
+            title: 'Order Confirmed',
+            message: `Your order #${orderShortId} has been placed successfully and is being prepared.`,
+            type: 'order-placed',
+            orderId: order._id,
+            url: `/orders/${order._id}`
+        })
+
+        await createUserNotification({
+            user: sellerId,
+            title: 'New Order Received',
+            message: `Order #${orderShortId} from ${buyerCity} is ready to fulfill.`,
+            type: 'seller-order',
+            orderId: order._id,
+            url: `/seller/orders/${order._id}`
+        })
 
         // Fetch buyer email
         const buyer = await userModel.findById(order.user, { email: 1 })
@@ -112,6 +131,15 @@ export const notifyOrderShipped = async (order) => {
         const buyerId = order.user?.toString()
         const orderShortId = order._id.toString().slice(-8)
 
+        await createUserNotification({
+            user: buyerId,
+            title: 'Order Shipped',
+            message: `Your order #${orderShortId} is on the way!`,
+            type: 'order-shipped',
+            orderId: order._id,
+            url: `/orders/${order._id}`
+        })
+
         const buyer = await userModel.findById(order.user, { email: 1 })
         if (buyer) {
             sendEmail({
@@ -150,6 +178,15 @@ export const notifyOrderDelivered = async (order) => {
     try {
         const buyerId = order.user?.toString()
         const orderShortId = order._id.toString().slice(-8)
+
+        await createUserNotification({
+            user: buyerId,
+            title: 'Order Delivered',
+            message: `Your order #${orderShortId} has been delivered. Enjoy your purchase!`,
+            type: 'order-delivered',
+            orderId: order._id,
+            url: `/orders/${order._id}`
+        })
 
         const buyer = await userModel.findById(order.user, { email: 1 })
         if (buyer) {
@@ -191,6 +228,15 @@ export const notifyOrderRejected = async (order) => {
         const buyerId = order.user?.toString()
         const orderShortId = order._id.toString().slice(-8)
 
+        await createUserNotification({
+            user: buyerId,
+            title: 'Refund Initiated',
+            message: `We could not fulfill order #${orderShortId}. A full refund has been initiated.`,
+            type: 'order-rejected',
+            orderId: order._id,
+            url: `/orders/${order._id}`
+        })
+
         const buyer = await userModel.findById(order.user, { email: 1 })
         if (buyer) {
             sendEmail({
@@ -231,6 +277,24 @@ export const notifyOrderCancelled = async (order) => {
         const sellerProfile = await sellerModel.findById(order.seller).select('userId')
         const sellerId = sellerProfile?.userId?.toString()
         const orderShortId = order._id.toString().slice(-8)
+
+        await createUserNotification({
+            user: buyerId,
+            title: 'Order Cancelled',
+            message: `Your order #${orderShortId} has been cancelled.`,
+            type: 'order-cancelled',
+            orderId: order._id,
+            url: `/orders/${order._id}`
+        })
+
+        await createUserNotification({
+            user: sellerId,
+            title: 'Order Cancelled',
+            message: `Order #${orderShortId} has been cancelled by the buyer.`,
+            type: 'seller-order-cancelled',
+            orderId: order._id,
+            url: `/seller/orders/${order._id}`
+        })
 
         // Notify buyer email
         const buyer = await userModel.findById(order.user, { email: 1 })

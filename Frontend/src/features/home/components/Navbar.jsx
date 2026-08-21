@@ -24,13 +24,7 @@ import SearchResultsPanel from '../components/SearchResultsPanel'
 import { useProduct } from '../../product/hook/useProduct'
 import { useDebounce } from '../components/useDebounce'
 import { CATEGORY_MENU } from '../../../constant/Categories'
-
-// Mock notifications — replace with real hook once backend endpoint exists
-const MOCK_NOTIFICATIONS = [
-  { id: 1, text: 'Your order #10234 has been shipped', time: '2h ago', unread: true },
-  { id: 2, text: 'Price drop on an item in your wishlist', time: '1d ago', unread: true },
-  { id: 3, text: 'Flash sale starts tomorrow — 30% off', time: '2d ago', unread: false },
-]
+import useNotification from '../../notification/hook/useNotification'
 
 const DESKTOP_LINKS = [
   { label: 'New Arrivals', to: '/new-arrivals', icon: Sparkles },
@@ -66,6 +60,12 @@ const Navbar = () => {
   const desktopSearchRef = useRef(null)
 
   const { handleSearchProducts, handleClearSearchResults } = useProduct()
+  const {
+    handleGetNotifications,
+    handleMarkAsRead,
+    handleDeleteNotification,
+    handleDeleteAllNotifications,
+  } = useNotification()
   const searchResults = useSelector((state) => state.product.searchResults)
   const searchLoading = useSelector((state) => state.product.loading.search)
   const debouncedQuery = useDebounce(query, 400)
@@ -73,7 +73,13 @@ const Navbar = () => {
   // Auth state from Redux
   const user = useSelector((state) => state.auth?.user)
   const cartItems = useSelector((state) => state.cart?.items ?? [])
+  const notifications = useSelector((state) => state.inAppNotification?.items ?? [])
+  const unreadCount = useSelector((state) => state.inAppNotification?.unreadCount ?? 0)
   const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0)
+
+  useEffect(() => {
+    if (user) handleGetNotifications()
+  }, [user])
 
   useEffect(() => {
     const trimmed = debouncedQuery.trim()
@@ -123,7 +129,6 @@ const Navbar = () => {
     navigate(path)
   }
 
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => n.unread).length
   const goToCategory = (slug) => {
     setCatOpen(false); setMobileCatOpen(false)
     navigate(`/all-products?category=${slug}`)
@@ -181,6 +186,66 @@ const Navbar = () => {
           >
             <Heart size={18} strokeWidth={1.5} />
           </NavLink>
+          <div className="relative">
+            <button
+              type="button"
+              aria-label="Notifications"
+              onClick={() => setNotifOpen((open) => !open)}
+              className={`relative flex h-5 w-5 items-center justify-center ${textSoft} hover:text-[#B08D57] transition-colors`}
+            >
+              <Bell size={18} strokeWidth={1.5} />
+              {unreadCount > 0 && (
+                <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#B08D57] px-1 text-[9px] font-bold text-[#0e0e0e]">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            {notifOpen && (
+              <div className={`absolute right-0 top-full mt-4 w-[min(20rem,calc(100vw-2rem))] border shadow-2xl overflow-hidden rounded-[8px] animate-fade-in-down z-50 ${cardBg}`}>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E5E5]">
+                  <span className={`text-[11px] font-semibold tracking-[0.1em] uppercase ${textPrimary}`}>Notifications</span>
+                  {notifications.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAllNotifications()}
+                      className="text-[10px] font-semibold text-[#666] hover:text-[#C43D3D]"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-72 overflow-y-auto divide-y divide-[#E5E5E5]">
+                  {notifications.length === 0 ? (
+                    <p className={`px-4 py-8 text-center text-[12px] ${textSoft}`}>No notifications</p>
+                  ) : notifications.map((notification) => (
+                    <div key={notification._id} className="flex items-start gap-3 px-4 py-3">
+                      {!notification.isRead && <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#B08D57]" />}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleMarkAsRead(notification._id)
+                          setNotifOpen(false)
+                          navigate(notification.url || '/orders')
+                        }}
+                        className={`min-w-0 flex-1 text-left ${notification.isRead ? 'pl-4' : ''}`}
+                      >
+                        <p className={`text-[12.5px] leading-snug ${textPrimary}`}>{notification.title}</p>
+                        <p className={`mt-0.5 text-[11px] ${textSoft}`}>{notification.message}</p>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Delete notification"
+                        onClick={() => handleDeleteNotification(notification._id)}
+                        className="shrink-0 text-[#999] hover:text-[#C43D3D]"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <NavLink to="/cart" aria-label="Cart" className={`relative ${textSoft} hover:text-[#B08D57] transition-colors`}>
             <ShoppingBag size={18} strokeWidth={1.5} />
             {cartCount > 0 && (
@@ -300,17 +365,46 @@ const Navbar = () => {
                 <div className={`absolute right-0 top-full mt-3 w-80 border shadow-2xl overflow-hidden rounded-[8px] animate-fade-in-down z-50 ${cardBg}`}>
                   <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E5E5]">
                     <span className={`text-[11px] font-semibold tracking-[0.1em] uppercase ${textPrimary}`}>Notifications</span>
-                    {unreadCount > 0 && <span className="text-[11px] text-[#B08D57]">{unreadCount} unread</span>}
+                    <div className="flex items-center gap-3">
+                      {unreadCount > 0 && <span className="text-[11px] text-[#B08D57]">{unreadCount} unread</span>}
+                      {notifications.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAllNotifications()}
+                          className="text-[10px] font-semibold text-[#666] hover:text-[#C43D3D]"
+                        >
+                          Clear all
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="max-h-72 overflow-y-auto divide-y divide-[#E5E5E5]">
-                    {MOCK_NOTIFICATIONS.map((n) => (
-                      <button key={n.id} type="button" className={`w-full flex items-start gap-3 text-left px-4 py-3 transition-colors ${hoverBg}`}>
-                        {n.unread && <span className="w-1.5 h-1.5 rounded-full bg-[#B08D57] mt-1.5 flex-shrink-0" />}
-                        <div className={n.unread ? '' : 'pl-4'}>
-                          <p className={`text-[12.5px] leading-snug ${textPrimary}`}>{n.text}</p>
-                          <p className={`text-[11px] mt-0.5 ${textSoft}`}>{n.time}</p>
-                        </div>
-                      </button>
+                    {notifications.length === 0 ? (
+                      <p className={`px-4 py-8 text-center text-[12px] ${textSoft}`}>No notifications</p>
+                    ) : notifications.map((notification) => (
+                      <div key={notification._id} className={`flex items-start gap-3 px-4 py-3 ${hoverBg}`}>
+                        {!notification.isRead && <span className="w-1.5 h-1.5 rounded-full bg-[#B08D57] mt-1.5 flex-shrink-0" />}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleMarkAsRead(notification._id)
+                            setNotifOpen(false)
+                            navigate(notification.url || '/orders')
+                          }}
+                          className={`min-w-0 flex-1 text-left ${notification.isRead ? 'pl-4' : ''}`}
+                        >
+                          <p className={`text-[12.5px] leading-snug ${textPrimary}`}>{notification.title}</p>
+                          <p className={`text-[11px] mt-0.5 ${textSoft}`}>{notification.message}</p>
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Delete notification"
+                          onClick={() => handleDeleteNotification(notification._id)}
+                          className="shrink-0 text-[#999] hover:text-[#C43D3D]"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>

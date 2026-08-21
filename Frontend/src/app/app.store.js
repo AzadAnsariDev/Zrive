@@ -10,6 +10,7 @@ import deliveryReducer from "../features/delivery/state/deliverySlice"
 import wishlistReducer from "../features/wishlist/state/wishlistSlice"
 import reviewReducer from "../features/review/state/reviewSlice"
 import notificationReducer from "../features/seller/state/notificationSlice"
+import inAppNotificationReducer from '../features/notification/state/notificationSlice'
 export const store = configureStore({
     reducer :{
         auth : authReducer,
@@ -22,7 +23,8 @@ export const store = configureStore({
         delivery: deliveryReducer,
         wishlist: wishlistReducer,
         review: reviewReducer,
-        notification: notificationReducer
+    notification: notificationReducer,
+    inAppNotification: inAppNotificationReducer
     }
 })
 
