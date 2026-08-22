@@ -3,12 +3,12 @@ import { NavLink, useNavigate, useLocation, Link } from 'react-router'
 import { useSelector } from 'react-redux'
 import {
   Search,
+  Menu,
   Heart,
   Bell,
   ShoppingBag,
   User,
   Home as HomeIcon,
-  LayoutGrid,
   ShoppingCart,
   Package,
   ChevronDown,
@@ -23,7 +23,7 @@ import SellerNavIcon from '../../seller/components/SellerNavIcon'
 import SearchResultsPanel from '../components/SearchResultsPanel'
 import { useProduct } from '../../product/hook/useProduct'
 import { useDebounce } from '../components/useDebounce'
-import { CATEGORY_MENU } from '../../../constant/Categories'
+import { CATEGORIES as MENS_CATEGORIES, CATEGORY_MENU } from '../../../constant/Categories'
 import useNotification from '../../notification/hook/useNotification'
 
 const DESKTOP_LINKS = [
@@ -35,7 +35,6 @@ const DESKTOP_LINKS = [
 
 const MOBILE_NAV = [
   { key: 'home', icon: HomeIcon, label: 'Home', to: '/' },
-  { key: 'categories', icon: LayoutGrid, label: 'Categories', to: null },
   { key: 'cart', icon: ShoppingCart, label: 'Cart', to: '/cart' },
   { key: 'orders', icon: Package, label: 'Orders', to: '/orders' },
   { key: 'profile', icon: User, label: 'Profile', to: '/profile' },
@@ -47,7 +46,6 @@ const Navbar = () => {
   const [notifOpen, setNotifOpen] = useState(false)
   const [catOpen, setCatOpen] = useState(false)
   const [mobileCatOpen, setMobileCatOpen] = useState(false)
-  const [mobileActiveGroup, setMobileActiveGroup] = useState(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const notifRef = useRef(null)
   const profileRef = useRef(null)
@@ -173,14 +171,24 @@ const Navbar = () => {
 
       {/* ─── MOBILE HEADER ─────────────────────────────────────── */}
       <header className={`md:hidden sticky top-0 z-30 flex items-center justify-between px-5 py-3.5 backdrop-blur-xl border-b ${navBg}`}>
-        <button
-          type="button"
-          aria-label="Search"
-          onClick={() => setMobileSearchOpen(true)}
-          className={`${textSoft} hover:text-[#B08D57] transition-colors`}
-        >
-          <Search size={18} strokeWidth={1.5} />
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            aria-label="Open categories menu"
+            onClick={() => setMobileCatOpen(true)}
+            className={`${textPrimary} hover:text-[#B08D57] transition-colors`}
+          >
+            <Menu size={21} strokeWidth={1.8} />
+          </button>
+          <button
+            type="button"
+            aria-label="Search"
+            onClick={() => setMobileSearchOpen(true)}
+            className={`${textSoft} hover:text-[#B08D57] transition-colors`}
+          >
+            <Search size={18} strokeWidth={1.5} />
+          </button>
+        </div>
 
         <NavLink to="/" className={`font-display text-[20px] font-semibold tracking-[0.12em] ${textPrimary}`}>
           ZRIVE
@@ -508,19 +516,6 @@ const Navbar = () => {
       <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-30 backdrop-blur-xl border-t ${navBg}`}>
         <div className="flex items-center px-2 py-2">
           {MOBILE_NAV.map(({ key, icon: Icon, label, to }) => {
-            if (!to) {
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setMobileCatOpen(true)}
-                  className={`flex-1 flex flex-col items-center gap-0.5 py-1 transition-colors ${mobileCatOpen ? 'text-[#B08D57]' : textSoft}`}
-                >
-                  <Icon size={17} strokeWidth={mobileCatOpen ? 2 : 1.5} />
-                  <span className="text-[9px] leading-none font-medium">{label}</span>
-                </button>
-              )
-            }
             return (
               <NavLink
                 key={key}
@@ -545,44 +540,57 @@ const Navbar = () => {
       {/* ─── MOBILE CATEGORY SHEET ──────────────────────────────── */}
       {mobileCatOpen && (
         <div className="md:hidden fixed inset-0 z-40">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileCatOpen(false)} />
-          <div className={`absolute bottom-0 left-0 right-0 rounded-t-[20px] max-h-[85vh] flex flex-col animate-fade-in-up ${surfaceBg}`}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E5E5] flex-shrink-0">
-              <span className={`font-display text-[17px] ${textPrimary}`}>Shop By Category</span>
-              <button type="button" onClick={() => setMobileCatOpen(false)} className={`${textSoft} hover:text-[#B08D57] transition-colors`}>
-                <X size={18} strokeWidth={1.5} />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setMobileCatOpen(false)} />
+          <div className={`absolute inset-y-0 left-0 w-[min(86vw,350px)] flex flex-col shadow-2xl animate-fade-in-left ${surfaceBg}`}>
+            <div className="flex items-center justify-between bg-[#111111] px-5 py-5 text-white flex-shrink-0">
+              <div>
+                <p className="font-display text-[18px] font-semibold tracking-[0.08em]">ZRIVE</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#D4B982]">
+                  {user ? `Hi, ${user.fullName?.split(' ')[0] || 'there'}` : 'Shop your style'}
+                </p>
+              </div>
+              <button type="button" aria-label="Close categories menu" onClick={() => setMobileCatOpen(false)} className="text-white/70 hover:text-white transition-colors">
+                <X size={20} strokeWidth={1.5} />
               </button>
             </div>
-            <div className="overflow-y-auto px-5 py-3 pb-6">
-              {CATEGORY_MENU.map((group) => {
-                const isOpen = mobileActiveGroup === group.title
-                return (
-                  <div key={group.title} className="border-b border-[#E5E5E5]">
+
+            <div className="overflow-y-auto px-4 py-5">
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <p className={`text-[11px] font-bold uppercase tracking-[0.16em] ${textPrimary}`}>The ZRIVE edit</p>
+                  <button type="button" onClick={() => { setMobileCatOpen(false); navigate('/all-products') }} className="text-[10px] font-semibold text-[#B08D57]">View all</button>
+                </div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {MENS_CATEGORIES.slice(0, 6).map((category) => (
                     <button
+                      key={category.id}
                       type="button"
-                      onClick={() => setMobileActiveGroup(isOpen ? null : group.title)}
-                      className="w-full flex items-center justify-between py-4"
+                      onClick={() => goToCategory(category.id)}
+                      className="group text-left"
                     >
-                      <span className={`text-[13px] font-semibold ${textPrimary}`}>{group.title}</span>
-                      <ChevronRight size={14} strokeWidth={2} className={`${textSoft} transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
-                    </button>
-                    {isOpen && (
-                      <div className="pb-4 grid grid-cols-2 gap-x-4 gap-y-3">
-                        {group.items.map((item) => (
-                          <button
-                            key={item.slug}
-                            type="button"
-                            onClick={() => goToCategory(item.slug)}
-                            className={`text-[12.5px] text-left hover:text-[#B08D57] transition-colors ${textSoft}`}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
+                      <div className="aspect-square overflow-hidden rounded-[6px] border border-[#E5E5E5] bg-[#F7F7F5] group-hover:border-[#B08D57] transition-colors">
+                        <img src={category.image} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                       </div>
-                    )}
-                  </div>
-                )
-              })}
+                      <span className={`mt-1.5 block truncate text-[10px] font-semibold ${textPrimary} group-hover:text-[#B08D57]`}>{category.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p className={`mb-2 text-[11px] font-bold uppercase tracking-[0.16em] ${textPrimary}`}>More from ZRIVE</p>
+              <div className="divide-y divide-[#E5E5E5]">
+                {MENS_CATEGORIES.slice(6).map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => goToCategory(category.id)}
+                    className={`flex w-full items-center justify-between py-3.5 text-left text-[12.5px] font-medium ${textSoft} hover:text-[#B08D57] transition-colors`}
+                  >
+                    {category.label}
+                    <ChevronRight size={14} strokeWidth={1.75} />
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { setError, setLoading } from "../state/authSlice";
 import { useAuth } from "../hook/useAuth";
@@ -46,7 +46,7 @@ const Register = () => {
   };
 
   return (
-    <div style={{ height: "100dvh" }} className="w-full flex overflow-hidden bg-black">
+    <div style={{ height: "100dvh" }} className="w-full flex overflow-hidden bg-white">
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(14px); }
@@ -62,11 +62,11 @@ const Register = () => {
         .auth-input {
           width: 100%;
           border-radius: 7px;
-          border: 1.5px solid #2a2a2a;
-          background: #141414;
+          border: 1.5px solid #e5e5e5;
+          background: #ffffff;
           padding: 8px 13px;
           font-size: 13px;
-          color: #f0f0f0;
+          color: #111111;
           outline: none;
           transition: border-color .2s, box-shadow .2s;
         }
@@ -75,14 +75,14 @@ const Register = () => {
           box-shadow: 0 0 0 3px rgba(176,141,87,.12);
         }
         .auth-input.err { border-color: #e53e3e; }
-        .auth-input::placeholder { color: #555; }
+        .auth-input::placeholder { color: #999; }
         .auth-label {
           display: block;
           font-size: 10px;
           font-weight: 700;
           letter-spacing: .1em;
           text-transform: uppercase;
-          color: #777;
+          color: #666;
           margin-bottom: 4px;
         }
       `}</style>
@@ -118,20 +118,28 @@ const Register = () => {
       </div>
 
       {/* ── RIGHT: Form panel ── */}
-      <div className="flex-1 flex items-center justify-center bg-[#0a0a0a] px-6 md:px-10 lg:px-14 overflow-y-auto">
+      <div className="relative flex-1 flex items-center justify-center bg-white px-6 md:px-10 lg:px-14 overflow-y-auto">
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="absolute top-6 left-6 flex items-center gap-2 text-[12px] font-semibold text-[#666] transition-colors hover:text-[#111] cursor-pointer"
+        >
+          <ArrowLeft size={16} />
+          Back to marketplace
+        </button>
         <div className="w-full max-w-[380px] py-4">
 
           {/* Mobile logo */}
           <div className="flex flex-col items-center mb-4 md:hidden fu">
-            <span className="text-white"><ZriveLogo /></span>
-            <p className="mt-2 font-display text-[16px] font-medium tracking-[0.35em] text-white">ZRIVE</p>
+            <span className="text-[#111]"><ZriveLogo /></span>
+            <p className="mt-2 font-display text-[16px] font-medium tracking-[0.35em] text-[#111]">ZRIVE</p>
             <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#B08D57] mt-0.5">Men's Fashion</p>
           </div>
 
           {/* Heading */}
           <div className="fu mb-4">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#B08D57] mb-1">Get started</p>
-            <h1 className="font-display text-[26px] md:text-[30px] font-bold text-white leading-[1.1]">
+            <h1 className="font-display text-[26px] md:text-[30px] font-bold text-[#111] leading-[1.1]">
               Create your account
             </h1>
           </div>
@@ -172,14 +180,14 @@ const Register = () => {
             {/* Phone */}
             <div className="fu3">
               <label className="auth-label">Phone Number</label>
-              <div className={`flex items-center rounded-[7px] border-[1.5px] bg-[#141414] transition-all focus-within:border-[#B08D57] focus-within:shadow-[0_0_0_3px_rgba(176,141,87,.12)] ${errors.phone ? "border-red-500" : "border-[#2a2a2a]"}`}>
-                <span className="border-r border-[#2a2a2a] px-3 py-[8px] text-[12px] font-bold text-[#666] shrink-0">+91</span>
+              <div className={`flex items-center rounded-[7px] border-[1.5px] bg-white transition-all focus-within:border-[#B08D57] focus-within:shadow-[0_0_0_3px_rgba(176,141,87,.12)] ${errors.phone ? "border-red-500" : "border-[#e5e5e5]"}`}>
+                <span className="border-r border-[#e5e5e5] px-3 py-[8px] text-[12px] font-bold text-[#666] shrink-0">+91</span>
                 <input
                   id="phone"
                   type="tel"
                   inputMode="numeric"
                   placeholder="98765 43210"
-                  className="w-full bg-transparent px-3 py-[8px] text-[13px] text-[#f0f0f0] placeholder:text-[#555] outline-none"
+                  className="w-full bg-transparent px-3 py-[8px] text-[13px] text-[#111] placeholder:text-[#999] outline-none"
                   {...register("phone", {
                     required: "Please enter your phone number",
                     pattern: { value: PHONE_REGEX, message: "Enter a valid 10-digit mobile number" },
@@ -192,18 +200,18 @@ const Register = () => {
             {/* Password */}
             <div className="fu4">
               <label className="auth-label">Password</label>
-              <div className={`flex items-center rounded-[7px] border-[1.5px] bg-[#141414] transition-all focus-within:border-[#B08D57] focus-within:shadow-[0_0_0_3px_rgba(176,141,87,.12)] ${errors.password ? "border-red-500" : "border-[#2a2a2a]"}`}>
+              <div className={`flex items-center rounded-[7px] border-[1.5px] bg-white transition-all focus-within:border-[#B08D57] focus-within:shadow-[0_0_0_3px_rgba(176,141,87,.12)] ${errors.password ? "border-red-500" : "border-[#e5e5e5]"}`}>
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Min 6 characters"
-                  className="w-full bg-transparent px-[13px] py-[8px] text-[13px] text-[#f0f0f0] placeholder:text-[#555] outline-none"
+                  className="w-full bg-transparent px-[13px] py-[8px] text-[13px] text-[#111] placeholder:text-[#999] outline-none"
                   {...register("password", {
                     required: "Please enter your password",
                     minLength: { value: 6, message: "Minimum 6 characters" },
                   })}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="px-3 text-[#555] hover:text-[#ccc] transition-colors cursor-pointer">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="px-3 text-[#999] hover:text-[#111] transition-colors cursor-pointer">
                   {showPassword ? <EyeOff size={15} strokeWidth={1.8} /> : <Eye size={15} strokeWidth={1.8} />}
                 </button>
               </div>
@@ -224,9 +232,9 @@ const Register = () => {
 
           {/* Divider */}
           <div className="fu4 flex items-center gap-3 my-3">
-            <span className="h-px flex-1 bg-[#222]" />
-            <span className="text-[9px] font-bold tracking-[0.2em] text-[#444]">OR</span>
-            <span className="h-px flex-1 bg-[#222]" />
+            <span className="h-px flex-1 bg-[#e5e5e5]" />
+            <span className="text-[9px] font-bold tracking-[0.2em] text-[#999]">OR</span>
+            <span className="h-px flex-1 bg-[#e5e5e5]" />
           </div>
 
           {/* Google */}
@@ -234,7 +242,7 @@ const Register = () => {
             <button
               type="button"
               onClick={() => { window.location.href = "/api/auth/google"; }}
-              className="flex w-full items-center justify-center gap-2.5 rounded-[7px] border border-[#2a2a2a] bg-[#141414] py-[10px] text-[12px] font-semibold text-[#ccc] transition-all hover:border-[#B08D57]/50 hover:bg-[#1a1a1a] hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              className="flex w-full items-center justify-center gap-2.5 rounded-[7px] border border-[#e5e5e5] bg-white py-[10px] text-[12px] font-semibold text-[#333] transition-all hover:border-[#B08D57]/50 hover:bg-[#fafafa] hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             >
               <GoogleIcon />
               Continue with Google
@@ -242,7 +250,7 @@ const Register = () => {
           </div>
 
           {/* Footer */}
-          <p className="fu5 mt-4 text-center text-[12px] text-[#555]">
+          <p className="fu5 mt-4 text-center text-[12px] text-[#777]">
             Already have an account?{" "}
             <Link to="/login" className="font-bold text-[#B08D57] hover:text-[#d4aa6a] transition-colors">
               Sign in
