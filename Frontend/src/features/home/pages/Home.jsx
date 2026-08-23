@@ -24,9 +24,8 @@ import useCart from "../../cart/hook/useCart";
 import WishlistButton from "../../wishlist/components/WishlistButton";
 import { notify } from "../../../utils/toast";
 import { CATEGORIES as MENS_CATEGORIES } from "../../../constant/Categories";
-import ZriveHeroBannerGen from "../../../assets/images/zrive_hero_banner_gen.png";
-import HeroZrive from "../../../assets/images/Hero_Zrive.png";
-import MobileHeroZrive from "../../../assets/images/New_Zrive_Mobile_Hero.png";
+import HeroDesktop from "../../../assets/images/hero_desktop_genz.jpg";
+import HeroMobile from "../../../assets/images/hero_mobile_compact_banner.jpg";
 
 // ---- Backend data format safety helpers -----------------------------------
 export const formatPrice = (priceObj) => {
@@ -233,38 +232,50 @@ const Home = () => {
       `}</style>
 
       {/* ══════════════════════════════════════════
-          1 · HERO BANNER (Generated Image 2 - 100% Width & Full Head Alignment)
+          1 · HERO BANNER — Responsive
       ══════════════════════════════════════════ */}
-      <section className="relative w-full overflow-hidden bg-[#111111] text-white">
+      <section className="relative w-full overflow-hidden bg-white">
+        {/* ── MOBILE (below md): compact landscape banner with sharp edges ── */}
         <div
-          className="relative w-full h-[260px] sm:h-[340px] md:h-[400px] lg:h-[460px] cursor-pointer group overflow-hidden"
+          className="md:hidden relative w-full cursor-pointer group bg-white rounded-none overflow-hidden"
           onClick={() => navigate("/all-products")}
         >
-          {/* Custom Generated Image 2 spanning 100% width with object-[center_12%] */}
           <img
-            src={ZriveHeroBannerGen}
-            alt="ZRIVE Luxury Menswear - Flat 20% Off 1st Order"
-            className="w-full h-full object-cover object-[center_12%] transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+            src={HeroMobile}
+            alt="ZRIVE — Flat 30% Off Your First Order"
+            className="w-full h-auto block rounded-none object-cover transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+            loading="eager"
           />
+        </div>
 
-          {/* Clean Eye-Catching Shop Collection CTA Overlay */}
-          <div className="absolute bottom-5 left-5 sm:bottom-8 sm:left-10 md:bottom-10 md:left-14 z-10 flex items-center gap-3">
+        {/* ── DESKTOP (md+): 16:9 Gen-Z wide campaign banner with CTAs ── */}
+        <div
+          className="hidden md:block relative w-full cursor-pointer group overflow-hidden"
+          onClick={() => navigate("/all-products")}
+        >
+          <img
+            src={HeroDesktop}
+            alt="ZRIVE New Collection Drop"
+            className="w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.015]"
+            style={{ display: "block" }}
+            loading="eager"
+          />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/10 to-transparent pointer-events-none" />
+          {/* CTA overlay */}
+          <div className="absolute bottom-1/2 translate-y-1/2 left-14 z-10 flex flex-col items-start gap-3">
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate("/all-products");
-              }}
-              className="inline-flex items-center gap-2.5 bg-[#111111] text-white text-[11px] md:text-[12px] font-bold tracking-[0.14em] uppercase px-6 py-3 md:px-7 md:py-3.5 border-2 border-[#B08D57] hover:bg-[#B08D57] transition-all duration-300 shadow-2xl rounded-xs group/btn"
+              onClick={(e) => { e.stopPropagation(); navigate("/all-products"); }}
+              className="inline-flex items-center gap-2.5 bg-[#B08D57] text-[#0a0a0a] text-[13px] font-bold tracking-[0.14em] uppercase px-8 py-4 hover:bg-white transition-all duration-300 shadow-2xl rounded-sm group/btn"
             >
               <span>Shop Collection</span>
-              <ArrowRight size={14} className="text-[#E9CD7A] group-hover/btn:text-white group-hover/btn:translate-x-1 transition-all" />
+              <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
             </button>
-
             <button
               type="button"
-              onClick={copyCouponCode}
-              className="hidden sm:inline-flex items-center gap-1.5 bg-black/80 border border-white/20 text-white text-[11px] font-semibold px-4 py-3.5 rounded-xs hover:border-[#B08D57] transition-colors"
+              onClick={(e) => { e.stopPropagation(); copyCouponCode(e); }}
+              className="inline-flex items-center gap-1.5 bg-black/70 backdrop-blur-sm border border-white/20 text-white text-[11px] font-semibold px-4 py-3 rounded-sm hover:border-[#B08D57] transition-colors"
             >
               {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={12} className="text-[#B08D57]" />}
               <span>{copied ? "Copied!" : "Code: ZRIVEFIRST"}</span>
