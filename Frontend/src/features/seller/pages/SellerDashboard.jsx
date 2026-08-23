@@ -11,6 +11,7 @@ import {
 import useSeller from "../hook/useSeller";
 import SellerAlarmToggle from "../components/SellerAlarmToggle";
 import KycRequiredModal from "../components/KycRequiredModal";
+import { SellerDashboardSkeleton } from "../../../components/common/Skeleton";
 import {
   registerServiceWorker,
   subscribeToPushNotifications,
@@ -155,6 +156,10 @@ const SellerDashboard = () => {
     }
     navigate("/seller/inventory/new");
   };
+
+  if (!application && !orders.length) {
+    return <SellerDashboardSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#111111] text-[12px] pb-12">

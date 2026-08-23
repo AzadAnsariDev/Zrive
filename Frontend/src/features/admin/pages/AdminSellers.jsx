@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { useSelector } from 'react-redux'
 import { ChevronRight, Search, ShieldAlert, CheckCircle, Clock, XCircle, ArrowLeft } from 'lucide-react'
 import { useAdmin } from '../hook/useAdmin'
+import { AdminSellersSkeleton } from '../../../components/common/Skeleton'
 
 const STATUS_CONFIG = {
   pending_verification: {
@@ -60,6 +61,10 @@ const AdminSellers = () => {
 
   const pendingCount = sellers.filter((s) => s.applicationStatus === 'pending_verification').length
   const approvedCount = sellers.filter((s) => s.applicationStatus === 'approved').length
+
+  if (loading && sellers.length === 0) {
+    return <AdminSellersSkeleton />
+  }
 
   return (
     <div className="space-y-6">

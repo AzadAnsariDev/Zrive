@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import useSeller from '../hook/useSeller'
 import { notify } from '../../../utils/toast'
+import { SellerPaymentsSkeleton } from '../../../components/common/Skeleton'
 
 const formatINR = (n) => `₹${(Number(n) || 0).toLocaleString('en-IN')}`
 const formatDate = (iso) =>
@@ -43,6 +44,12 @@ const SellerPayments = () => {
       setUpiMobileInput(application.payout.upiMobile || application.businessPhone || '')
     }
   }, [application])
+
+  const loading = useSelector((state) => state.seller.loading)
+
+  if (loading && orders.length === 0) {
+    return <SellerPaymentsSkeleton />
+  }
 
   // Revenue and balance stats — only accepted orders
   const payoutStats = useMemo(() => {

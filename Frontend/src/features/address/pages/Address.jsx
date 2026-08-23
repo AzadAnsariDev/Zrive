@@ -22,6 +22,7 @@ import {
 import useAddress from "../hook/useAddress";
 import useOrder from "../../order/hook/useOrder";
 import { setSelectedAddress } from "../state/addressSlice";
+import { AddressSkeleton } from "../../../components/common/Skeleton";
 
 const emptyDefaults = {
   fullName: "",
@@ -66,6 +67,7 @@ const Address = () => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const {
     register,
@@ -80,7 +82,15 @@ const Address = () => {
   const isDefault = watch("isDefault");
 
   useEffect(() => {
-    handleGetAllAddresses();
+    async function loadAddresses() {
+      setLoading(true);
+      try {
+        await handleGetAllAddresses();
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadAddresses();
   }, []);
 
   useEffect(() => {
@@ -89,6 +99,10 @@ const Address = () => {
       dispatch(setSelectedAddress(defaultAddr));
     }
   }, [addresses]);
+
+  if (loading) {
+    return <AddressSkeleton />;
+  }
 
   const openCreateForm = () => {
     reset(emptyDefaults);

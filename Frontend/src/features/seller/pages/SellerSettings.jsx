@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import useSeller from '../hook/useSeller'
 import { notify } from '../../../utils/toast'
+import { SellerSettingsSkeleton } from '../../../components/common/Skeleton'
 
 const PLANS = [
   {
@@ -104,6 +105,10 @@ const SellerSettings = () => {
       setPincode(addr.pincode || '')
     }
   }, [application])
+
+  if (!application) {
+    return <SellerSettingsSkeleton />
+  }
 
   const onSaveProfile = async (e) => {
     e.preventDefault()

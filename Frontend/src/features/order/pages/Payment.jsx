@@ -19,6 +19,7 @@ import useOrder from "../hook/useOrder";
 import useCart from "../../cart/hook/useCart";
 import useAddress from "../../address/hook/useAddress";
 import { notify } from "../../../utils/toast";
+import { PaymentSkeleton } from "../../../components/common/Skeleton";
 
 const PAYMENT_METHODS = [
   {
@@ -85,25 +86,36 @@ const Payment = () => {
 
   const [selectedAddress, setSelectedAddress] = useState(location.state?.address || null);
   const [loadingPayment, setLoadingPayment] = useState(false);
+  const [loadingPage, setLoadingPage] = useState(true);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [expandedMethod, setExpandedMethod] = useState(null);
 
   useEffect(() => {
-    handleGetCart();
-    if (!selectedAddress) {
-      (async () => {
-        const addrList = await handleGetAddresses();
-        const list = addrList || addressesFromStore;
-        if (list && list.length > 0) {
-          const defaultAddr = list.find((a) => a.isDefault) || list[0];
-          setSelectedAddress(defaultAddr);
-        } else {
-          notify.error("Please select a delivery address first");
-          navigate("/address");
+    async function loadData() {
+      setLoadingPage(true);
+      try {
+        await handleGetCart();
+        if (!selectedAddress) {
+          const addrList = await handleGetAddresses();
+          const list = addrList || addressesFromStore;
+          if (list && list.length > 0) {
+            const defaultAddr = list.find((a) => a.isDefault) || list[0];
+            setSelectedAddress(defaultAddr);
+          } else {
+            notify.error("Please select a delivery address first");
+            navigate("/address");
+          }
         }
-      })();
+      } finally {
+        setLoadingPage(false);
+      }
     }
+    loadData();
   }, []);
+
+  if (loadingPage) {
+    return <PaymentSkeleton />;
+  }
 
   const handleSelectMethod = (methodId) => {
     setSelectedMethod(methodId);

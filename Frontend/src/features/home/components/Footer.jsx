@@ -52,21 +52,37 @@ const TRUST_BADGES = [
     icon: Truck,
     label: "Free Shipping",
     sub: "On orders above ₹999",
+    bg: "bg-[#FDF6EC]",
+    border: "border-[#F5E5CE]",
+    iconColor: "text-[#B08D57]",
+    badgeBg: "bg-[#B08D57]/15",
   },
   {
     icon: RefreshCw,
     label: "7-Day Returns",
     sub: "Hassle-free exchange",
+    bg: "bg-[#EDF8F1]",
+    border: "border-[#D3EEDC]",
+    iconColor: "text-[#287A4B]",
+    badgeBg: "bg-[#287A4B]/15",
   },
   {
     icon: Shield,
     label: "Secure Payments",
     sub: "Escrow protection",
+    bg: "bg-[#EDF3FC]",
+    border: "border-[#D4E3FA]",
+    iconColor: "text-[#2962FF]",
+    badgeBg: "bg-[#2962FF]/15",
   },
   {
     icon: CreditCard,
     label: "Easy EMI",
     sub: "No-cost options",
+    bg: "bg-[#F7EEFA]",
+    border: "border-[#EED7F4]",
+    iconColor: "text-[#8E24AA]",
+    badgeBg: "bg-[#8E24AA]/15",
   },
 ];
 
@@ -84,26 +100,30 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-[#111111] text-white">
-      {/* Trust Badges */}
-      <div className="border-b border-white/10">
-        <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {TRUST_BADGES.map(({ icon: Icon, label, sub }) => (
-              <div key={label} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#B08D57]/10 border border-[#B08D57]/30 flex items-center justify-center flex-shrink-0">
+    <div className="w-full">
+      {/* Colorful, Compact Trust Badges Strip with Margin Gap */}
+      <div className="max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12 my-6 md:my-8">
+        <div className="bg-gradient-to-r from-[#FAF8F5] via-[#FFFDF9] to-[#FAF8F5] border border-[#EAE4D7] rounded-xl sm:rounded-2xl p-3.5 sm:p-4 shadow-sm">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+            {TRUST_BADGES.map(({ icon: Icon, label, sub, bg, border, iconColor, badgeBg }) => (
+              <div
+                key={label}
+                className={`flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl ${bg} border ${border} transition-all duration-200 hover:shadow-sm`}
+              >
+                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg ${badgeBg} flex items-center justify-center flex-shrink-0 ${iconColor}`}>
                   <Icon
                     size={16}
-                    strokeWidth={1.5}
-                    className="text-[#B08D57]"
+                    strokeWidth={2}
                   />
                 </div>
 
-                <div>
-                  <p className="text-[12.5px] font-semibold text-white">
+                <div className="min-w-0">
+                  <p className="text-[12px] sm:text-[13px] font-bold text-[#111111] truncate">
                     {label}
                   </p>
-                  <p className="text-[11px] text-white/50">{sub}</p>
+                  <p className="text-[10px] sm:text-[11px] font-medium text-[#666666] truncate">
+                    {sub}
+                  </p>
                 </div>
               </div>
             ))}
@@ -111,8 +131,9 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Main Footer */}
-      <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 pt-12 pb-8">
+      {/* Main Footer (Pure Black) */}
+      <footer className="bg-[#111111] text-white">
+        <div className="max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 pt-12 pb-8">
         <div className="grid grid-cols-2 md:grid-cols-[1.6fr_1fr_1fr_1fr] gap-8 md:gap-12 mb-12">
 
           {/* Brand */}
@@ -230,8 +251,9 @@ const Footer = () => {
             </Link>
           </div>
         </div>
-      </div>
-    </footer>
+        </div>
+      </footer>
+    </div>
   );
 };
 

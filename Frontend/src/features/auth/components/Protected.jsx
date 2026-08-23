@@ -1,12 +1,13 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 import { Navigate } from 'react-router';
+import { ProtectedSkeleton } from '../../../components/common/Skeleton';
 
 const Protected = ({ children, role = "buyer" }) => {
 
   const { user, loading } = useSelector((state) => state.auth);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <ProtectedSkeleton />;
 
   if (!user) {
     return <Navigate to="/login" replace />;

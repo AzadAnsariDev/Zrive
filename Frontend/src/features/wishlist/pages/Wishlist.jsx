@@ -15,6 +15,7 @@ import {
 import { notify } from "../../../utils/toast";
 import useWishlist from "../hook/useWishlist";
 import useCart from "../../cart/hook/useCart";
+import { WishlistSkeleton } from "../../../components/common/Skeleton";
 
 const formatPrice = (priceObj) => {
   if (priceObj === null || priceObj === undefined) return "";
@@ -74,6 +75,10 @@ const Wishlist = () => {
       setMovingSku(null);
     }
   };
+
+  if (loading) {
+    return <WishlistSkeleton />
+  }
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#111111] pb-16">

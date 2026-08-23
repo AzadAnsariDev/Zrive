@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router'
 import { useProduct } from '../hook/useProduct'
 import { useSelector } from 'react-redux'
 import EmptyProductState from '../components/EmptyProductState'
+import { SellerInventorySkeleton } from '../../../components/common/Skeleton'
 import { formatPrice } from '../../home/pages/Home'
 
 const FILTER_TABS = ['All', 'In Stock', 'Out of Stock']
@@ -53,12 +54,18 @@ const ProductList = () => {
   const [activeFilter, setActiveFilter] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
 
+  const loading = useSelector((state) => state.product?.loading?.products || state.product?.loading?.fetch || state.seller?.loading)
+
   const { handleGetSellerProducts } = useProduct()
   const navigate = useNavigate()
 
   useEffect(() => {
     handleGetSellerProducts()
   }, [])
+
+  if (loading && PRODUCTS.length === 0) {
+    return <SellerInventorySkeleton />
+  }
 
   const filteredProducts = PRODUCTS.filter((p) => {
     const matchesFilter =

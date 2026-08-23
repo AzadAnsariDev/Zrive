@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useAdmin } from '../hook/useAdmin'
 import { notify } from '../../../utils/toast'
+import { AdminSellerDetailSkeleton } from '../../../components/common/Skeleton'
 
 const RejectModal = ({ onClose, onConfirm, submitting }) => {
     const [reason, setReason] = useState('')
@@ -95,11 +96,7 @@ const AdminSellerDetail = () => {
     }
 
     if (loading?.sellers || !seller) {
-        return (
-            <div className="min-h-[50vh] flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-white/20 border-t-[#B08D57] rounded-full animate-spin" />
-            </div>
-        )
+        return <AdminSellerDetailSkeleton />
     }
 
     const isApproved = seller.applicationStatus === 'approved'

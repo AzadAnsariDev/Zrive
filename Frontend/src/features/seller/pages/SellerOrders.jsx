@@ -5,6 +5,7 @@ import {
   Clock, Check, X, Package, MapPin, Phone, RefreshCw, AlertCircle, Loader2, ChevronRight, ArrowLeft, ShoppingBag,
 } from 'lucide-react'
 import useSeller from '../hook/useSeller'
+import { SellerOrdersSkeleton } from '../../../components/common/Skeleton'
 
 const FILTERS = [
   { key: 'all', label: 'All Orders' },
@@ -118,7 +119,7 @@ const SellerOrders = () => {
         {/* Orders Table Container */}
         <div className="bg-white border border-[#EAEAEA] rounded-[6px] overflow-hidden shadow-sm">
           {loading ? (
-            <div className="p-8 text-center text-[#666] text-[12px]">Loading merchant orders…</div>
+            <SellerOrdersSkeleton />
           ) : filteredOrders.length === 0 ? (
             <div className="p-12 text-center text-[#666] text-[12px]">No orders found for this filter.</div>
           ) : (

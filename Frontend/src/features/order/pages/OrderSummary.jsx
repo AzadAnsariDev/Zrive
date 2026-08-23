@@ -20,6 +20,7 @@ import useCart from "../../cart/hook/useCart";
 import useAddress from "../../address/hook/useAddress";
 import { setSelectedAddress } from "../../address/state/addressSlice";
 import { notify } from "../../../utils/toast";
+import { OrderSummarySkeleton } from "../../../components/common/Skeleton";
 
 const toNum = (v) => {
   const n = Number(v);
@@ -242,14 +243,22 @@ const OrderSummary = () => {
   );
   const [loadingAddr, setLoadingAddr] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const isFreeShipping = cartTotal >= 999;
   const shippingFee = isFreeShipping ? 0 : 99;
   const grandTotal = cartTotal + shippingFee;
 
   useEffect(() => {
-    handleGetCart();
-    resolveAddress();
+    async function loadData() {
+      setLoading(true);
+      try {
+        await Promise.all([handleGetCart(), resolveAddress()]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
   }, []);
 
   const resolveAddress = async () => {
@@ -271,6 +280,10 @@ const OrderSummary = () => {
   const handleChangeAddress = () => {
     navigate("/address", { state: { returnTo: "/order-summary" } });
   };
+
+  if (loading) {
+    return <OrderSummarySkeleton />;
+  }
 
   const handleIncrement = async (item) => {
     try {

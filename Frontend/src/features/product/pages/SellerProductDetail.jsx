@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { ArrowLeft, Plus, Pencil, X, ImageIcon, UploadCloud, Loader2, Trash2 } from 'lucide-react'
 import { useProduct } from '../hook/useProduct'
 import { notify } from '../../../utils/toast'
+import { SellerProductDetailSkeleton } from '../../../components/common/Skeleton'
 
 const MAX_IMAGES_PER_VARIANT = 5
 
@@ -463,11 +464,7 @@ const SellerProductDetail = () => {
   }
 
   if (loading || !product) {
-    return (
-      <div className="min-h-screen bg-[#FFFFFF] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#EAEAEA] border-t-[#B08D57] rounded-full animate-spin" />
-      </div>
-    )
+    return <SellerProductDetailSkeleton />
   }
 
   return (

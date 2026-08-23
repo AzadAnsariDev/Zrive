@@ -24,6 +24,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { notify } from "../../../utils/toast";
+import { ProfileSkeleton } from "../../../components/common/Skeleton";
 import { useAuth } from "../../auth/hook/useAuth";
 import useAddress from "../../address/hook/useAddress";
 
@@ -70,6 +71,10 @@ const Profile = () => {
       });
     }
   }, [user]);
+
+  if (!user) {
+    return <ProfileSkeleton />;
+  }
 
   const onSaveProfile = async (e) => {
     e.preventDefault();

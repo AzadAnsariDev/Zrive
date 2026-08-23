@@ -14,6 +14,7 @@ import {
 import { notify } from "../../../utils/toast";
 import useOrder from "../hook/useOrder";
 import CancelOrderModal from "../components/CancelOrderModal";
+import { OrderGroupItemsSkeleton } from "../../../components/common/Skeleton";
 
 const STATUS_CONFIG = {
   pending_payment: { icon: Clock, label: "Awaiting payment" },
@@ -63,11 +64,7 @@ const OrderGroupItems = () => {
   };
 
   if (loading && groupOrders.length === 0) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#EAEAEA] border-t-[#B08D57] rounded-full animate-spin" />
-      </div>
-    );
+    return <OrderGroupItemsSkeleton />;
   }
 
   return (

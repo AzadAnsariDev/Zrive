@@ -32,6 +32,7 @@ import { useReview } from '../../review/hook/useReview'
 import ReviewSummary from '../../review/components/ReviewSummary'
 import ReviewList from '../../review/components/ReviewList'
 import ReviewForm from '../../review/components/ReviewForm'
+import { SingleProductSkeleton } from '../../../components/common/Skeleton'
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
@@ -358,21 +359,7 @@ const SingleProduct = () => {
   }
 
   if (!product) {
-    return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-10">
-          <div className="h-4 w-28 bg-[#FAFAFA] rounded mb-6 animate-pulse" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="aspect-[3/4] bg-[#FAFAFA] rounded animate-pulse" />
-            <div className="space-y-4">
-              <div className="h-4 w-20 bg-[#FAFAFA] rounded" />
-              <div className="h-8 w-3/4 bg-[#FAFAFA] rounded" />
-              <div className="h-6 w-24 bg-[#FAFAFA] rounded" />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <SingleProductSkeleton />
   }
 
   return (

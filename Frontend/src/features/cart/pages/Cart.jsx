@@ -5,6 +5,7 @@ import { Minus, Plus, Trash2, ShoppingBag, ShieldCheck, Truck, RefreshCw, Tag, A
 import useCart from '../hook/useCart'
 import { formatPrice } from '../../home/pages/Home'
 import { notify } from '../../../utils/toast'
+import { CartSkeleton } from '../../../components/common/Skeleton'
 
 const CartItemRow = ({ item, index, onIncrement, onDecrement, onRemove }) => {
   const variant = item.product?.variants
@@ -216,12 +217,7 @@ const Cart = () => {
   const isFreeShipping = subtotal >= 999
 
   if (loading) {
-    return (
-      <div className="min-h-[60vh] bg-white flex flex-col items-center justify-center gap-3">
-        <div className="w-8 h-8 border-2 border-[#EAEAEA] border-t-[#B08D57] rounded-full animate-spin" />
-        <p className="text-[13px] text-[#666666]">Loading your shopping bag…</p>
-      </div>
-    )
+    return <CartSkeleton />
   }
 
   return (

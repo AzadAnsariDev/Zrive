@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import useSeller from '../hook/useSeller'
 import { useProduct } from '../../product/hook/useProduct'
+import { SellerAnalyticsSkeleton } from '../../../components/common/Skeleton'
 
 const formatINR = (n) => `₹${(Number(n) || 0).toLocaleString('en-IN')}`
 
@@ -49,6 +50,12 @@ const SellerAnalytics = () => {
     handleGetSellerOrders()
     handleGetSellerProducts()
   }, [])
+
+  const loading = useSelector((state) => state.seller.loading)
+
+  if (loading && orders.length === 0) {
+    return <SellerAnalyticsSkeleton />
+  }
 
   const timeframeDays = useMemo(() => {
     switch (timeframe) {

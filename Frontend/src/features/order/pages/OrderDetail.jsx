@@ -26,6 +26,7 @@ import {
   Star,
 } from "lucide-react";
 import { notify } from "../../../utils/toast";
+import { OrderDetailSkeleton } from "../../../components/common/Skeleton";
 import useOrder from "../hook/useOrder.js";
 import useDelivery from "../../delivery/hook/useDelivery.js";
 import { setCurrentDelivery } from "../../delivery/state/deliverySlice.js";
@@ -620,11 +621,7 @@ const OrderDetail = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#EAEAEA] border-t-[#B08D57] rounded-full animate-spin" />
-      </div>
-    );
+    return <OrderDetailSkeleton />;
   }
 
   if (!order) {
