@@ -24,8 +24,55 @@ import useCart from "../../cart/hook/useCart";
 import WishlistButton from "../../wishlist/components/WishlistButton";
 import { notify } from "../../../utils/toast";
 import { CATEGORIES as MENS_CATEGORIES } from "../../../constant/Categories";
-import HeroDesktop from "../../../assets/images/hero_desktop_genz.jpg";
-import HeroMobile from "../../../assets/images/hero_mobile_compact_banner.jpg";
+import HeroBanner from "../../../assets/images/hero_streetwear_banner.png";
+import HeroSlide1 from "../../../assets/images/hero_slide_1.png";
+import HeroSlide2 from "../../../assets/images/hero_slide_2.png";
+import HeroSlide3 from "../../../assets/images/hero_slide_3.png";
+import HeroSlide4 from "../../../assets/images/hero_slide_4.png";
+import HeroSlide5 from "../../../assets/images/hero_slide_5.png";
+
+const HERO_SLIDES = [
+  {
+    id: 1,
+    image: HeroSlide1,
+    title: "THE NEW STREET CODE",
+    offer: "UP TO 40% OFF",
+    subtitle: "MEN'S STREETWEAR",
+    cta: "SHOP THE DROP →",
+  },
+  {
+    id: 2,
+    image: HeroSlide2,
+    title: "NEW ARRIVALS",
+    offer: "UP TO 30% OFF",
+    subtitle: "FRESH FITS. NEW ENERGY.",
+    cta: "SHOP NEW ARRIVALS →",
+  },
+  {
+    id: 3,
+    image: HeroSlide3,
+    title: "STREET ESSENTIALS",
+    offer: "FROM ₹699",
+    subtitle: "BUILT FOR YOUR EVERYDAY",
+    cta: "EXPLORE ESSENTIALS →",
+  },
+  {
+    id: 4,
+    image: HeroSlide4,
+    title: "TRENDING NOW",
+    offer: "UP TO 40% OFF",
+    subtitle: "THE FIT EVERYONE'S TALKING ABOUT",
+    cta: "SHOP TRENDING →",
+  },
+  {
+    id: 5,
+    image: HeroSlide5,
+    title: "WEEKEND DROP",
+    offer: "LIMITED TIME",
+    subtitle: "YOUR NEXT FIT STARTS HERE",
+    cta: "SHOP THE DROP →",
+  },
+];
 
 // ---- Backend data format safety helpers -----------------------------------
 export const formatPrice = (priceObj) => {
@@ -188,6 +235,15 @@ const Home = () => {
   const navigate = useNavigate();
   const { handleGetProducts } = useProduct();
   const [copied, setCopied] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Auto-advance desktop slider every 5 seconds (5000ms)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     handleGetProducts();
@@ -232,54 +288,118 @@ const Home = () => {
       `}</style>
 
       {/* ══════════════════════════════════════════
-          1 · HERO BANNER — Responsive
+          1 · HERO BANNER — Responsive (Half Page Height & Zero Text Crop)
       ══════════════════════════════════════════ */}
-      <section className="relative w-full overflow-hidden bg-white">
-        {/* ── MOBILE (below md): compact landscape banner with sharp edges ── */}
+      <section className="relative w-full overflow-hidden bg-[#0c0e11]">
+        {/* ── MOBILE (below md): Natural aspect ratio (~half-page height), zero text crop ── */}
         <div
-          className="md:hidden relative w-full cursor-pointer group bg-white rounded-none overflow-hidden"
+          className="md:hidden relative w-full aspect-[1024/863] cursor-pointer group bg-[#0c0e11] overflow-hidden"
           onClick={() => navigate("/all-products")}
         >
           <img
-            src={HeroMobile}
-            alt="ZRIVE — Flat 30% Off Your First Order"
-            className="w-full h-auto block rounded-none object-cover transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+            src={HeroBanner}
+            alt="ZRIVE — The New Street Code | Up to 40% Off Men's Streetwear"
+            className="w-full h-full object-contain block select-none"
             loading="eager"
           />
+
+          {/* Eye-catching glowing 'Shop The Drop' button */}
+          <div className="absolute top-[69.5%] left-[7.2%] z-20">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/all-products");
+              }}
+              className="group/btn relative inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-[#D4AF37] via-[#FFDF73] to-[#B08D57] text-[#0A0A0A] font-black text-[10.5px] sm:text-[12px] tracking-[0.14em] uppercase rounded-full shadow-[0_0_20px_rgba(212,175,55,0.75)] hover:shadow-[0_0_30px_rgba(212,175,55,1)] active:scale-95 transition-all duration-200 border border-[#FFF8DC]"
+            >
+              <span className="relative z-10 flex items-center gap-1">
+                SHOP THE DROP
+                <ArrowRight size={12} className="group-hover/btn:translate-x-1 transition-transform stroke-[2.5]" />
+              </span>
+              <span className="absolute inset-0 rounded-full bg-white/30 animate-pulse pointer-events-none" />
+            </button>
+          </div>
         </div>
 
-        {/* ── DESKTOP (md+): 16:9 Gen-Z wide campaign banner with CTAs ── */}
+        {/* ── DESKTOP & TABLET (md+): 5-Slide Auto-Rotating Hero Carousel (5s interval, Zero Crop) ── */}
         <div
-          className="hidden md:block relative w-full cursor-pointer group overflow-hidden"
-          onClick={() => navigate("/all-products")}
+          className="hidden md:block relative w-full h-[clamp(360px,50vh,470px)] group bg-[#0c0e11] overflow-hidden select-none"
         >
-          <img
-            src={HeroDesktop}
-            alt="ZRIVE New Collection Drop"
-            className="w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.015]"
-            style={{ display: "block" }}
-            loading="eager"
-          />
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/10 to-transparent pointer-events-none" />
-          {/* CTA overlay */}
-          <div className="absolute bottom-1/2 translate-y-1/2 left-14 z-10 flex flex-col items-start gap-3">
+          {HERO_SLIDES.map((slide, idx) => (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 transition-opacity duration-700 ease-in-out flex items-center justify-center ${idx === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                }`}
+            >
+              <img
+                src={slide.image}
+                alt={`${slide.title} — ${slide.subtitle}`}
+                className="w-full h-full object-contain object-center transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                loading={idx === 0 ? "eager" : "lazy"}
+              />
+            </div>
+          ))}
+
+          {/* Real HTML/CSS Clickable CTA Pill Button matching Reference */}
+          <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); navigate("/all-products"); }}
-              className="inline-flex items-center gap-2.5 bg-[#B08D57] text-[#0a0a0a] text-[13px] font-bold tracking-[0.14em] uppercase px-8 py-4 hover:bg-white transition-all duration-300 shadow-2xl rounded-sm group/btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/all-products");
+              }}
+              className="group/btn relative inline-flex items-center gap-2 px-5 py-2 lg:px-6 lg:py-2.5 bg-gradient-to-r from-[#F5D57F] via-[#E5B85C] to-[#C99948] text-[#0A0A0A] font-extrabold text-[11.5px] lg:text-[13px] tracking-[0.14em] uppercase rounded-full overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.45),0_0_18px_rgba(229,184,92,0.65)] hover:shadow-[0_8px_26px_rgba(0,0,0,0.55),0_0_26px_rgba(245,213,127,0.9)] hover:scale-105 active:scale-95 transition-all duration-300 border border-[#FFF4D0]"
             >
-              <span>Shop Collection</span>
-              <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+              <span className="relative z-10 flex items-center gap-2 font-black">
+                SHOP THE DROP
+                <ArrowRight size={14} className="group-hover/btn:translate-x-1.5 transition-transform duration-300 stroke-[2.5]" />
+              </span>
+              <span className="absolute inset-0 rounded-full bg-white/35 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700 overflow-hidden pointer-events-none" />
             </button>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); copyCouponCode(e); }}
-              className="inline-flex items-center gap-1.5 bg-black/70 backdrop-blur-sm border border-white/20 text-white text-[11px] font-semibold px-4 py-3 rounded-sm hover:border-[#B08D57] transition-colors"
-            >
-              {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={12} className="text-[#B08D57]" />}
-              <span>{copied ? "Copied!" : "Code: ZRIVEFIRST"}</span>
-            </button>
+          </div>
+
+          {/* Navigation Arrows */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+            }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2.5 rounded-full bg-black/50 hover:bg-black/80 text-white/80 hover:text-white backdrop-blur-sm border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            aria-label="Previous Slide"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2.5 rounded-full bg-black/50 hover:bg-black/80 text-white/80 hover:text-white backdrop-blur-sm border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            aria-label="Next Slide"
+          >
+            <ChevronRight size={20} />
+          </button>
+
+          {/* Slide Indicator Dots */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
+            {HERO_SLIDES.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentSlide(idx);
+                }}
+                className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentSlide
+                  ? "w-7 bg-gradient-to-r from-[#D4AF37] to-[#FFDF73] shadow-[0_0_8px_rgba(212,175,55,0.8)]"
+                  : "w-2 bg-white/30 hover:bg-white/60"
+                  }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
           </div>
         </div>
       </section>
