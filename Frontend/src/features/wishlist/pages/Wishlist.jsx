@@ -30,6 +30,7 @@ const getVariant = (item) =>
 
 const Wishlist = () => {
   const navigate = useNavigate();
+  const user = useSelector((state) => state.auth?.user);
   const { handleGetWishlist, handleRemoveFromWishlist } = useWishlist();
   const { handleAddToCart } = useCart();
 
@@ -38,6 +39,10 @@ const Wishlist = () => {
   const [movingSku, setMovingSku] = useState(null);
 
   useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     async function loadData() {
       setLoading(true);
       try {
@@ -47,7 +52,7 @@ const Wishlist = () => {
       }
     }
     loadData();
-  }, []);
+  }, [user]);
 
   const onRemoveItem = async (sku) => {
     try {
@@ -75,6 +80,57 @@ const Wishlist = () => {
       setMovingSku(null);
     }
   };
+
+  // ── Unauthenticated State (Myntra-Style PLEASE LOG IN Screen) ──
+  if (!user) {
+    return (
+      <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-4 py-16 bg-white">
+        <h1 className="font-display text-[22px] sm:text-[24px] font-extrabold text-[#282c3f] tracking-[0.06em] mb-2 uppercase">
+          PLEASE LOG IN
+        </h1>
+        <p className="text-[14px] text-[#7e818c] mb-8 font-normal">
+          Login to view items in your wishlist.
+        </p>
+
+        {/* Myntra Styled Illustration */}
+        <div className="relative w-40 h-44 mb-8 flex items-center justify-center">
+          {/* Soft sparkles */}
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#c3c4ca] text-[18px] select-none">✦</span>
+          <span className="absolute right-3 bottom-6 text-[#c3c4ca] text-[13px] select-none">✦</span>
+          <span className="absolute right-5 top-5 text-[#c3c4ca] text-[15px] select-none">✧</span>
+
+          {/* Card Stack Illustration */}
+          <div className="relative w-28 h-36 rounded-2xl border-2 border-[#5ce1ca] bg-[#eefaf7] shadow-sm flex flex-col items-center justify-center p-3 transform -rotate-1 hover:rotate-0 transition-transform">
+            {/* mini shirt icon */}
+            <div className="absolute top-3 right-3 text-[#5ce1ca]">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" />
+              </svg>
+            </div>
+
+            {/* Orange Wishlist Symbol */}
+            <div className="flex flex-col items-center gap-1 mt-2">
+              <div className="w-9 h-9 rounded-full bg-[#fde9c8] flex items-center justify-center text-[#e59b2c] shadow-inner">
+                <Heart size={18} fill="#e59b2c" strokeWidth={0} />
+              </div>
+              <div className="flex items-center gap-1 mt-1">
+                <span className="w-4 h-1.5 rounded-full bg-[#e59b2c]" />
+                <span className="w-2 h-1.5 rounded-full bg-[#e59b2c]/60" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Login CTA Button */}
+        <Link
+          to="/login"
+          className="min-w-[170px] px-8 py-3 rounded-[4px] border-2 border-[#3470E4] text-[#3470E4] hover:bg-[#3470E4] hover:text-white text-[13.5px] font-bold tracking-[0.08em] uppercase transition-all duration-200 shadow-sm active:scale-95 text-center"
+        >
+          LOGIN
+        </Link>
+      </div>
+    );
+  }
 
   if (loading) {
     return <WishlistSkeleton />

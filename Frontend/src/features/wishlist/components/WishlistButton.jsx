@@ -1,15 +1,18 @@
 import React from "react";
 import { Heart } from "lucide-react";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router";
 import useWishlist from "../hook/useWishlist";
 import { notify } from "../../../utils/toast";
 
 const WishlistButton = ({ productId, variantSku, className = "" }) => {
+  const navigate = useNavigate();
+  const user = useSelector((state) => state.auth?.user);
   const { handleToggleWishlist } = useWishlist();
 
   const isWishlisted = useSelector((state) => {
-    const skus = state.wishlist.variantSkus || [];
-    const items = state.wishlist.items || [];
+    const skus = state.wishlist?.variantSkus || [];
+    const items = state.wishlist?.items || [];
     if (variantSku && skus.includes(variantSku)) return true;
     return items.some(
       (item) =>
@@ -23,6 +26,13 @@ const WishlistButton = ({ productId, variantSku, className = "" }) => {
   const onClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // If user is not logged in, redirect to login page immediately
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
     const wasWishlisted = isWishlisted;
     try {
       await handleToggleWishlist(productId, variantSku);

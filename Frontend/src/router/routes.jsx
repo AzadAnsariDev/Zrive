@@ -31,7 +31,6 @@ import AdminSellers from "../features/admin/pages/AdminSellers";
 import AdminSellerDetail from "../features/admin/pages/AdminSellerDetail";
 import SellerOrderDetail from "../features/seller/pages/SellerOrderDetail";
 import NewArrivals from "../features/home/pages/NewArrivals";
-import Collections from "../features/home/pages/Collections";
 import Wishlist from "../features/wishlist/pages/Wishlist";
 import Profile from "../features/home/pages/Profile";
 import OrderSummary from "../features/order/pages/OrderSummary";
@@ -45,7 +44,6 @@ const router = createBrowserRouter([
       { path: "categories", element: <div>Categories page</div> },
       { path: "new-arrivals", element: <NewArrivals /> }, // ← add
       { path: "cart", element: <Cart /> },
-      { path: "collections", element: <Collections /> }, // ← add
       { path: "profile", element: <Protected>  <Profile /> </Protected> },
       { path: "payment", element: <Protected>  <Payment /> </Protected> },
       { path: "order-summary", element: <Protected>  <OrderSummary /> </Protected> },

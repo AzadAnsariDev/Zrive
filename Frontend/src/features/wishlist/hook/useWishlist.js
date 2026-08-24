@@ -11,9 +11,11 @@ import { addToWishlist, removeFromWishlist, getWishlist } from "../services/wish
 
 const useWishlist = () => {
     const dispatch = useDispatch()
+    const user = useSelector((state) => state.auth?.user)
     const variantSkus = useSelector((state) => state.wishlist.variantSkus)
 
     const handleGetWishlist = async () => {
+        if (!user) return
         dispatch(setFetchLoading(true))
         try {
             const result = await getWishlist()
