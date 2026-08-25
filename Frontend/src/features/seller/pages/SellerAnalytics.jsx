@@ -124,7 +124,6 @@ const SellerAnalytics = () => {
     }
   }, [filteredOrders, acceptedOrders])
 
-  // ── Chart series (revenue only from accepted orders) ─────────────────
   const chartSeries = useMemo(() => {
     const now = new Date()
     const daysToMap = timeframeDays === 180 ? 30 : timeframeDays
@@ -143,7 +142,6 @@ const SellerAnalytics = () => {
 
     const map = Object.fromEntries(buckets.map((b) => [b.key, b]))
 
-    // Revenue chart only uses accepted orders
     acceptedOrders.forEach((o) => {
       if (!o.createdAt) return
       const key = new Date(o.createdAt).toISOString().slice(0, 10)
@@ -153,7 +151,6 @@ const SellerAnalytics = () => {
       }
     })
 
-    // Order count uses all filtered orders
     filteredOrders.forEach((o) => {
       if (!o.createdAt) return
       const key = new Date(o.createdAt).toISOString().slice(0, 10)
@@ -163,7 +160,6 @@ const SellerAnalytics = () => {
     return buckets
   }, [filteredOrders, acceptedOrders, timeframeDays])
 
-  // ── Status distribution ───────────────────────────────────────────────
   const statusDistribution = useMemo(() => {
     const counts = { Delivered: 0, Confirmed: 0, Placed: 0, Shipped: 0, 'Timed Out': 0, Rejected: 0 }
 
@@ -189,7 +185,6 @@ const SellerAnalytics = () => {
       .filter((item) => item.value > 0)
   }, [filteredOrders])
 
-  // ── Top products (all orders) ──────────────────────────────────────
   const topProducts = useMemo(() => {
     const productStats = {}
     filteredOrders.forEach((o) => {
@@ -212,7 +207,6 @@ const SellerAnalytics = () => {
     return Object.values(productStats).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
   }, [filteredOrders])
 
-  // ── UI ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-white text-[#111] pb-12">
 

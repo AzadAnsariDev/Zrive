@@ -1,4 +1,3 @@
-// ============================= OrderDetail.jsx (BUYER) =============================
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useDispatch, useSelector } from "react-redux";

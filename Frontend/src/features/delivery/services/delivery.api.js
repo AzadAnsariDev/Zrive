@@ -36,7 +36,6 @@ export const trackDelivery = async (deliveryId) => {
     return response.data
 }
 
-// ⚠️ Real Shiprocket cost — hook mein ready rahega, UI se abhi kahi call mat karna
 export const assignAWB = async (deliveryId) => {
     const response = await deliveryApiInstance.post(`/${deliveryId}/assign-awb`)
     return response.data

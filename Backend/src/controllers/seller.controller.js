@@ -213,7 +213,7 @@ export const getSellerPayouts = async (req, res) => {
             })
         }
 
-        // Calculate next 10-day payout date
+        // Next payout date calculation based on 10-day cycle (10th, 20th, or 1st of next month)
         const now = new Date()
         const dayOfMonth = now.getDate()
         let nextPayoutDate = new Date(now)
@@ -223,7 +223,6 @@ export const getSellerPayouts = async (req, res) => {
         } else if (dayOfMonth <= 20) {
             nextPayoutDate.setDate(20)
         } else {
-            // End of month / 1st of next month
             nextPayoutDate.setMonth(now.getMonth() + 1, 1)
         }
         nextPayoutDate.setHours(18, 0, 0, 0)

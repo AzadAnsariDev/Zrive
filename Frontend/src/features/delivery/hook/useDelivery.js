@@ -66,7 +66,7 @@ const useDelivery = () => {
       dispatch(setCurrentDelivery(res.delivery));
       return true;
     } catch (err) {
-      // 404 ka matlab delivery abhi tak sync nahi hui — error mat dikhao, bas null rakho
+      // 404 indicates shipment is not yet created for this order
       if (err.response?.status === 404) {
         dispatch(setCurrentDelivery(null));
         return false;
@@ -139,7 +139,6 @@ const useDelivery = () => {
     }
   };
 
-  // ⚠️ Real Shiprocket cost — UI se abhi kahi call mat karna
   const handleAssignAWB = async (deliveryId) => {
     dispatch(setDeliveryLoading(true));
     try {
@@ -215,14 +214,7 @@ const useDelivery = () => {
     }
   };
 
-  // ── Buyer list-page ke liye ──────────────────────────────────────
-  // AllOrders jaise list-view mein har active order ke liye delivery
-  // fetch + live-track karta hai, phir store ki `deliveries` list set
-  // kar deta hai (jise AllOrders.jsx pehle se orderId → delivery map
-  // banane ke liye use kar raha hai). Koi naya backend route ya slice
-  // change nahi kiya — sirf existing buyer endpoints ko loop mein
-  // reuse kiya hai. Loading/error state background-refresh hone ki
-  // wajah se dispatch nahi karte, taaki page pe flicker na ho.
+  // Background sync deliveries for orders list view without triggering layout reflows
   const handleSyncOrderDeliveries = async (orderIds = []) => {
     if (!orderIds.length) return [];
 
@@ -232,7 +224,7 @@ const useDelivery = () => {
         const delivery = res?.delivery;
         if (!delivery) return null;
 
-        // shipment already terminal state mein hai to dobara track mat karo (cost bachao)
+        // Skip tracking requests for terminal states to save API quota
         if (["delivered", "cancelled"].includes(delivery.status)) {
           return delivery;
         }
@@ -241,7 +233,6 @@ const useDelivery = () => {
           const trackRes = await trackDeliveryBuyer(delivery._id);
           return trackRes?.delivery || delivery;
         } catch {
-          // tracking call fail ho to bhi jo delivery mil chuki thi wahi use karo
           return delivery;
         }
       }),

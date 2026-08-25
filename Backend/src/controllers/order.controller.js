@@ -182,8 +182,6 @@ export const verifyOrder = async (req, res) => {
     });
   }
 
-  console.log("Setted all paymwnt");
-  // Success path logic remains clean
   payment.status = "paid";
   payment.razorpay.payment_id = razorpay_payment_id;
   payment.razorpay.signature = razorpay_signature;
@@ -204,7 +202,6 @@ export const verifyOrder = async (req, res) => {
     { $set: { items: [] } },
   );
 
-  // Send notifications to buyer & seller (non-blocking)
   const orders = await orderModel.find({ payment: payment._id });
   for (const order of orders) {
     await notifyOrderPlaced(order);
@@ -217,7 +214,6 @@ export const verifyOrder = async (req, res) => {
 };
 
 export const webhook = async (req, res) => {
-  console.log("Webhook Hit");
   try {
     const webhookSignature = req.headers["x-razorpay-signature"];
 
@@ -235,11 +231,10 @@ export const webhook = async (req, res) => {
     const payload = JSON.parse(req.body.toString());
     const event = payload.event;
 
-    // ── Refund events — alag branch, kyunki payload me order_id nahi
-    // payment_id hota hai, aur payment.status yahan "pending" nahi hoga
+    // Handle asynchronous Razorpay refund webhooks
     if (event === "refund.processed" || event === "refund.failed") {
       const refundEntity = payload.payload.refund.entity;
-      const razorpayRefundId = refundEntity.id; // e.g. rfnd_xxxxx
+      const razorpayRefundId = refundEntity.id;
 
       const payment = await paymentModel.findOne({
         "refunds.refundId": razorpayRefundId,
@@ -277,7 +272,7 @@ export const webhook = async (req, res) => {
       return res.status(200).json({ success: true });
     }
 
-    // ── Payment events (existing logic) ──────────────────────
+    // Handle payment capture / failure webhooks
     const razorpayOrderId = payload.payload.payment.entity.order_id;
 
     const payment = await paymentModel.findOne({

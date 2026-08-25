@@ -149,7 +149,6 @@ export const getProducts = async (req, res) => {
 
     const filter = { seller: { $nin: bannedSellerIds } }
 
-    // search optional hai — agar nahi diya to bilkul pehle jaisa behavior
     if (search && search.trim()) {
         const regex = new RegExp(search.trim(), "i")
         filter.$or = [
@@ -167,9 +166,7 @@ export const getProducts = async (req, res) => {
     })
 }
 
-// Lightweight, fast endpoint — sirf navbar ke live-search dropdown ke liye.
-// getProducts se alag isliye kyunki ye kam fields select karta hai aur
-// result count limit karta hai (dropdown me 8 se zyada dikhana bhi nahi chahiye).
+// Lightweight query optimized for navbar live search dropdown
 export const searchProducts = async (req, res) => {
     try {
         const { q } = req.query

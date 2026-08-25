@@ -9,7 +9,7 @@ const refundSchema = new mongoose.Schema(
     status: { type: String, enum:["pending", "initiated", "processed", "failed"]},
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: false }   // yahan set karo
+  { _id: false }
 );
 
 

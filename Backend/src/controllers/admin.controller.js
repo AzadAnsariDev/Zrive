@@ -33,7 +33,7 @@ export const adminLogin = async (req, res) => {
     )
 
     res.cookie("adminToken", token, {
-        httpOnly: true,   // JS se access nahi ho sakta cookie, XSS se extra protection
+        httpOnly: true,
     })
 
     res.status(200).json({
@@ -56,7 +56,7 @@ export const adminLogout = async (req, res) => {
 
 export const getAllSellerApplications = async (req, res) => {
     const applications = await sellerModel
-        .find({}) // koi status filter nahi, sab chahiye
+        .find({})
         .select("brandName businessEmail applicationStatus rejectionReason createdAt")
         .populate("userId", "username")
 

@@ -1,12 +1,12 @@
 import cron from "node-cron";
+import orderModel from "../models/order.model.js";
 import { processRefund } from "../services/orderRejection.service.js";
 
 export const startRefundRetryCron = () => {
   cron.schedule("0 */6 * * *", async () => {
     console.log("[refund-retry-cron] running...");
 
-    // "permanently_failed" is intentionally excluded — those need a
-    // human, not another automatic attempt.
+    // Permanently failed refunds require manual intervention and are skipped here
     const failedOrders = await orderModel.find({ "refund.status": "failed" });
 
     console.log(`[refund-retry-cron] found ${failedOrders.length} retryable failed refund(s)`);

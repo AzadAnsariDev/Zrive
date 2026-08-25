@@ -32,14 +32,14 @@ const useWishlist = () => {
     }
 
     const handleAddToWishlist = async (productId, variantSku) => {
-        // optimistic — heart fills instantly
+        // Optimistic UI update: mark wishlisted immediately
         dispatch(addVariantSku(variantSku))
         dispatch(setCreateLoading(true))
         try {
             const result = await addToWishlist(productId, variantSku)
             return result
         } catch (err) {
-            // resync with server truth instead of hand-rolling a rollback
+            // Resync state with backend on failure
             dispatch(setError(err.response?.data?.message || err.message))
             handleGetWishlist()
         } finally {
@@ -48,7 +48,7 @@ const useWishlist = () => {
     }
 
     const handleRemoveFromWishlist = async (variantSku) => {
-        // optimistic — heart empties instantly
+        // Optimistic UI update: unmark immediately
         dispatch(removeVariantSku(variantSku))
         dispatch(setCreateLoading(true))
         try {
@@ -62,9 +62,6 @@ const useWishlist = () => {
         }
     }
 
-    // convenience wrapper — the caller (ProductCard etc.) already knows
-    // whether this sku is wishlisted since it reads variantSkus to render
-    // the heart, so it just tells us which way to flip
     const handleToggleWishlist = (productId, variantSku) => {
         const isWishlisted = variantSkus.includes(variantSku)
         if (isWishlisted) {

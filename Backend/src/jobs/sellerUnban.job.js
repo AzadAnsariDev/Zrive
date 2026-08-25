@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import userModel from "../models/user.model.js"; // apna actual path daal do
+import userModel from "../models/user.model.js";
 
 const processExpiredBans = async () => {
   const now = new Date();
@@ -23,7 +23,7 @@ const processExpiredBans = async () => {
   }
 };
 
-// Har 30 minute me chalega
+// Check and lift expired seller bans every 30 minutes
 export const startSellerUnbanCron = () => {
   cron.schedule("*/30 * * * *", () => {
     console.log("[sellerUnban] Cron running...");

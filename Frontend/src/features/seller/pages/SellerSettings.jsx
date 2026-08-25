@@ -68,7 +68,6 @@ const SellerSettings = () => {
   const { handleGetMyApplication, handleUpdateProfile, handleSubscribePlan } = useSeller()
   const application = useSelector((state) => state.seller.application)
 
-  // Profile form
   const [brandName, setBrandName] = useState('')
   const [businessEmail, setBusinessEmail] = useState('')
   const [businessPhone, setBusinessPhone] = useState('')
@@ -80,7 +79,6 @@ const SellerSettings = () => {
   const [stateName, setStateName] = useState('')
   const [pincode, setPincode] = useState('')
 
-  // UI state
   const [savingProfile, setSavingProfile] = useState(false)
   const [subscribingKey, setSubscribingKey] = useState(null)
   const [showPlanModal, setShowPlanModal] = useState(null)

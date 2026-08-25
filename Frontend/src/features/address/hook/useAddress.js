@@ -18,7 +18,6 @@ import {
 const useAddress = () => {
   const dispatch = useDispatch();
 
-  // Create
   const handleCreateAddress = async (addressData) => {
     try {
       const result = await createAddress(addressData);
@@ -35,7 +34,6 @@ const useAddress = () => {
     }
   };
 
-  // Get All
   const handleGetAllAddresses = async () => {
     try {
       const result = await getAllAddresses();
@@ -51,7 +49,6 @@ const useAddress = () => {
     }
   };
 
-  // Get One
   const handleGetAddressById = async (addressId) => {
     try {
       const result = await getAddressById(addressId);
@@ -67,7 +64,6 @@ const useAddress = () => {
     }
   };
 
-  // Update
   const handleUpdateAddress = async (addressId, addressData) => {
     try {
       const result = await updateAddress(addressId, addressData);
@@ -84,7 +80,6 @@ const useAddress = () => {
     }
   };
 
-  // Delete
   const handleDeleteAddress = async (addressId) => {
     try {
       const result = await deleteAddress(addressId);

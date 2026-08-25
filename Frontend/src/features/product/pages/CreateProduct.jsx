@@ -191,17 +191,14 @@ const CreateProduct = () => {
       return
     }
 
-    // Build FormData matching backend field names exactly
     const fd = new FormData()
 
-    // Basic fields — backend reads: title, description, category, priceAmount, priceCurrency
     fd.append('title', data.name.trim())
     fd.append('description', data.description.trim())
     fd.append('category', data.category)
     fd.append('priceAmount', String(Number(data.priceAmount)))
     fd.append('priceCurrency', data.priceCurrency || 'INR')
 
-    // Shipping — backend reads req.parsedShippingDefaults from JSON string field "shippingDefaults"
     fd.append('shippingDefaults', JSON.stringify({
       weight: Number(data.weight),
       dimensions: {
@@ -211,10 +208,8 @@ const CreateProduct = () => {
       },
     }))
 
-    // Product images — backend filters req.files where fieldname === "images"
     images.forEach((img) => fd.append('images', img.file))
 
-    // Variants — backend reads JSON.parse(req.body.variants)
     const variantsPayload = variants.map((v) => ({
       size: v.size,
       color: v.color,
@@ -224,7 +219,7 @@ const CreateProduct = () => {
     }))
     fd.append('variants', JSON.stringify(variantsPayload))
 
-    // Variant images — backend filters req.files where fieldname === "variantImages_N"
+    // Map each variant's files to corresponding variantImages_index field for backend upload
     variants.forEach((v, index) => {
       v.images.forEach((img) => fd.append(`variantImages_${index}`, img.file))
     })

@@ -212,7 +212,6 @@ const SingleProduct = () => {
   const [shakeSize, setShakeSize] = useState(false)
   const [isBuyingNow, setIsBuyingNow] = useState(false)
 
-  // ── Review state ──
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [reviews, setReviews] = useState([])
   const [reviewPagination, setReviewPagination] = useState({ total: 0, page: 1, totalPages: 1 })
@@ -242,7 +241,6 @@ const SingleProduct = () => {
     }
   }, [product])
 
-  // ── Load reviews + eligibility ──
   useEffect(() => {
     if (!productId) return
     loadReviews(1)
@@ -270,7 +268,7 @@ const SingleProduct = () => {
       setShowReviewForm(false)
       setCanReview(false)
       loadReviews(1)
-      fetchProductDetail() // avgRating/totalReviews refresh
+      fetchProductDetail()
       notify.success("Review submitted!")
     } catch (err) {
       throw err

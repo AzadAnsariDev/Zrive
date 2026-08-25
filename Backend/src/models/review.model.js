@@ -15,10 +15,10 @@ const reviewSchema = new mongoose.Schema(
     order: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "orders",
-      required: true, // verified purchase ke liye zaroori
+      required: true,
     },
     variantId: {
-      type: mongoose.Schema.Types.ObjectId, // order.orderItems se aayega
+      type: mongoose.Schema.Types.ObjectId,
     },
     rating: {
       type: Number,
@@ -40,7 +40,7 @@ const reviewSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Ek order ke ek item pe sirf ek hi review — duplicate prevent
+// Prevent duplicate reviews for the same order and product
 reviewSchema.index({ product: 1, user: 1, order: 1 }, { unique: true });
 
 const reviewModel = mongoose.model("reviews", reviewSchema);

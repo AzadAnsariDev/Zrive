@@ -5,7 +5,6 @@ import { useDispatch } from "react-redux";
 import { setError, setLoading } from "../state/authSlice";
 import { useAuth } from "../hook/useAuth";
 import { useNavigate, Link } from "react-router";
-import ZriveLogo from "../components/ZriveLogo";
 import authHero from "../../../assets/images/auth-hero.jpg";
 import { notify } from "../../../utils/toast";
 
@@ -98,9 +97,8 @@ const Register = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
 
         {/* Brand mark */}
-        <div className="absolute top-8 left-8 flex items-center gap-2.5 z-10">
-          <span className="text-white"><ZriveLogo /></span>
-          <span className="text-white font-display text-[15px] font-medium tracking-[0.35em]">ZRIVE</span>
+        <div className="absolute top-8 left-8 z-10">
+          <span className="text-white font-display text-[22px] font-bold tracking-[0.35em]">ZRIVE</span>
         </div>
 
         {/* Bottom copy */}
@@ -118,21 +116,25 @@ const Register = () => {
       </div>
 
       {/* ── RIGHT: Form panel ── */}
-      <div className="relative flex-1 flex items-center justify-center bg-white px-6 md:px-10 lg:px-14 overflow-y-auto">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="absolute top-6 left-6 flex items-center gap-2 text-[12px] font-semibold text-[#666] transition-colors hover:text-[#111] cursor-pointer"
-        >
-          <ArrowLeft size={16} />
-          Back to marketplace
-        </button>
-        <div className="w-full max-w-[380px] py-4">
+      <div className="flex-1 flex flex-col bg-white overflow-hidden">
+        {/* Back button row */}
+        <div className="flex-shrink-0 px-6 md:px-10 lg:px-14 pt-6 pb-2">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 text-[12px] font-semibold text-[#666] transition-colors hover:text-[#111] cursor-pointer"
+          >
+            <ArrowLeft size={16} />
+            Back to marketplace
+          </button>
+        </div>
+        {/* Centered form area */}
+        <div className="flex-1 flex items-center justify-center px-6 md:px-10 lg:px-14 overflow-hidden">
+        <div className="w-full max-w-[380px] py-2">
 
-          {/* Mobile logo */}
+          {/* Mobile brand */}
           <div className="flex flex-col items-center mb-4 md:hidden fu">
-            <span className="text-[#111]"><ZriveLogo /></span>
-            <p className="mt-2 font-display text-[16px] font-medium tracking-[0.35em] text-[#111]">ZRIVE</p>
+            <p className="font-display text-[22px] font-bold tracking-[0.35em] text-[#111]">ZRIVE</p>
             <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#B08D57] mt-0.5">Men's Fashion</p>
           </div>
 
@@ -256,6 +258,7 @@ const Register = () => {
               Sign in
             </Link>
           </p>
+        </div>
         </div>
       </div>
     </div>

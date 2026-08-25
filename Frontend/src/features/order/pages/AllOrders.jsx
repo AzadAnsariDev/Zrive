@@ -52,7 +52,7 @@ const TONE_CLASSES = {
   error: "bg-red-50 text-red-600",
 };
 
-// Progression order — jab ek group ke andar alag-alag status ho, sabse "kam advanced" wala dikhao
+// Priority rank to determine collective status for multi-seller grouped orders
 const STATUS_PRIORITY = {
   pending_payment: 0,
   failed: 0,
@@ -64,7 +64,6 @@ const STATUS_PRIORITY = {
   delivered: 3,
 };
 
-// ── Delivery-model status → order-model status ─────────────────────────
 const DELIVERY_STATUS_MAP = {
   delivered: "delivered",
   out_for_delivery: "shipped",
@@ -76,7 +75,6 @@ const DELIVERY_STATUS_MAP = {
   rto_delivered: "cancelled",
 };
 
-// ── Filter definitions ─────────────────────────────────────
 const FILTERS = [
   { key: "all", label: "All", match: () => true },
   {
@@ -150,7 +148,7 @@ const getGroupStatus = (group) => {
 const groupOrdersByPayment = (orders) => {
   const map = new Map();
   for (const order of orders) {
-    const key = getPaymentId(order) || order._id; // fallback agar payment kabhi missing ho
+    const key = getPaymentId(order) || order._id;
     if (!map.has(key)) map.set(key, []);
     map.get(key).push(order);
   }

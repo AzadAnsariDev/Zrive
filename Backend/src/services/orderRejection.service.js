@@ -1,11 +1,7 @@
 import orderModel from "../models/order.model.js";
 import { createRefund } from "../services/razorpay.service.js";
 import { applyStrike } from "./sellerPenalty.service.js";
-/**
- * PHASE 1 — runs inside the Mongo transaction.
- * Only touches the database. No external (Razorpay) calls here —
- * this is exactly what caused the inconsistency bug.
- */
+// Phase 1: Database state changes inside transaction. External API calls (Razorpay) are intentionally deferred to Phase 2.
 export const prepareOrderRejection = async ({
   order,
   reason,
@@ -33,12 +29,7 @@ export const prepareOrderRejection = async ({
   return order;
 };
 
-/**
- * PHASE 2 — runs AFTER the transaction has committed. Talks to Razorpay.
- * Idempotent: safe to call multiple times on the same order — if a
- * refund already succeeded, it short-circuits instead of calling
- * Razorpay again.
- */
+// Phase 2: Post-commit Razorpay refund execution. Idempotent to safely support cron retries.
 const MAX_REFUND_RETRIES = 5;
 
 export const processRefund = async (orderId) => {

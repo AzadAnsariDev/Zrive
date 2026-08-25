@@ -52,10 +52,7 @@ const buttonStyles = `
   margin: 16px 0;
 `
 
-// ─────────────────────────────────────────────────────────────────────
-// BUYER EMAILS
-// ─────────────────────────────────────────────────────────────────────
-
+// Buyer email templates
 export const welcomeEmailTemplate = (user) => {
   return `
     <html>
@@ -303,10 +300,7 @@ export const orderCancelledTemplate = (order) => {
   `
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// SELLER EMAILS
-// ─────────────────────────────────────────────────────────────────────
-
+// Seller email templates
 export const sellerNewOrderTemplate = (order) => {
   const items = (order.orderItems || [])
     .map(item => `

@@ -5,7 +5,6 @@ const adminApiInstance = axios.create({
     withCredentials: true
 })
 
-// ---------------- Auth ----------------
 export const adminLogin = async ({ email, password }) => {
     const response = await adminApiInstance.post(`/admin/login`, { email, password })
     return response.data
@@ -21,7 +20,6 @@ export const getAdminProfile = async () => {
     return response.data
 }
 
-// ---------------- Seller Applications ----------------
 export const getAllSellerApplications = async () => {
     const response = await adminApiInstance.get(`/admin/sellers`)
     return response.data
@@ -44,7 +42,6 @@ export const rejectSellerApplication = async (sellerId, rejectionReason) => {
     return response.data
 }
 
-// ---------------- Deliveries ----------------
 export const getFailedDeliveries = async () => {
     const response = await adminApiInstance.get(`/delivery/failed`)
     return response.data

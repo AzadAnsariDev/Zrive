@@ -65,7 +65,6 @@ const productSchema = new mongoose.Schema(
           validator: (v) => Array.isArray(v) && v.length > 0,
           message: "Product must have at least one variant",
         },
-        //Validate to check whether InStock or Out of Stock
         {
           validator: function (v) {
             const seen = new Set();
@@ -93,7 +92,7 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// auto-derive status from total variant stock — no manual setting needed
+// Auto-derive stock status from total variant quantities
 productSchema.pre("save", function () {
   const totalStock = this.variants.reduce((sum, v) => sum + v.stock, 0);
   this.status = totalStock > 0 ? "In-Stock" : "Out of Stock";

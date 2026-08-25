@@ -9,19 +9,18 @@ import { initializeSocketService } from './src/services/socket.service.js'
 
 const PORT = config.PORT || "5000"
 
-let io // Export io for use in services/controllers
+let io
 
-const startServer = async()=>{
+const startServer = async () => {
     await connectToDB()
 
-    const server = app.listen(PORT, ()=>{
+    const server = app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`)
-        startOrderTimeoutCron();
-        startSellerUnbanCron();
-        startRefundRetryCron();
+        startOrderTimeoutCron()
+        startSellerUnbanCron()
+        startRefundRetryCron()
     })
 
-    // Attach Socket.io to HTTP server
     io = new Server(server, {
         cors: {
             origin: config.CLIENT_URL || "http://localhost:5173",
@@ -29,16 +28,13 @@ const startServer = async()=>{
         }
     })
 
-    // Initialize socket service
     initializeSocketService(io)
-
     console.log('[Socket.io] Initialized and listening')
 
-    // Socket.io connection handler
+    // Handle real-time room subscriptions for buyers and sellers
     io.on('connection', (socket) => {
         console.log(`[Socket.io] User connected: ${socket.id}`)
 
-        // Join room by userId (supports both seller and buyer)
         socket.on('join-room', (userId) => {
             if (userId) {
                 const room = userId.toString()
@@ -47,7 +43,6 @@ const startServer = async()=>{
             }
         })
 
-        // Seller joins their seller room (keyed by userId)
         socket.on('seller-login', (sellerId) => {
             if (sellerId) {
                 const room = sellerId.toString()
@@ -56,7 +51,6 @@ const startServer = async()=>{
             }
         })
 
-        // Buyer joins their user room (keyed by userId)
         socket.on('user-login', (userId) => {
             if (userId) {
                 const room = userId.toString()
@@ -89,7 +83,6 @@ const startServer = async()=>{
 
 startServer()
 
-// Export io for use in other files (services, controllers)
 export { io }
 
 

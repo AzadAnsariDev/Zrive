@@ -24,7 +24,6 @@ const ReviewSummary = ({ product, canReview, onWriteReview }) => {
   const totalReviews = product?.totalReviews ?? 0
   const breakdown = product?.ratingBreakdown ?? { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
 
-  // ── No reviews yet — premium empty state ──
   if (totalReviews === 0) {
     return (
       <div className="border-t border-[#EAEAEA] pt-8 mt-10">
@@ -54,7 +53,6 @@ const ReviewSummary = ({ product, canReview, onWriteReview }) => {
     )
   }
 
-  // ── Has reviews — summary widget ──
   return (
     <div className="border-t border-[#EAEAEA] pt-8 mt-10">
       <div className="flex items-center justify-between mb-6">

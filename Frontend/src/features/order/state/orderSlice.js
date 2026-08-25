@@ -31,12 +31,10 @@ const orderSlice = createSlice({
     updateOrder: (state, action) => {
       const updatedOrder = action.payload;
 
-      // currentOrder update (agar wahi order khula hai)
       if (state.currentOrder?._id === updatedOrder._id) {
         state.currentOrder = updatedOrder;
       }
 
-      // orders list me bhi update karo (agar list already loaded hai)
       state.orders = state.orders.map((order) =>
         order._id === updatedOrder._id ? updatedOrder : order,
       );

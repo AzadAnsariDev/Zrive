@@ -39,7 +39,6 @@ const orderSchema = new mongoose.Schema(
       default: "pending_payment",
     },
 
-    // Seller confirmation tracking
     confirmationStatus: {
       type: String,
       enum: ["pending", "accepted", "rejected", "expired"],
@@ -47,7 +46,6 @@ const orderSchema = new mongoose.Schema(
     },
     confirmationDeadline: { type: Date },
 
-    // Cancellation reason
     cancelReason: {
       type: String,
       enum: [
@@ -58,7 +56,7 @@ const orderSchema = new mongoose.Schema(
         "seller_no_response"
       ],
     },
-    rejectionNote: { type: String },   // seller ka optional free-text note
+    rejectionNote: { type: String },
 
     shippingAddress: {
       name: { type: String, required: true },

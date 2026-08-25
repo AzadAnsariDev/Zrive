@@ -3,7 +3,6 @@ import reviewModel from "../models/review.model.js";
 import productModel from "../models/product.model.js";
 import { verifyPurchase } from "../services/review.service.js";
 
-// ── Rating aggregation helper ─────────────────────────────
 const recalculateProductRating = async (productId) => {
   const stats = await reviewModel.aggregate([
     { $match: { product: new mongoose.Types.ObjectId(productId) } },
@@ -34,7 +33,6 @@ const recalculateProductRating = async (productId) => {
   });
 };
 
-// ── Create Review ──────────────────────────────────────────
 export const createReview = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -84,7 +82,6 @@ export const createReview = async (req, res) => {
   }
 };
 
-// ── Get Reviews (paginated + sorted + filtered) ────────────
 export const getProductReviews = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -121,7 +118,6 @@ export const getProductReviews = async (req, res) => {
   }
 };
 
-// ── Toggle Helpful ──────────────────────────────────────────
 export const toggleHelpful = async (req, res) => {
   try {
     const { reviewId } = req.params;
@@ -154,7 +150,6 @@ export const toggleHelpful = async (req, res) => {
   }
 };
 
-// ── Seller Reply ─────────────────────────────────────────────
 export const replyToReview = async (req, res) => {
   try {
     const { reviewId } = req.params;
@@ -182,7 +177,6 @@ export const replyToReview = async (req, res) => {
   }
 };
 
-// ── Delete Review (user apna hi delete kar sake) ────────────
 export const deleteReview = async (req, res) => {
   try {
     const { reviewId } = req.params;
@@ -204,7 +198,7 @@ export const deleteReview = async (req, res) => {
   }
 };
 
-// ── Check eligibility (frontend "Write a Review" button ke liye) ──
+// Check if user is eligible to review (must have a delivered purchase and not reviewed yet)
 export const checkEligibility = async (req, res) => {
   try {
     const { productId } = req.params;

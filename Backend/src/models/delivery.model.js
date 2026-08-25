@@ -24,9 +24,9 @@ const deliverySchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        "order_created",      // shiprocket pe order create hua
-        "awb_assigned",       // courier assign hua
-        "pickup_scheduled",   // pickup request bhej di
+        "order_created",
+        "awb_assigned",
+        "pickup_scheduled",
         "picked_up",
         "in_transit",
         "delivered",

@@ -26,7 +26,7 @@ export const addToWishlist = async (req, res) => {
 
     return res.status(201).json({ message: "Added to wishlist", wishlistItem });
   } catch (err) {
-    // Unique index (user + variantSku) throws this on a duplicate add —
+    // Idempotent: ignore duplicate key error if already wishlisted
     if (err.code === 11000) {
       return res.status(200).json({ message: "Already in wishlist" });
     }

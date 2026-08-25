@@ -81,7 +81,6 @@ const Wishlist = () => {
     }
   };
 
-  // ── Unauthenticated State (Myntra-Style PLEASE LOG IN Screen) ──
   if (!user) {
     return (
       <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-4 py-16 bg-white">
@@ -91,8 +90,6 @@ const Wishlist = () => {
         <p className="text-[14px] text-[#7e818c] mb-8 font-normal">
           Login to view items in your wishlist.
         </p>
-
-        {/* Myntra Styled Illustration */}
         <div className="relative w-40 h-44 mb-8 flex items-center justify-center">
           {/* Soft sparkles */}
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#c3c4ca] text-[18px] select-none">✦</span>

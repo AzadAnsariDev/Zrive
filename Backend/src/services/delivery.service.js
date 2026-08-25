@@ -152,8 +152,6 @@ export const assignAWBForDelivery = async (deliveryId) => {
 
     for (const courier of candidates) {
         if (courier.rate > MAX_DELIVERY_COST) {
-            // TODO: notify seller ("Contact admin — higher delivery cost than expected")
-            // TODO: notify admin ("Delivery cost higher than expected in this order")
             lastError = `Courier ${courier.courier_name} cost ₹${courier.rate} exceeds ₹${MAX_DELIVERY_COST} limit`
             break
         }
@@ -237,11 +235,7 @@ const STATUS_MAP = {
     "Cancelled": "cancelled",
 }
 
-// ── Delivery status → Order status sync ────────────────────────────
-// Delivery hi actual tracking source of truth hai — jab delivery ka status
-// aage badhta hai (shipped/delivered/etc.), order.orderStatus ko bhi wahi
-// reflect karna chahiye, taaki AllOrders.jsx ko frontend-side merge/map
-// karne ki zaroorat na pade — order khud sahi status carry kare.
+// Sync order status directly from courier delivery status to keep single source of truth
 const DELIVERY_TO_ORDER_STATUS = {
     picked_up: "shipped",
     in_transit: "shipped",
@@ -249,7 +243,6 @@ const DELIVERY_TO_ORDER_STATUS = {
     delivered: "delivered",
     rto: "cancelled",
     cancelled: "cancelled",
-    // pickup_scheduled / awb_assigned / order_created → order abhi "placed" hi rahega
 }
 
 const ORDER_STATUS_PRIORITY = {
@@ -274,13 +267,12 @@ const syncOrderStatusFromDelivery = async (delivery) => {
     const currentPriority = ORDER_STATUS_PRIORITY[order.orderStatus] ?? 0
     const targetPriority = ORDER_STATUS_PRIORITY[targetStatus]
 
-    // forward-only guard — late/out-of-order tracking event se order kabhi peeche na jaaye
+    // Forward-only guard: prevent out-of-order tracking webhooks from rolling back order status
     if (targetPriority <= currentPriority) return
 
     order.orderStatus = targetStatus
     await order.save()
 
-    // Send notifications based on new status (non-blocking)
     if (targetStatus === "shipped") {
         await notifyOrderShipped(order)
     } else if (targetStatus === "delivered") {
@@ -296,7 +288,6 @@ export const trackDelivery = async (deliveryId) => {
     }
 
     const trackingData = await trackShipmentByAWB(delivery.awbCode)
-    console.log(trackingData)
 
     const activities = trackingData?.tracking_data?.shipment_track_activities || []
     const chronological = [...activities].reverse()
@@ -310,15 +301,14 @@ export const trackDelivery = async (deliveryId) => {
         if (alreadyExists) continue
 
         delivery.statusHistory.push({
-            status: STATUS_MAP[activity.status] || delivery.status, // internal enum
-            note: activity.activity,        // real Shiprocket text — "Shipment In Transit"
-            location: activity.location,    // real location
+            status: STATUS_MAP[activity.status] || delivery.status,
+            note: activity.activity,
+            location: activity.location,
             timestamp: new Date(activity.date),
         })
         historyChanged = true
     }
 
-    // delivery.status ko sirf latest/current status pe update karo
     const latestStatus = trackingData?.tracking_data?.shipment_track?.[0]?.current_status
     const mappedCurrent = latestStatus && STATUS_MAP[latestStatus]
     if (mappedCurrent && delivery.status !== mappedCurrent) {
@@ -339,8 +329,6 @@ export const trackDelivery = async (deliveryId) => {
         await delivery.save()
     }
 
-    // order ko bhi sync karo — is call ke baad order.orderStatus khud sahi ho jayega,
-    // frontend ko koi alag mapping/merge logic maintain nahi karni padegi
     await syncOrderStatusFromDelivery(delivery)
 
     return delivery

@@ -48,7 +48,7 @@ export const retryDeliverySync = async (req, res) => {
     }
 
     try {
-        // purana failed record delete karo, naya successful record banega createDeliveryForOrder se
+        // Clear failed delivery record before creating a fresh attempt
         await deliveryModel.findByIdAndDelete(deliveryId)
 
         const newDelivery = await createDeliveryForOrder(delivery.order)

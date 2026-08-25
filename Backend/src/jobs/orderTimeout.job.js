@@ -16,7 +16,7 @@ const processExpiredOrders = async () => {
 
   if (expiredOrders.length === 0) return;
 
-  console.log(`[orderTimeout] ${expiredOrders.length} expired order(s) mile`);
+  console.log(`[orderTimeout] Found ${expiredOrders.length} expired order(s)`);
 
   for (const { _id } of expiredOrders) {
     const session = await mongoose.startSession();
@@ -45,17 +45,17 @@ const processExpiredOrders = async () => {
       });
 
       await session.commitTransaction();
-      console.log(`[orderTimeout] Order ${_id} auto-rejected`);
+      console.log(`[orderTimeout] Order ${_id} auto-rejected due to seller timeout`);
     } catch (err) {
       await session.abortTransaction();
-      console.error(`[orderTimeout] Order ${_id} process karne me error:`, err);
+      console.error(`[orderTimeout] Failed to process expired order ${_id}:`, err);
     } finally {
       session.endSession();
     }
   }
 };
 
-// Runs in every 15 mins
+// Auto-reject orders where seller failed to confirm within the 24-hour deadline
 export const startOrderTimeoutCron = () => {
   cron.schedule("*/15 * * * *", () => {
     console.log("[orderTimeout] Cron running...");

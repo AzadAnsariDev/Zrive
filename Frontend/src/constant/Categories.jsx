@@ -1,14 +1,4 @@
-// src/constants/categories.js
-//
-// Single source of truth for all category data across the app.
-// Used by: Home.jsx (category tiles), Navbar.jsx (mega-menu),
-// NewArrivals.jsx (filter chips/checkboxes).
-//
-// IMPORTANT: `id` must exactly match the `category` field value stored on
-// product documents in the backend — filters compare against this directly.
-// Run the console.log check on `products` to confirm actual backend values
-// before editing these ids.
-
+// Category definitions shared across navigation, filter chips, and category tiles
 export const CATEGORIES = [
   {
     id: "tshirts",

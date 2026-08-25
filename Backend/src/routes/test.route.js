@@ -9,7 +9,7 @@ testRouter.get("/shiprocket", async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Shiprocket token fetched successfully",
-            tokenPreview: token.substring(0, 20) + "..."   // pura token log/response me nahi dikhayenge
+            tokenPreview: token.substring(0, 20) + "..." // Truncate token preview for response
         })
     } catch (error) {
         res.status(500).json({

@@ -46,8 +46,8 @@ export const useAdmin = () => {
     dispatch(setLoading({ key: 'create', value: true }))
     try {
       await adminLogout()
-    } catch (err) {
-      // ignore — local state clear kar denge chahe API fail ho
+    } catch {
+      // Clear client state regardless of server logout error
     } finally {
       dispatch(clearAdmin())
       dispatch(setLoading({ key: 'create', value: false }))

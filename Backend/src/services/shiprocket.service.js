@@ -13,14 +13,13 @@ const loginToShiprocket = async () => {
     })
 
     const token = response.data.token
-    console.log(token) 
 
     if (!token) {
         throw new Error("Shiprocket login failed: token not received")
     }
 
     cachedToken = token
-    // Shiprocket token ~10 din valid hota hai, hum 9 din maan ke safe rakhte hain
+    // Cache Shiprocket auth token for 9 days (Shiprocket tokens remain valid for ~10 days)
     tokenExpiryTime = Date.now() + 9 * 24 * 60 * 60 * 1000
 
     return token
@@ -39,7 +38,6 @@ export const getShiprocketToken = async () => {
 export const addPickupLocation = async (seller) => {
     const token = await getShiprocketToken()
 
-    // unique nickname — sellerId is used 
     const pickupNickname = `SR_${seller._id.toString()}`
 
     const payload = {
@@ -99,7 +97,7 @@ export const buildShiprocketOrderPayload = ({ order, seller, buyerEmail, items, 
 
         order_items: items,
 
-        payment_method: "Prepaid",   // abhi sirf Razorpay hai, COD future mein
+        payment_method: "Prepaid",
         sub_total: order.sellerAmount.amount,
 
         length: dimensions.length,
@@ -133,7 +131,7 @@ export const requestPickup = async (shipmentId) => {
         return response.data
     } catch (error) {
         console.log("Shiprocket pickup error:", JSON.stringify(error.response?.data))
-        throw error   // upar wapas throw karo, jaisa pehle tha
+        throw error
     }
 }
 
@@ -146,7 +144,7 @@ export const generateLabel = async (shipmentId) => {
         { headers: { Authorization: `Bearer ${token}` } }
     )
 
-    return response.data   // { label_created, label_url, ... }
+    return response.data
 }
 
 
@@ -159,7 +157,7 @@ export const generateInvoice = async (shiprocketOrderId) => {
         { headers: { Authorization: `Bearer ${token}` } }
     )
 
-    return response.data   // { is_invoice_created, invoice_url }
+    return response.data
 }
 
 export const trackShipmentByAWB = async (awbCode) => {
@@ -184,7 +182,7 @@ export const checkCourierServiceability = async ({ pickup_postcode, delivery_pos
         }
     )
 
-    return response.data.data   // { available_courier_companies: [...] }
+    return response.data.data
 }
 
 export const cancelShiprocketOrder = async (shiprocketOrderId) => {

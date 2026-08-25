@@ -50,7 +50,6 @@ const Navbar = () => {
   const location = useLocation()
   const { handleLogout } = useAuth()
 
-  // State controls
   const [notifOpen, setNotifOpen] = useState(false)
   const [catOpen, setCatOpen] = useState(false)
   const [mobileCatOpen, setMobileCatOpen] = useState(false)
@@ -62,7 +61,6 @@ const Navbar = () => {
   const megaMenuRef = useRef(null)
   const closeTimer = useRef(null)
 
-  // ── Search State ───────────────────────────────────────────────────
   const [query, setQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
@@ -77,7 +75,6 @@ const Navbar = () => {
     handleDeleteAllNotifications,
   } = useNotification()
 
-  // Redux Selectors
   const searchResults = useSelector((state) => state.product?.searchResults ?? [])
   const searchLoading = useSelector((state) => state.product?.loading?.search ?? false)
   const debouncedQuery = useDebounce(query, 350)

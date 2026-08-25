@@ -126,7 +126,6 @@ export const getAllAddresses = async (req, res) => {
 
         const user = req.user.id
 
-        // default address sabse upar, fir sabse naya pehle
         const addresses = await addressModel
             .find({ user })
             .sort({ isDefault: -1, createdAt: -1 })
@@ -205,7 +204,7 @@ export const deleteAddress = async (req, res) => {
 
         await addressModel.deleteOne({ _id: addressId })
 
-        // agar deleted address hi default tha, to koi aur address ko default banao
+        // If the deleted address was primary, designate the next newest address as default
         if (wasDefault) {
             const nextAddress = await addressModel.findOne({ user }).sort({ createdAt: -1 })
             if (nextAddress) {

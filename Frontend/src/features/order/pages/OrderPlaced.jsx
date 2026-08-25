@@ -2,17 +2,9 @@ import React from "react";
 import { Link, useParams } from "react-router";
 import { ArrowRight, ShoppingBag } from "lucide-react";
 
-// ─────────────────────────────────────────────────────────
-// Confirmation page only — deliberately does NOT fetch or
-// render order line-items here. A single payment can spawn
-// multiple seller-wise Order documents, so "one order" isn't
-// a meaningful concept on this screen. Full detail lives on
-// /orders/:orderId (OrderDetail.jsx) after the person taps
-// "View your orders".
-// ─────────────────────────────────────────────────────────
-
+// Confirmation screen only displays the payment/order reference. Line items are fetched on the OrderDetail page.
 const OrderPlaced = () => {
-  const { orderRef } = useParams(); // razorpay_order_id from the URL, shown as a reference only
+  const { orderRef } = useParams();
 
   return (
     <div className="min-h-screen bg-cream flex flex-col items-center justify-center px-6 pt-14 pb-16 md:pt-16">

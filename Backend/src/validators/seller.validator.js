@@ -41,7 +41,7 @@ export const validateSellerVerificationDetails = [
                 throw new Error("Not a valid Indian pincode")
             }
 
-            req.parsedPickupAddress = parsed  // controller ke liye store kar diya, dobara parse na karna pade
+            req.parsedPickupAddress = parsed // Cache parsed object for controller
             return true
         }),
 
