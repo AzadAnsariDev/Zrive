@@ -1,4 +1,6 @@
 import express from 'express'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import authRouter from './routes/auth.route.js'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
@@ -16,6 +18,9 @@ import deliveryRouter from './routes/delivery.route.js'
 import wishlistRouter from './routes/wishlist.route.js'
 import reviewRouter from './routes/review.route.js'
 import notificationRouter from './routes/notification.route.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = express()
 
@@ -55,5 +60,12 @@ app.use("/api/wishlist", wishlistRouter)
 app.use("/api/review", reviewRouter);
 app.use("/api/notification", notificationRouter)
 
+// Frontend static files serve karo
+app.use(express.static(path.join(__dirname, 'public')))
+
+// Catch-all: koi bhi non-API route → index.html (React Router handle karega)
+app.get('*name', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'))
+})
 
 export default app
