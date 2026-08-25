@@ -203,27 +203,27 @@ const SellerDashboard = () => {
             </h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleAddProductClick}
-              className="flex items-center gap-1.5 bg-[#111] text-white px-4 py-2 rounded text-[11px] font-bold uppercase hover:bg-[#B08D57] transition-all"
+              className="flex items-center gap-1.5 bg-[#111] text-white px-3 sm:px-4 py-2 rounded text-[10.5px] sm:text-[11px] font-bold uppercase hover:bg-[#B08D57] transition-all"
             >
-              <PlusCircle size={14} />
-              Add Product
+              <PlusCircle size={13} />
+              <span>Add Product</span>
             </button>
             <button
               onClick={() => navigate("/seller/inventory")}
-              className="flex items-center gap-1.5 border border-[#EAEAEA] bg-[#FAFAFA] text-[#111] px-3.5 py-2 rounded text-[11px] font-bold uppercase hover:border-[#111] transition-all"
+              className="flex items-center gap-1.5 border border-[#EAEAEA] bg-[#FAFAFA] text-[#111] px-3 sm:px-3.5 py-2 rounded text-[10.5px] sm:text-[11px] font-bold uppercase hover:border-[#111] transition-all"
             >
-              <Boxes size={14} />
-              Inventory
+              <Boxes size={13} />
+              <span>Inventory</span>
             </button>
             <button
               onClick={() => navigate("/seller/analytics")}
-              className="flex items-center gap-1.5 border border-[#EAEAEA] bg-[#FAFAFA] text-[#111] px-3.5 py-2 rounded text-[11px] font-bold uppercase hover:border-[#B08D57] hover:text-[#B08D57] transition-all"
+              className="flex items-center gap-1.5 border border-[#EAEAEA] bg-[#FAFAFA] text-[#111] px-3 sm:px-3.5 py-2 rounded text-[10.5px] sm:text-[11px] font-bold uppercase hover:border-[#B08D57] hover:text-[#B08D57] transition-all"
             >
-              <BarChart2 size={14} />
-              Analytics
+              <BarChart2 size={13} />
+              <span>Analytics</span>
             </button>
           </div>
         </div>

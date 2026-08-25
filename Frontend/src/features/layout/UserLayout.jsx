@@ -2,10 +2,12 @@ import React from 'react'
 import { Outlet } from 'react-router'
 import Navbar from '../home/components/Navbar'
 import Footer from '../home/components/Footer'
+import ScrollToTop from '../../components/common/ScrollToTop'
 
 const UserLayout = () => {
   return (
     <div className="min-h-screen bg-cream text-ink">
+      <ScrollToTop />
       <Navbar />
 
       {/* pb-20 clears the fixed mobile bottom nav; desktop needs no extra

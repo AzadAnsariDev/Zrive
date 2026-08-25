@@ -3,15 +3,8 @@ import { useNavigate, useParams, Link } from 'react-router'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Heart,
   ChevronDown,
   Image as ImageIcon,
-  Share2,
-  Shield,
-  Truck,
-  RefreshCw,
   Star,
   ShoppingBag,
   Zap,
@@ -45,6 +38,16 @@ const ShakeKeyframes = () => (
       40%, 60% { transform: translateX(4px); }
     }
     .shake-once { animation: shakeX 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes slideInFromRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    @keyframes slideInFromLeft {
+      from { transform: translateX(-100%); opacity: 0; }
+      to   { transform: translateX(0);     opacity: 1; }
+    }
+    .slide-in-right { animation: slideInFromRight 0.35s cubic-bezier(0.4,0,0.2,1) both; }
+    .slide-in-left  { animation: slideInFromLeft  0.35s cubic-bezier(0.4,0,0.2,1) both; }
   `}</style>
 )
 
@@ -199,18 +202,23 @@ const SingleProduct = () => {
   const { productId } = useParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const { handleGetProductDetail } = useProduct()
+  const { handleGetProductDetail, handleGetProducts } = useProduct()
   const { handleGetAllAddresses } = useAddress()
   const { handleGetProductReviews, handleCheckEligibility, handleCreateReview } = useReview()
 
   const [product, setProduct] = useState(null)
   const [activeImage, setActiveImage] = useState(0)
+  const [slideDir, setSlideDir] = useState(null)   // 'left' | 'right'
   const [sizeChartOpen, setSizeChartOpen] = useState(false)
   const [selectedColor, setSelectedColor] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
   const [sizeError, setSizeError] = useState(false)
   const [shakeSize, setShakeSize] = useState(false)
   const [isBuyingNow, setIsBuyingNow] = useState(false)
+  const [categoryProducts, setCategoryProducts] = useState([])
+
+  // touch swipe state
+  const touchStartX = useRef(null)
 
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [reviews, setReviews] = useState([])
@@ -232,7 +240,10 @@ const SingleProduct = () => {
     }
   }
 
-  useEffect(() => { fetchProductDetail() }, [productId])
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    fetchProductDetail()
+  }, [productId])
 
   useEffect(() => {
     if (product?.variants?.length) {
@@ -295,12 +306,45 @@ const SingleProduct = () => {
     : [product?.image].filter(Boolean)
 
   const effectivePrice = selectedVariant?.price ?? product?.price
-  const handlePrevImage = () => setActiveImage(i => (i - 1 + images.length) % images.length)
-  const handleNextImage = () => setActiveImage(i => (i + 1) % images.length)
+
+  const goToImage = (nextIdx, dir) => {
+    setSlideDir(dir)
+    setActiveImage(nextIdx)
+  }
+  const handlePrevImage = () => {
+    goToImage((activeImage - 1 + images.length) % images.length, 'left')
+  }
+  const handleNextImage = () => {
+    goToImage((activeImage + 1) % images.length, 'right')
+  }
+
+  // touch handlers for swipe
+  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX }
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null || images.length <= 1) return
+    const diff = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 40) {
+      diff > 0 ? handleNextImage() : handlePrevImage()
+    }
+    touchStartX.current = null
+  }
+
   const related = product?.relatedProducts ?? []
   const canAddToCart = variants.length === 0 || (selectedVariant && selectedVariant.stock > 0)
 
   useEffect(() => { if (canAddToCart) setSizeError(false) }, [canAddToCart])
+
+  // Fetch same-category products for Recommended For You
+  useEffect(() => {
+    if (!product?.category) return
+    handleGetProducts().then((all) => {
+      if (!all) return
+      const filtered = all
+        .filter(p => p._id !== product._id && p.category === product.category)
+        .slice(0, 8)
+      setCategoryProducts(filtered)
+    }).catch(() => {})
+  }, [product?.category])
 
   const { handleAddToCart } = useCart()
 
@@ -409,9 +453,20 @@ const SingleProduct = () => {
 
           {/* Main Image Display */}
           <div className="relative">
-            <div className="relative aspect-[3/4] max-h-[580px] overflow-hidden rounded-[8px] bg-[#FAFAFA] border border-[#EAEAEA]">
+            <div
+              className="relative aspect-[3/4] max-h-[580px] overflow-hidden rounded-[8px] bg-[#FAFAFA] border border-[#EAEAEA]"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
               {images[activeImage]?.url ? (
-                <img src={images[activeImage].url} alt={product.name || product.title} className="w-full h-full object-cover" />
+                <img
+                  key={activeImage}
+                  src={images[activeImage].url}
+                  alt={product.name || product.title}
+                  className={`w-full h-full object-cover ${
+                    slideDir === 'right' ? 'slide-in-right' : slideDir === 'left' ? 'slide-in-left' : ''
+                  }`}
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-[#999]">
                   <ImageIcon size={32} />
@@ -422,23 +477,22 @@ const SingleProduct = () => {
                 variantSku={selectedVariant?.sku || product.variants?.[0]?.sku}
                 className="absolute top-4 right-4 z-10"
               />
+              {/* Dot indicators */}
               {images.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handlePrevImage}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-white cursor-pointer"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextImage}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-white cursor-pointer"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                  {images.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => goToImage(i, i > activeImage ? 'right' : 'left')}
+                      className={`rounded-full transition-all duration-300 cursor-pointer ${
+                        i === activeImage
+                          ? 'w-5 h-1.5 bg-white shadow'
+                          : 'w-1.5 h-1.5 bg-white/50 hover:bg-white/80'
+                      }`}
+                    />
+                  ))}
+                </div>
               )}
             </div>
 
@@ -449,8 +503,8 @@ const SingleProduct = () => {
                   <button
                     key={i}
                     type="button"
-                    onClick={() => setActiveImage(i)}
-                    className={`w-14 h-18 rounded overflow-hidden border-2 shrink-0 cursor-pointer ${
+                    onClick={() => goToImage(i, i > activeImage ? 'right' : 'left')}
+                    className={`w-14 aspect-[3/4] rounded overflow-hidden border-2 shrink-0 cursor-pointer ${
                       i === activeImage ? 'border-[#B08D57]' : 'border-transparent opacity-60'
                     }`}
                   >
@@ -567,7 +621,7 @@ const SingleProduct = () => {
           />
         )}
 
-        {/* You May Also Like */}
+        {/* You May Also Like (from relatedProducts) */}
         {related.length > 0 && (
           <div className="mt-14 pt-8 border-t border-[#EAEAEA]">
             <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[#B08D57] mb-6">
@@ -575,6 +629,36 @@ const SingleProduct = () => {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {related.map((p) => <RelatedProductCard key={p._id || p.id} product={p} />)}
+            </div>
+          </div>
+        )}
+
+        {/* Recommended For You (same category) */}
+        {categoryProducts.length > 0 && (
+          <div className="mt-14 pt-8 border-t border-[#EAEAEA]">
+            <div className="flex items-end justify-between mb-6">
+              <div>
+                <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#B08D57] mb-0.5">From the same collection</p>
+                <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[#111]">Recommended For You</h2>
+              </div>
+              <Link
+                to={`/all-products?category=${encodeURIComponent(product?.category || '')}`}
+                className="text-[11px] font-bold text-[#B08D57] hover:underline hidden sm:block"
+              >
+                View All &rarr;
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+              {categoryProducts.slice(0, 4).map((p) => <RelatedProductCard key={p._id || p.id} product={p} />)}
+            </div>
+            {/* Mobile: show 4, link to all */}
+            <div className="mt-4 flex sm:hidden justify-center">
+              <Link
+                to={`/all-products?category=${encodeURIComponent(product?.category || '')}`}
+                className="text-[11.5px] font-bold text-[#B08D57] border border-[#B08D57] px-5 py-2 rounded-full hover:bg-[#F5EFE5] transition-colors"
+              >
+                View All in {product?.category}
+              </Link>
             </div>
           </div>
         )}

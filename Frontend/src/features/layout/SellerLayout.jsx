@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useSelector } from 'react-redux'
 import ZriveLogo from '../auth/components/ZriveLogo'
+import ScrollToTop from '../../components/common/ScrollToTop'
 
 const SIDEBAR_LINKS = [
   { to: '/seller', label: 'Dashboard', icon: LayoutDashboard },
@@ -49,6 +50,7 @@ const SellerLayout = () => {
 
   return (
     <div className="min-h-screen bg-white text-[#111] font-sans">
+      <ScrollToTop />
 
       {/* ─── DESKTOP SIDEBAR ──────────────────────────────────── */}
       <div className="hidden md:flex h-screen overflow-hidden">

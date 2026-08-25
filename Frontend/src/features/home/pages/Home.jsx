@@ -292,10 +292,7 @@ const Home = () => {
       ══════════════════════════════════════════ */}
       <section className="relative w-full overflow-hidden bg-[#0c0e11]">
         {/* ── MOBILE (below md): Natural aspect ratio (~half-page height), zero text crop ── */}
-        <div
-          className="md:hidden relative w-full aspect-[1024/863] cursor-pointer group bg-[#0c0e11] overflow-hidden"
-          onClick={() => navigate("/all-products")}
-        >
+        <div className="md:hidden relative w-full aspect-[1024/863] bg-[#0c0e11] overflow-hidden">
           <img
             src={HeroBanner}
             alt="ZRIVE — The New Street Code | Up to 40% Off Men's Streetwear"
@@ -307,11 +304,8 @@ const Home = () => {
           <div className="absolute top-[69.5%] left-[7.2%] z-20">
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate("/all-products");
-              }}
-              className="group/btn relative inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-[#D4AF37] via-[#FFDF73] to-[#B08D57] text-[#0A0A0A] font-black text-[10.5px] sm:text-[12px] tracking-[0.14em] uppercase rounded-full shadow-[0_0_20px_rgba(212,175,55,0.75)] hover:shadow-[0_0_30px_rgba(212,175,55,1)] active:scale-95 transition-all duration-200 border border-[#FFF8DC]"
+              onClick={() => navigate("/all-products")}
+              className="group/btn relative inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-[#D4AF37] via-[#FFDF73] to-[#B08D57] text-[#0A0A0A] font-black text-[10.5px] sm:text-[12px] tracking-[0.14em] uppercase rounded-full shadow-[0_0_20px_rgba(212,175,55,0.75)] hover:shadow-[0_0_30px_rgba(212,175,55,1)] active:scale-95 transition-all duration-200 border border-[#FFF8DC] cursor-pointer"
             >
               <span className="relative z-10 flex items-center gap-1">
                 SHOP THE DROP

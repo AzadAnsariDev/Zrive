@@ -55,12 +55,12 @@ export const register = async (req, res)=>{
         // seller onboarding flow (createBasicSellerApplication), never at signup.
     })
 
-    // Send welcome email (non-blocking - fails silently)
-    await sendEmail({
+    // Fire welcome email in background — never blocks the response
+    sendEmail({
         to: user.email,
         subject: 'Welcome to ZRIVE - Your Shopping Journey Begins!',
         html: welcomeEmailTemplate(user)
-    })
+    }).catch(() => {}) // silently ignore
 
     await mergeGuestCart(req, res, user._id)
 

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router'
 import { useSelector } from 'react-redux'
 import { useAdmin } from '../admin/hook/useAdmin'
 import { useState } from 'react'
+import ScrollToTop from '../../components/common/ScrollToTop'
 
 const SIDEBAR_LINKS = [
   { label: 'Overview', path: '/admin', icon: LayoutGrid, end: true },
@@ -32,6 +33,7 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-[#0e0e0e] text-[#e5e2e1] flex">
+      <ScrollToTop />
       {/* Sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-[220px] lg:shrink-0 bg-[#131313] border-r border-white/10 min-h-screen sticky top-0">
         <div className="px-6 pt-6 pb-4 border-b border-white/10 flex items-center justify-between">
