@@ -34,11 +34,13 @@ import NewArrivals from "../features/home/pages/NewArrivals";
 import Wishlist from "../features/wishlist/pages/Wishlist";
 import Profile from "../features/home/pages/Profile";
 import OrderSummary from "../features/order/pages/OrderSummary";
+import NotFound from "../features/home/pages/NotFound";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <UserLayout />,
+    errorElement: <NotFound />,
     children: [
       { index: true, element: <Home /> },
       { path: "categories", element: <div>Categories page</div> },
@@ -186,6 +188,11 @@ const router = createBrowserRouter([
         element: <SellerKYC />,
       },
     ],
+  },
+  // Catch-all: any unknown URL → 404 page (auto-redirects to homepage)
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ]);
 
