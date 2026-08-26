@@ -228,13 +228,15 @@ const Profile = () => {
                   </div>
 
                   <div
-                    onClick={() => navigate("/become-seller")}
+                    onClick={() => navigate((user?.role === 'seller' || user?.role === 'basic_seller') ? '/seller' : '/become-seller')}
                     className="p-5 bg-[#FAFAFA] border border-[#EAEAEA] rounded-[8px] hover:border-[#B08D57] cursor-pointer transition-all flex items-center justify-between"
                   >
                     <div>
                       <Store size={22} className="text-[#B08D57] mb-2" />
                       <h3 className="font-display text-[15px] font-bold text-[#111]">Seller Console</h3>
-                      <p className="text-[11px] text-[#666]">Start selling on ZRIVE</p>
+                      <p className="text-[11px] text-[#666]">
+                        {(user?.role === 'seller' || user?.role === 'basic_seller') ? 'Go to Seller Dashboard' : 'Start selling on ZRIVE'}
+                      </p>
                     </div>
                     <ArrowUpRight size={16} className="text-[#999]" />
                   </div>

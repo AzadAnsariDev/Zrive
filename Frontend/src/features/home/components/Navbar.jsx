@@ -186,7 +186,7 @@ const Navbar = () => {
   const handleSellerClick = () => {
     if (!user) {
       setSellerModalOpen(true)
-    } else if (user.role === 'seller') {
+    } else if (user.role === 'seller' || user.role === 'basic_seller') {
       navigate('/seller')
     } else {
       navigate('/become-seller')
@@ -560,12 +560,12 @@ const Navbar = () => {
                         Wishlist ({wishlistCount})
                       </Link>
                       <Link
-                        to={user.role === 'seller' ? '/seller' : '/become-seller'}
+                        to={(user.role === 'seller' || user.role === 'basic_seller') ? '/seller' : '/become-seller'}
                         className="flex items-center justify-between px-4 py-2 text-[12.5px] font-medium text-[#B08D57] hover:bg-[#F5EFE5]/50 transition-colors"
                       >
                         <span className="flex items-center gap-2.5">
                           <Store size={14} />
-                          {user.role === 'seller' ? 'Seller Dashboard' : 'Become a Seller'}
+                          {(user.role === 'seller' || user.role === 'basic_seller') ? 'Seller Dashboard' : 'Become a Seller'}
                         </span>
                         <ArrowUpRight size={13} />
                       </Link>
@@ -796,7 +796,7 @@ const Navbar = () => {
                 >
                   <span className="flex items-center gap-2">
                     <Store size={15} />
-                    Become a Seller
+                    {(user?.role === 'seller' || user?.role === 'basic_seller') ? 'Seller Dashboard' : 'Become a Seller'}
                   </span>
                   <ArrowUpRight size={14} />
                 </button>
