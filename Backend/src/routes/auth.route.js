@@ -26,9 +26,9 @@ authRouter.post("/push-subscription/unsubscribe", authenticateUser, unsubscribeP
 authRouter.post("/push-subscription/test", authenticateUser, testPushNotification)
 
 authRouter.get("/google/callback", 
-    passport.authenticate('google', {session : false, failureRedirect: "http://localhost:5173/login"}),
+    passport.authenticate('google', {session : false, failureRedirect: "https://zrive.onrender.com/login"}),
     googleCallback
 )
 
 authRouter.get("/get-me", authenticateUser, getMe)
-export default authRouter
+export default authRouter
