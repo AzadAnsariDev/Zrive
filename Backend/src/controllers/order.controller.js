@@ -489,6 +489,13 @@ export const cancelOrder = async (req, res) => {
 };
 
 export const acceptOrder = async (req, res) => {
+  if (!config.ENABLE_LIVE_SHIPROCKET) {
+    return res.status(403).json({
+      success: false,
+      message: "Live order acceptance and automated Shiprocket dispatch are currently locked until official launch at Zrive.com.",
+    });
+  }
+
   const { orderId } = req.params;
   const session = await mongoose.startSession();
   session.startTransaction();

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router'
 import {
-  Clock, Check, X, Package, MapPin, Phone, RefreshCw, AlertCircle, Loader2, ChevronRight, ArrowLeft, ShoppingBag,
+  Clock, Check, X, Package, MapPin, Phone, RefreshCw, AlertCircle, Loader2, ChevronRight, ArrowLeft, ShoppingBag, Truck, ShieldCheck,
 } from 'lucide-react'
 import useSeller from '../hook/useSeller'
 import { SellerOrdersSkeleton } from '../../../components/common/Skeleton'
@@ -54,6 +54,7 @@ const SellerOrders = () => {
   const [actingOrderId, setActingOrderId] = useState(null)
   const [rejectModalOrder, setRejectModalOrder] = useState(null)
   const [rejectReason, setRejectReason] = useState('out_of_stock')
+  const [acceptNoticeOrder, setAcceptNoticeOrder] = useState(null)
 
   useEffect(() => {
     handleGetSellerOrders()
@@ -64,10 +65,8 @@ const SellerOrders = () => {
     [orders, activeFilter]
   )
 
-  const onAccept = async (orderId) => {
-    setActingOrderId(orderId)
-    await handleAcceptOrder(orderId)
-    setActingOrderId(null)
+  const onAccept = (order) => {
+    setAcceptNoticeOrder(order)
   }
 
   const onConfirmReject = async () => {
@@ -173,16 +172,16 @@ const SellerOrders = () => {
                       {pending && (
                         <>
                           <button
-                            onClick={() => onAccept(order._id)}
+                            onClick={() => onAccept(order)}
                             disabled={isBusy}
-                            className="px-4 py-2 bg-[#287A4B] text-white rounded text-[11px] font-bold uppercase hover:bg-[#1E6039]"
+                            className="px-4 py-2 bg-[#287A4B] text-white rounded text-[11px] font-bold uppercase hover:bg-[#1E6039] cursor-pointer"
                           >
-                            {isBusy ? 'Processing...' : 'Accept Order'}
+                            Accept Order
                           </button>
                           <button
                             onClick={() => setRejectModalOrder(order)}
                             disabled={isBusy}
-                            className="px-4 py-2 border border-[#C43D3D] text-[#C43D3D] rounded text-[11px] font-bold uppercase hover:bg-[#FCECEC]"
+                            className="px-4 py-2 border border-[#C43D3D] text-[#C43D3D] rounded text-[11px] font-bold uppercase hover:bg-[#FCECEC] cursor-pointer"
                           >
                             Reject
                           </button>
@@ -190,7 +189,7 @@ const SellerOrders = () => {
                       )}
                       <button
                         onClick={() => navigate(`/seller/orders/${order._id}`)}
-                        className="px-4 py-2 bg-[#111111] text-white rounded text-[11px] font-bold uppercase hover:bg-[#B08D57]"
+                        className="px-4 py-2 bg-[#111111] text-white rounded text-[11px] font-bold uppercase hover:bg-[#B08D57] cursor-pointer"
                       >
                         Details &rarr;
                       </button>
@@ -202,6 +201,55 @@ const SellerOrders = () => {
           )}
         </div>
       </div>
+
+      {/* Accept Order Notice Modal */}
+      {acceptNoticeOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[12px] border border-[#EAEAEA] p-6 md:p-7 max-w-md w-full space-y-5 shadow-2xl relative">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#F5EFE5] border border-[#E6D7C3] flex items-center justify-center text-[#B08D57] shrink-0">
+                  <Truck size={20} />
+                </div>
+                <div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#B08D57] bg-[#F5EFE5] px-2 py-0.5 rounded">
+                    <ShieldCheck size={11} /> Pipeline Verified
+                  </span>
+                  <h3 className="text-[16px] font-bold text-[#111] mt-0.5">Live Dispatch Notice</h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setAcceptNoticeOrder(null)}
+                className="text-[#888] hover:text-[#111] p-1 rounded-full transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="bg-[#FAFAFA] border border-[#EAEAEA] rounded-[8px] p-4 text-[12px] leading-relaxed text-[#555] space-y-2.5">
+              <p>
+                Our automated delivery pipeline and real-time tracking integration with <strong className="text-[#111]">Shiprocket</strong> have been officially tested and verified end-to-end.
+              </p>
+              <p>
+                Accepting an order generates an actual live courier shipment &amp; chargeable AWB. To avoid incurring real courier charges during testing, <strong className="text-[#C43D3D]">live order acceptance is temporarily locked</strong> in this preview environment.
+              </p>
+              <div className="pt-1 text-[11px] text-[#B08D57] font-semibold flex items-center gap-1.5">
+                <span>✨</span>
+                <span>Full automated fulfillment will be live upon official launch at <strong className="underline">Zrive.com</strong>.</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => setAcceptNoticeOrder(null)}
+                className="w-full sm:w-auto px-6 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11.5px] font-bold uppercase tracking-wider hover:bg-[#B08D57] transition-colors cursor-pointer"
+              >
+                Understood
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject Modal */}
       {rejectModalOrder && (

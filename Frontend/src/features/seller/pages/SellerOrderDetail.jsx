@@ -53,6 +53,7 @@ const SellerOrderDetail = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("out_of_stock");
 
   useEffect(() => {
@@ -96,17 +97,8 @@ const SellerOrderDetail = () => {
     ? "CANCELLED"
     : (order.confirmationStatus || order.orderStatus || "PENDING").toUpperCase();
 
-  const onAccept = async () => {
-    setSubmitting(true);
-    try {
-      await handleAcceptOrder(order._id);
-      notify.success("Order accepted for fulfillment!");
-      await handleGetOrderById(order._id);
-    } catch (err) {
-      notify.error(err, "Failed to accept order.");
-    } finally {
-      setSubmitting(false);
-    }
+  const onAccept = () => {
+    setShowAcceptModal(true);
   };
 
   const onReject = async () => {
@@ -366,6 +358,55 @@ const SellerOrderDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Accept Order Notice Modal */}
+      {showAcceptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[12px] border border-[#EAEAEA] p-6 md:p-7 max-w-md w-full space-y-5 shadow-2xl relative">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#F5EFE5] border border-[#E6D7C3] flex items-center justify-center text-[#B08D57] shrink-0">
+                  <Truck size={20} />
+                </div>
+                <div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#B08D57] bg-[#F5EFE5] px-2 py-0.5 rounded">
+                    <ShieldCheck size={11} /> Pipeline Verified
+                  </span>
+                  <h3 className="text-[16px] font-bold text-[#111] mt-0.5">Live Dispatch Notice</h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAcceptModal(false)}
+                className="text-[#888] hover:text-[#111] p-1 rounded-full transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="bg-[#FAFAFA] border border-[#EAEAEA] rounded-[8px] p-4 text-[12px] leading-relaxed text-[#555] space-y-2.5">
+              <p>
+                Our automated delivery pipeline and real-time tracking integration with <strong className="text-[#111]">Shiprocket</strong> have been officially tested and verified end-to-end.
+              </p>
+              <p>
+                Accepting an order generates an actual live courier shipment &amp; chargeable AWB. To avoid incurring real courier charges during testing, <strong className="text-[#C43D3D]">live order acceptance is temporarily locked</strong> in this preview environment.
+              </p>
+              <div className="pt-1 text-[11px] text-[#B08D57] font-semibold flex items-center gap-1.5">
+                <span>✨</span>
+                <span>Full automated fulfillment will be live upon official launch at <strong className="underline">Zrive.com</strong>.</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => setShowAcceptModal(false)}
+                className="w-full sm:w-auto px-6 py-2.5 bg-[#111111] text-white rounded-[6px] text-[11.5px] font-bold uppercase tracking-wider hover:bg-[#B08D57] transition-colors cursor-pointer"
+              >
+                Understood
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject Modal */}
       {showRejectModal && (

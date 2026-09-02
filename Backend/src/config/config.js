@@ -52,7 +52,8 @@ const config = {
     CLIENT_URL: process.env.CLIENT_URL,
     VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
-    VAPID_SUBJECT: process.env.VAPID_SUBJECT || "mailto:admin@zrive.com"
+    VAPID_SUBJECT: process.env.VAPID_SUBJECT || "mailto:admin@zrive.com",
+    ENABLE_LIVE_SHIPROCKET: process.env.ENABLE_LIVE_SHIPROCKET === "true",
 }
 
 export default config
